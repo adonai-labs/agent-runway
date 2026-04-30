@@ -66,7 +66,7 @@ Specs are not passive documentation — they act as **executable guides that act
 Run your first structured AI workflow in seconds:
 
 ```bash
-npx @adonai-labs/agent-runway@beta init
+npx @adonai-labs/agent-runway init
 ```
 
 The CLI will ask whether to install in the current project or globally, then which agent environment to configure:
@@ -100,17 +100,17 @@ Then it will show you project presets:
 Or use presets directly:
 
 ```bash
-npx @adonai-labs/agent-runway@beta init --preset node-typescript
-npx @adonai-labs/agent-runway@beta init --preset web-fullstack-ts
-npx @adonai-labs/agent-runway@beta init --stacks node,typescript,react
-npx @adonai-labs/agent-runway@beta init --target vscode --preset node-typescript
-npx @adonai-labs/agent-runway@beta init --target all --preset web-fullstack-ts
+npx @adonai-labs/agent-runway init --preset node-typescript
+npx @adonai-labs/agent-runway init --preset web-fullstack-ts
+npx @adonai-labs/agent-runway init --stacks node,typescript,react
+npx @adonai-labs/agent-runway init --target vscode --preset node-typescript
+npx @adonai-labs/agent-runway init --target all --preset web-fullstack-ts
 ```
 
 Or install it first:
 
 ```bash
-npm install -D @adonai-labs/agent-runway@beta
+npm install -D @adonai-labs/agent-runway
 npx agent-runway init
 ```
 
@@ -309,31 +309,31 @@ The summary is concise and stakeholder-friendly:
 ### Interactive
 
 ```bash
-npx @adonai-labs/agent-runway@beta init
+npx @adonai-labs/agent-runway init
 ```
 
 ### Preset
 
 ```bash
-npx @adonai-labs/agent-runway@beta init --preset web-fullstack-ts
+npx @adonai-labs/agent-runway init --preset web-fullstack-ts
 ```
 
 ### Custom stacks
 
 ```bash
-npx @adonai-labs/agent-runway@beta init --stacks node,typescript,react
+npx @adonai-labs/agent-runway init --stacks node,typescript,react
 ```
 
 ### Add stacks later
 
 ```bash
-npx @adonai-labs/agent-runway@beta add dotnet
+npx @adonai-labs/agent-runway add dotnet
 ```
 
 ### Update
 
 ```bash
-npx @adonai-labs/agent-runway@beta update
+npx @adonai-labs/agent-runway update
 ```
 
 ---
@@ -343,7 +343,7 @@ npx @adonai-labs/agent-runway@beta update
 ### Global
 
 ```bash
-npx @adonai-labs/agent-runway@beta init --scope global --preset core-only
+npx @adonai-labs/agent-runway init --scope global --preset core-only
 ```
 
 Applies to all Cursor projects on your machine. Claude Code and VS Code installs are project-scoped for now.
@@ -351,7 +351,7 @@ Applies to all Cursor projects on your machine. Claude Code and VS Code installs
 ### Project (default)
 
 ```bash
-npx @adonai-labs/agent-runway@beta init --scope project --target vscode --preset web-fullstack-ts
+npx @adonai-labs/agent-runway init --scope project --target vscode --preset web-fullstack-ts
 ```
 
 Recommended for teams and portability.

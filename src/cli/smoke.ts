@@ -26,6 +26,7 @@ const CASES: SmokeCase[] = [
     expectedPaths: [
       ...BASE_EXPECTED,
       '.cursor/commands',
+      '.cursor/commands/autonomous-lead.md',
       '.cursor/skills',
       '.cursor/rules',
       '.cursor/agents',
@@ -38,6 +39,7 @@ const CASES: SmokeCase[] = [
     expectedPaths: [
       ...BASE_EXPECTED,
       '.claude/commands',
+      '.claude/commands/autonomous-lead.md',
       '.claude/agents',
       'CLAUDE.md',
       '.agent-runway/skills',
@@ -54,6 +56,7 @@ const CASES: SmokeCase[] = [
       '.github/copilot-instructions.md',
       '.github/instructions',
       '.github/prompts',
+      '.github/prompts/autonomous-lead.prompt.md',
       '.github/agents',
       '.github/skills',
       '.agent-runway/rules',

@@ -44,6 +44,7 @@ Read the developer's description carefully. Identify the primary intent:
 | Intent signal | Likely category |
 |---|---|
 | "add", "build", "implement", "create", "new endpoint/feature" | Implementation |
+| "autonomous", "without supervision", "run unattended", "low supervision" | Autonomous implementation |
 | "fix", "broken", "not working", "bug", "error", "wrong behaviour" | Bug fix |
 | "review", "check this", "audit", "PR review" | Code review |
 | "clean up", "refactor", "simplify", "too complex", "hard to read" | Refactor |
@@ -58,6 +59,7 @@ If the intent is genuinely ambiguous after reading the description, use `AskQues
 ```
 What best describes what you want to do?
 - Add or change functionality (feature or fix)
+- Add or change functionality autonomously (low supervision)
 - Clean up or restructure existing code (refactor)
 - Review completed work (code review)
 - Provision or change infrastructure (IaC)
@@ -105,6 +107,19 @@ If no project docs exist yet, note it plainly:
 ```
 No project docs found. Proceeding with standard .NET patterns.
 The tech lead can add project context to .agent-runway/docs/ to improve future routing.
+```
+
+#### If intent is Autonomous implementation
+
+Route directly to `/autonomous-lead`.
+
+Before handoff, load the same project context as Implementation/Bug fix and add this note:
+
+```
+Autonomous mode selected:
+- Execution will proceed without interactive approval gates
+- Decisions will be logged under .agent-runway/logs/autonomous-runs/
+- ADRs will be created for architectural-impact decisions
 ```
 
 #### If intent is Refactor
@@ -174,6 +189,8 @@ Alternatives: [other applicable commands]
 ```
 
 For non-implementation intents (Refactor, IaC, Architecture, Review, Ticket validation, PO evaluation), route directly to the relevant skill without the classification/alternatives block.
+
+For Autonomous implementation intents, route directly to `/autonomous-lead` and include artifact logging obligations in the handoff summary.
 
 If the task is **Complex**, add:
 

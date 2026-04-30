@@ -212,18 +212,17 @@ export async function initCommand(options: InitOptions) {
     spinner.text = 'Creating configuration...';
     await createConfig(configDir, selectedStacks, isGlobal, targets);
 
-    if (!isGlobal) {
-      spinner.text = 'Creating project structure...';
-      await ensureProjectStructure(projectRoot);
-      spinner.text = 'Copying stack spec templates...';
-      await copyStackSpecTemplates(projectRoot, selectedStacks);
-    }
+    spinner.text = 'Creating project structure...';
+    await ensureProjectStructure(projectRoot);
+    spinner.text = 'Copying stack spec templates...';
+    await copyStackSpecTemplates(projectRoot, selectedStacks);
 
     spinner.succeed(chalk.green('Agent Runway installed successfully!'));
 
     if (isGlobal) {
       console.log(chalk.blue('\n✅ Global installation complete!\n'));
       console.log(chalk.gray(`Location: ${cursorDir}`));
+      console.log(chalk.gray(`Project scaffold: ${path.join(projectRoot, '.agent-runway')}`));
       console.log(chalk.gray('These rules will apply to ALL Cursor projects\n'));
     } else {
       const targetLabel = targets.join(' + ');

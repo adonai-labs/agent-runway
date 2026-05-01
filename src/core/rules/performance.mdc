@@ -1,0 +1,242 @@
+---
+description: Performance optimisation guidelines — bundle optimisation, memory management, rendering, network, Electron-specific, and monitoring strategies. Applied when working on performance-sensitive code.
+globs: "**/*.ts,**/*.tsx,**/*.js,**/*.jsx,**/*.cs,**/*.rs"
+alwaysApply: false
+---
+
+# Performance Optimisation Guidelines
+
+Directives for performance-sensitive code. Apply when building or optimising Electron, React, or web applications.
+
+---
+
+## Performance Fundamentals
+
+### Key metrics to track
+
+- **Loading:** FCP, LCP, FID, CLS
+- **Runtime:** heap used, heap total, RSS
+- **Bundle:** main chunk size, renderer chunk size, total size
+- **Electron:** main process memory, renderer process memory
+
+### Performance budgets (reference)
+
+| Metric | Target | Typical threshold |
+|--------|--------|-------------------|
+| FCP | < 1.5s | 1500 ms |
+| LCP | < 2.5s | 2500 ms |
+| FID | < 100 ms | 100 ms |
+| Main bundle | < 1 MB | 1024 KB |
+| Renderer bundle | < 2 MB | 2048 KB |
+| Heap used | < 512 MB | 512 MB |
+| Memory leak | < 10 MB/min | 10 MB |
+
+---
+
+## Bundle Optimisation
+
+### Code splitting
+
+- **Do** lazy-load routes with `React.lazy` and `Suspense`
+- **Do** lazy-load heavy components (charts, tables, editors)
+
+```tsx
+const Dashboard = lazy(() => import('./pages/Dashboard'));
+const Chart = lazy(() => import('./components/Chart'));
+```
+
+- **Do** wrap lazy-loaded routes in `<Suspense>` with a fallback
+- **Don't** import everything at the top level; use dynamic imports for feature modules
+
+### Tree shaking
+
+- **Do** use named exports instead of default exports for utilities
+- **Do** import only what you need from libraries (e.g. `import Button from '@mui/material/Button'`)
+
+```tsx
+import { Button } from '@/components/ui'; // not import * from '@mui/material'
+```
+
+- **Don't** use barrel files that re-export everything; prefer selective exports
+
+### Dynamic imports
+
+- **Do** use `import()` for feature modules that are conditionally loaded
+- **Do** load heavy libraries (charts, analytics) only when needed
+
+### Bundle analysis
+
+- **Do** run `webpack-bundle-analyzer` or `vite-bundle-analyzer` regularly
+- **Do** add `npm run analyze` to build scripts
+- **Don't** ship large dependencies without checking their impact
+
+---
+
+## Memory Management
+
+### Leak prevention
+
+- **Do** return a cleanup function from every `useEffect` that registers listeners, timers, or subscriptions
+- **Do** remove event listeners in `useEffect` cleanup
+
+```tsx
+useEffect(() => {
+  const handler = () => {};
+  el.addEventListener('click', handler);
+  return () => el.removeEventListener('click', handler);
+}, [el]);
+```
+
+- **Do** clear `setInterval` and `setTimeout` in cleanup
+- **Don't** accumulate unbounded data in state (e.g. append-only arrays without limits)
+
+### Cleanup in useEffect
+
+- **Do** return a function that clears intervals, timers, and subscriptions
+- **Do** disconnect `IntersectionObserver` and `ResizeObserver` in cleanup
+- **Don't** leave subscriptions or timers running after unmount
+
+### Weak references
+
+- **Do** use `WeakMap` for caches keyed by DOM nodes or objects
+- **Do** prefer WeakMap when the key should not prevent garbage collection
+
+### Object pooling
+
+- **Do** consider pooling for frequently created/destroyed objects (events, DOM nodes)
+- **Do** implement `acquire`/`release` pattern with reset logic
+- **Don't** pool without clear evidence of allocation pressure
+
+---
+
+## Rendering Optimisation
+
+### React.memo
+
+- **Do** use for components that receive stable props and rarely change
+- **Do** use for list items that receive callbacks
+
+```tsx
+export const ListItem = React.memo(({ item, onClick }) => <div onClick={() => onClick(item.id)}>{item.name}</div>);
+```
+
+- **Don't** memoise trivial components; prefer memoisation for expensive renders
+
+### useMemo
+
+- **Do** use for expensive derived data (filtering, sorting, mapping)
+- **Do** include all dependencies in the dependency array
+- **Don't** memoise cheap operations
+
+### useCallback
+
+- **Do** use for callbacks passed to memoised children
+- **Do** use for callbacks in dependency arrays of other hooks
+
+```tsx
+const handleClick = useCallback((id: string) => onItemClick(id), [onItemClick]);
+```
+
+- **Don't** wrap every callback; only where it prevents child re-renders
+
+### Virtualisation
+
+- **Do** use virtual scrolling for lists with > 100 items (e.g. `react-window`, `react-virtualized`)
+- **Do** use for tables with many rows
+
+### Lazy images
+
+- **Do** use `IntersectionObserver` or `loading="lazy"` for images below the fold
+- **Do** provide a placeholder or skeleton while loading
+
+---
+
+## Network Optimisation
+
+### Caching
+
+- **Do** cache responses with a TTL (e.g. 5–60 min) for idempotent data
+- **Do** check cache before fetching when the same URL is requested repeatedly
+
+### Debouncing
+
+- **Do** debounce search inputs (300–500 ms)
+- **Do** debounce resize handlers and scroll handlers
+
+### Request batching
+
+- **Do** batch multiple requests when the API supports it
+- **Do** avoid sending many small requests in rapid succession
+
+---
+
+## Electron-Specific
+
+### Process memory
+
+- **Do** monitor memory usage in the main process
+- **Do** close unused or minimised windows when memory is high
+- **Don't** keep all windows in memory indefinitely
+
+### IPC optimisation
+
+- **Do** batch IPC messages when possible
+- **Do** use `invoke`/`handle` for request-response patterns
+
+```ts
+// Prefer batch over many individual sends
+ipcMain.handle('batch-request', (_, requests) => Promise.all(requests.map(process)));
+```
+
+- **Don't** send large payloads or high-frequency messages without batching
+
+### Window state
+
+- **Do** persist window bounds (x, y, width, height) on close
+- **Do** restore bounds on next start and respect screen bounds
+
+---
+
+## Common Anti-Patterns
+
+- **Don't** omit `useEffect` cleanup for intervals, timers, or subscriptions
+- **Don't** run expensive calculations on every render without `useMemo`
+- **Don't** pass inline callbacks to memoised children without `useCallback`
+- **Don't** import entire libraries or barrel files when only a few exports are needed
+- **Don't** render large lists without virtualisation
+- **Don't** load images eagerly when they are below the fold
+- **Don't** fire requests on every keystroke without debouncing
+
+---
+
+## Checklist
+
+### Bundle
+
+- [ ] Code splitting for routes and heavy components
+- [ ] Named exports for tree shaking
+- [ ] Regular bundle analysis
+
+### Memory
+
+- [ ] Cleanup in all `useEffect` hooks
+- [ ] WeakMap for DOM-keyed caches where appropriate
+- [ ] Virtualisation for large lists
+
+### Rendering
+
+- [ ] `React.memo` for expensive list items
+- [ ] `useMemo` for expensive derived data
+- [ ] `useCallback` for callbacks passed to memoised children
+- [ ] Lazy loading for images below the fold
+
+### Network
+
+- [ ] Response caching where appropriate
+- [ ] Debouncing for search and resize inputs
+
+### Electron
+
+- [ ] Memory monitoring for main process
+- [ ] IPC batching for high-frequency flows
+- [ ] Window state persistence

@@ -1,0 +1,193 @@
+---
+description: TypeScript best practices — strict configuration, advanced type patterns, type safety, generics, branded types, type guards, performance, testing, and common anti-patterns. Applied when working with TypeScript files.
+globs: "**/*.ts,**/*.tsx"
+alwaysApply: false
+---
+
+# TypeScript Best Practices
+
+Directives for type-safe, maintainable TypeScript. Australian English spelling throughout.
+
+---
+
+## Strict Configuration
+
+Enable these `compilerOptions`; do not disable strict mode.
+
+| Option | Purpose |
+|--------|---------|
+| `strict: true` | Enables strict null checks, no implicit any, strict function types |
+| `noUnusedLocals` | Error on unused variables |
+| `noUnusedParameters` | Error on unused function parameters |
+| `noFallthroughCasesInSwitch` | Require `break` in switch |
+| `noUncheckedIndexedAccess` | Index access returns `T \| undefined` |
+| `exactOptionalPropertyTypes` | Distinguish `undefined` from omitted optional props |
+| `noImplicitReturns` | All code paths must return |
+| `noImplicitOverride` | Require `override` when overriding |
+| `allowUnreachableCode: false` | Error on unreachable code |
+
+- Do not use `skipLibCheck: true` unless necessary for legacy dependencies
+- Prefer `moduleResolution: "bundler"` for modern bundlers; `"node16"` for Node
+
+---
+
+## Path Mapping
+
+- Use `baseUrl: "."` and `paths` for aliases (e.g. `@/*`, `@components/*`, `@utils/*`)
+- Prefer short, consistent aliases over long relative imports
+- For Electron: separate `tsconfig.main.json` and `tsconfig.renderer.json` with distinct `include`/`exclude` and `rootDir`/`outDir`
+- Ensure `paths` resolve correctly in both IDE and build; extend from a base config if shared
+
+---
+
+## Utility Types
+
+| Use case | Type |
+|----------|------|
+| Partial nested object | `DeepPartial<T>` |
+| Require specific keys | `RequiredFields<T, K>` or `Required<Pick<T, K>>` |
+| Make specific keys optional | `OptionalFields<T, K>` or `Partial<Pick<T, K>> & Omit<T, K>` |
+| Ensure keys are non-null | `NonNullableFields<T, K>` |
+| Event handler | `(event: T) => void` or `Promise<void>` |
+| Async/sync function types | `(...args: TArgs) => Promise<TReturn>` vs `(...args: TArgs) => TReturn` |
+
+- Use `Pick<T, K>` for a subset of keys; `Omit<T, K>` when excluding keys
+- Use `Record<K, V>` for object maps; avoid `{ [key: string]: T }` when keys are known
+- Prefer `Awaited<T>` over manual unwrapping of `Promise<T>`
+
+---
+
+## Conditional Types
+
+- Use when mapping one type to another based on a condition (`T extends U ? X : Y`)
+- Common patterns: `ArrayElement<T>`, `PromiseType<T>`, `FunctionReturnType<T>`, `FunctionParameters<T>`
+- Use `infer` to extract types from function signatures or generic positions
+- Avoid deeply nested conditional types; prefer simpler unions or helper types
+- Do not use conditional types in hot runtime paths; they are compile-time only
+
+---
+
+## Template Literal Types
+
+- Use for string unions built from a base (e.g. `` `${T}Event` ``, `` `/api/${T}` ``)
+- Useful for event names, API paths, CSS custom properties, file extensions
+- Keeps related string literals in sync when the base type changes
+- Combine with `Uppercase<T>`, `Lowercase<T>`, `Capitalize<T>` for string transformations
+
+---
+
+## Branded Types
+
+- Concept: `T & { __brand: B }` to distinguish semantically different primitives (e.g. `UserId` vs `PostId` vs `string`)
+- Use when: IDs, emails, URLs, or other primitives that must not be mixed accidentally
+- Pair with type guards (`isUserId`, `isEmail`) and factory functions (`createUserId`) that validate and return the branded type
+- Do not expose raw branded values from APIs; validate at boundaries
+- Use a unique symbol or string literal for the brand to avoid collisions
+
+---
+
+## Type Safety Directives
+
+- **Strict null checks**: Use optional chaining (`?.`), nullish coalescing (`??`), and explicit `undefined` checks; avoid non-null assertion (`!`) unless you have proven the value exists
+- **Exhaustive switch**: Add `default` with `const _exhaustive: never = value` or `assertNever(value)` so new union members cause a compile error
+- **Unreachable code**: Use `never` for impossible branches; `assertNever(value: never): never` throws and narrows correctly
+- Do not use `@ts-ignore`; prefer `@ts-expect-error` with a comment explaining why
+- Avoid `as` assertions; use type guards or validation instead
+
+```typescript
+default: const _: never = status; throw new Error(`Unhandled: ${_}`);
+```
+
+---
+
+## Type Guards
+
+- Use `value is T` predicates when narrowing unions or primitives
+- Naming: `isAdmin`, `isUserId`, `isEmail` — `is` prefix + type name
+- Prefer type guards over `as` assertions; they validate at runtime and narrow correctly
+- Use `instanceof` for class hierarchies, `in` for discriminated unions
+- Use `typeof` for primitives; combine with `in` for object shape checks
+
+```typescript
+const isAdmin = (u: AnyUser): u is Admin => u.type === 'admin';
+```
+
+---
+
+## Generic Constraints
+
+- Use `T extends Interface` to require shape (e.g. `T extends { id: string }`)
+- Multiple constraints: `T extends A & B`
+- Use `Omit<T, K>` when constructing objects that omit auto-generated fields
+- Prefer `T[]` and `ReadonlyArray<T>` over `Array<T>` for immutability hints
+- Use default type parameters when a sensible default exists (e.g. `T = unknown`)
+
+---
+
+## Performance
+
+- Use `import type` for type-only imports; avoids runtime import and improves tree-shaking
+- Use `as const` for literal arrays/objects to get narrow types and avoid widening
+- Avoid expensive conditional types in hot paths; move complex type logic to declaration files or separate modules
+- Prefer `typeof arr[number]` over manual string unions for array-derived types
+- Do not use `enum` for string unions; prefer `as const` objects or literal unions
+
+```typescript
+import type { User } from './types';
+const STATUSES = ['idle', 'loading', 'success'] as const;
+type Status = (typeof STATUSES)[number];
+```
+
+---
+
+## Runtime Validation
+
+- Validate at boundaries: API responses, user input, config, environment variables
+- Use Zod (or similar) to define schemas; infer types with `z.infer<typeof Schema>`
+- Prefer `parse` for hard failures; use `safeParse` when you need to handle invalid data
+- Do not trust `unknown` without validation; never cast `unknown` to a type without runtime checks
+- Validate once at the boundary; propagate validated types inward
+
+---
+
+## Common Anti-patterns
+
+| Anti-pattern | Do instead |
+|--------------|------------|
+| `any` for parameters or return types | Use `unknown` and narrow, or define proper types |
+| `as User` on `JSON.parse` result | Validate with Zod (or similar) and use inferred type |
+| `as HTMLElement` without check | Use `instanceof HTMLElement` or null check |
+| Long manual string unions | Use `as const` array and `typeof arr[number]` |
+| Complex nested conditional types | Simplify; use helper types or separate declarations |
+| Non-null assertion (`!`) as default | Use optional chaining and explicit checks |
+| `Function` or `(...args: any[]) => any` | Use specific function signatures |
+| Empty object `{}` as type | Use `Record<string, never>` or a proper interface |
+
+---
+
+## Checklist
+
+**Configuration**
+- [ ] Strict mode and recommended options enabled
+- [ ] Path mapping configured
+- [ ] Separate configs for main/renderer if Electron
+
+**Type safety**
+- [ ] Strict null checks; minimal use of `!`
+- [ ] Type guards for union narrowing
+- [ ] Exhaustive handling for discriminated unions
+- [ ] Branded types for domain primitives where appropriate
+
+**Performance**
+- [ ] `import type` for type-only imports
+- [ ] `as const` for literal unions
+- [ ] No expensive conditional types in hot paths
+
+**Validation**
+- [ ] Runtime validation at boundaries (API, config, input)
+- [ ] Types inferred from schemas where possible
+
+**Anti-patterns**
+- [ ] No `any`; use `unknown` and narrow
+- [ ] No unsafe `as`; use type guards or validation
+- [ ] No complex unions without `as const` derivation

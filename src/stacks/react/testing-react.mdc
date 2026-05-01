@@ -1,0 +1,406 @@
+---
+description: Testing React components — React Testing Library, hooks, context, async, accessibility. Extends core/rules/testing.mdc with React-specific patterns.
+globs: "**/*.test.{ts,tsx,js,jsx},**/*.spec.{ts,tsx,js,jsx},**/__tests__/**"
+alwaysApply: false
+---
+
+# Testing React Applications
+
+Extends `core/rules/testing.mdc` with React-specific testing patterns using React Testing Library.
+
+---
+
+## Component Testing Principles
+
+- **Test behavior, not implementation**: Focus on what the user sees and does
+- **Avoid testing internal state**: Test outputs (rendered DOM, calls to callbacks)
+- **Use accessible queries**: Prefer `getByRole`, `getByLabelText` over `getByTestId`
+- **Write tests that resemble how users interact**: Click buttons, type in inputs, see text
+
+---
+
+## React Testing Library Queries
+
+### Query Priority (from most to least preferred)
+
+```typescript
+import { render, screen } from '@testing-library/react';
+
+// 1. Accessible by everyone (best)
+screen.getByRole('button', { name: /submit/i });
+screen.getByLabelText('Email address');
+screen.getByPlaceholderText('Enter email');
+screen.getByText('Welcome');
+
+// 2. Semantic queries
+screen.getByAltText('Profile picture');
+screen.getByTitle('Close dialog');
+
+// 3. Test IDs (last resort)
+screen.getByTestId('custom-element');
+```
+
+### Query Variants
+
+```typescript
+// getBy* - throws error if not found
+const button = screen.getByRole('button');
+
+// queryBy* - returns null if not found
+const button = screen.queryByRole('button');
+expect(button).not.toBeInTheDocument();
+
+// findBy* - async, waits for element
+const button = await screen.findByRole('button');
+
+// getAllBy*, queryAllBy*, findAllBy* - for multiple elements
+const items = screen.getAllByRole('listitem');
+```
+
+---
+
+## Testing Components
+
+### Basic Component Test
+
+```typescript
+import { render, screen } from '@testing-library/react';
+import { UserProfile } from './UserProfile';
+
+describe('UserProfile', () => {
+  it('should display user name and email', () => {
+    render(<UserProfile name="John Doe" email="john@example.com" />);
+
+    expect(screen.getByText('John Doe')).toBeInTheDocument();
+    expect(screen.getByText('john@example.com')).toBeInTheDocument();
+  });
+});
+```
+
+### Testing User Interactions
+
+```typescript
+import { render, screen } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
+import { LoginForm } from './LoginForm';
+
+describe('LoginForm', () => {
+  it('should call onSubmit with email and password', async () => {
+    const user = userEvent.setup();
+    const handleSubmit = jest.fn();
+
+    render(<LoginForm onSubmit={handleSubmit} />);
+
+    await user.type(screen.getByLabelText('Email'), 'test@example.com');
+    await user.type(screen.getByLabelText('Password'), 'password123');
+    await user.click(screen.getByRole('button', { name: /sign in/i }));
+
+    expect(handleSubmit).toHaveBeenCalledWith({
+      email: 'test@example.com',
+      password: 'password123',
+    });
+  });
+});
+```
+
+---
+
+## Testing Async Behavior
+
+### Waiting for Elements
+
+```typescript
+it('should display user data after loading', async () => {
+  render(<UserDashboard />);
+
+  // Initially shows loading
+  expect(screen.getByText('Loading...')).toBeInTheDocument();
+
+  // Wait for user data to appear
+  const userName = await screen.findByText('John Doe');
+  expect(userName).toBeInTheDocument();
+
+  // Loading indicator should be gone
+  expect(screen.queryByText('Loading...')).not.toBeInTheDocument();
+});
+```
+
+### Using waitFor
+
+```typescript
+import { waitFor } from '@testing-library/react';
+
+it('should update counter after click', async () => {
+  const user = userEvent.setup();
+  render(<Counter />);
+
+  await user.click(screen.getByRole('button', { name: /increment/i }));
+
+  await waitFor(() => {
+    expect(screen.getByText('Count: 1')).toBeInTheDocument();
+  });
+});
+```
+
+---
+
+## Testing Hooks
+
+### useHook from @testing-library/react
+
+```typescript
+import { renderHook, waitFor } from '@testing-library/react';
+import { useCounter } from './useCounter';
+
+describe('useCounter', () => {
+  it('should increment counter', () => {
+    const { result } = renderHook(() => useCounter());
+
+    expect(result.current.count).toBe(0);
+
+    act(() => {
+      result.current.increment();
+    });
+
+    expect(result.current.count).toBe(1);
+  });
+
+  it('should fetch user data', async () => {
+    const { result } = renderHook(() => useUser(123));
+
+    expect(result.current.loading).toBe(true);
+
+    await waitFor(() => {
+      expect(result.current.loading).toBe(false);
+    });
+
+    expect(result.current.user).toEqual({ id: 123, name: 'John' });
+  });
+});
+```
+
+---
+
+## Testing Context
+
+### Wrapping with Providers
+
+```typescript
+import { render, screen } from '@testing-library/react';
+import { ThemeProvider } from './ThemeContext';
+import { ThemedButton } from './ThemedButton';
+
+const renderWithTheme = (ui: React.ReactElement, { theme = 'light' } = {}) => {
+  return render(
+    <ThemeProvider value={theme}>
+      {ui}
+    </ThemeProvider>
+  );
+};
+
+describe('ThemedButton', () => {
+  it('should apply dark theme styles', () => {
+    renderWithTheme(<ThemedButton />, { theme: 'dark' });
+
+    const button = screen.getByRole('button');
+    expect(button).toHaveClass('button-dark');
+  });
+});
+```
+
+### Custom Render Helper
+
+```typescript
+import { render, RenderOptions } from '@testing-library/react';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { BrowserRouter } from 'react-router-dom';
+
+interface AllTheProvidersProps {
+  children: React.ReactNode;
+}
+
+const AllTheProviders = ({ children }: AllTheProvidersProps) => {
+  const queryClient = new QueryClient({
+    defaultOptions: { queries: { retry: false } },
+  });
+
+  return (
+    <QueryClientProvider client={queryClient}>
+      <BrowserRouter>
+        {children}
+      </BrowserRouter>
+    </QueryClientProvider>
+  );
+};
+
+const customRender = (
+  ui: React.ReactElement,
+  options?: Omit<RenderOptions, 'wrapper'>
+) => render(ui, { wrapper: AllTheProviders, ...options });
+
+export { customRender as render };
+```
+
+---
+
+## Mocking
+
+### Mocking API Calls
+
+```typescript
+import { rest } from 'msw';
+import { setupServer } from 'msw/node';
+
+const server = setupServer(
+  rest.get('/api/users/:id', (req, res, ctx) => {
+    return res(ctx.json({ id: 123, name: 'John Doe' }));
+  })
+);
+
+beforeAll(() => server.listen());
+afterEach(() => server.resetHandlers());
+afterAll(() => server.close());
+
+it('should display user data', async () => {
+  render(<UserProfile userId={123} />);
+
+  expect(await screen.findByText('John Doe')).toBeInTheDocument();
+});
+```
+
+### Mocking Modules
+
+```typescript
+jest.mock('./api/userService', () => ({
+  getUserById: jest.fn(),
+}));
+
+import { getUserById } from './api/userService';
+
+it('should handle API errors', async () => {
+  (getUserById as jest.Mock).mockRejectedValue(new Error('Not found'));
+
+  render(<UserProfile userId={999} />);
+
+  expect(await screen.findByText('User not found')).toBeInTheDocument();
+});
+```
+
+---
+
+## Testing Accessibility
+
+```typescript
+import { render } from '@testing-library/react';
+import { axe, toHaveNoViolations } from 'jest-axe';
+
+expect.extend(toHaveNoViolations);
+
+describe('LoginForm a11y', () => {
+  it('should not have accessibility violations', async () => {
+    const { container } = render(<LoginForm />);
+    const results = await axe(container);
+
+    expect(results).toHaveNoViolations();
+  });
+});
+```
+
+---
+
+## Snapshot Testing (Use Sparingly)
+
+```typescript
+import { render } from '@testing-library/react';
+
+it('should match snapshot', () => {
+  const { container } = render(<UserCard name="John" email="john@example.com" />);
+
+  expect(container.firstChild).toMatchSnapshot();
+});
+```
+
+**When to use snapshots:**
+- ✅ Testing static components (cards, badges, icons)
+- ✅ Catching unintended markup changes
+- ❌ Don't use as primary test strategy
+- ❌ Avoid for dynamic or frequently changing components
+
+---
+
+## Common Patterns
+
+### Testing Forms
+
+```typescript
+it('should validate email format', async () => {
+  const user = userEvent.setup();
+  render(<RegistrationForm />);
+
+  const emailInput = screen.getByLabelText('Email');
+  await user.type(emailInput, 'invalid-email');
+  await user.click(screen.getByRole('button', { name: /submit/i }));
+
+  expect(await screen.findByText('Invalid email format')).toBeInTheDocument();
+});
+```
+
+### Testing Conditional Rendering
+
+```typescript
+it('should show edit button for admin users', () => {
+  render(<UserProfile user={{ role: 'admin' }} />);
+
+  expect(screen.getByRole('button', { name: /edit/i })).toBeInTheDocument();
+});
+
+it('should not show edit button for regular users', () => {
+  render(<UserProfile user={{ role: 'user' }} />);
+
+  expect(screen.queryByRole('button', { name: /edit/i })).not.toBeInTheDocument();
+});
+```
+
+### Testing Lists
+
+```typescript
+it('should render all users', () => {
+  const users = [
+    { id: 1, name: 'Alice' },
+    { id: 2, name: 'Bob' },
+  ];
+
+  render(<UserList users={users} />);
+
+  const listItems = screen.getAllByRole('listitem');
+  expect(listItems).toHaveLength(2);
+  expect(screen.getByText('Alice')).toBeInTheDocument();
+  expect(screen.getByText('Bob')).toBeInTheDocument();
+});
+```
+
+---
+
+## Best Practices
+
+- ✅ Use `userEvent` over `fireEvent` for realistic interactions
+- ✅ Wait for async updates with `findBy*` or `waitFor`
+- ✅ Clean up after each test (RTL does this automatically)
+- ✅ Test from the user's perspective
+- ✅ Use `screen` instead of destructuring from `render()`
+- ❌ Don't test implementation details (state, props drilling)
+- ❌ Don't use `container.querySelector` (use queries instead)
+- ❌ Don't wait for fixed timeouts (use `waitFor` instead)
+
+---
+
+## Checklist
+
+- [ ] Components tested with accessible queries
+- [ ] User interactions use `userEvent`
+- [ ] Async behavior uses `findBy*` or `waitFor`
+- [ ] Custom hooks tested with `renderHook`
+- [ ] Providers wrapped with custom render helper
+- [ ] API calls mocked with MSW
+- [ ] Accessibility tested with jest-axe
+- [ ] Tests focus on user behavior, not implementation

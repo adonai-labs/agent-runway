@@ -1,0 +1,51 @@
+---
+id: "702"
+category: "security"
+description: OWASP AI Security & Privacy Guide – PR rules emphasizing data protection, governance, and safety.
+globs: *.py,*.ts,*.tsx,*.js,*.cs,*.java,*.go,*.rb,*.ps1,*.yml,*.yaml,*.json
+alwaysApply: false
+---
+
+# OWASP AI Security & Privacy – PR Review Rules
+
+## Data Governance
+- Classify inputs/outputs; prohibit uncontrolled ingestion of sensitive categories (PII, PHI, credentials).
+- Minimize retention; delete intermediates; avoid storing raw prompts/outputs unless justified.
+- Document data sources and consent; prefer data references over raw payloads.
+
+## Privacy by Design
+- Redact data before prompts; support field-level masking and hashing.
+- Provide opt-out and data deletion pathways where applicable.
+- Disable training/fine-tuning on user data by default in production.
+
+## Access Control and Secrets
+- Secrets in secure variables/key vault; rotate regularly; scope by environment.
+- Principle of least privilege for service principals and tokens used by tools.
+
+## Monitoring & Incident Response
+- Capture minimal operational telemetry (latency, tokens, errors) without sensitive content.
+- Threshold alerts for spikes, cost anomalies, and failure patterns.
+- Provide runbooks for key incident types (leak, poisoning, abuse, drift).
+
+## Safety & Abuse Prevention
+- Add content/abuse filters for inputs/outputs appropriate to domain.
+- Restrict high-risk actions (code exec, network, file writes) behind approvals.
+- Sandbox tool execution; apply egress allowlists and filesystem quotas.
+
+## Model & Supply Chain Risk
+- Track model/SDK versions; maintain SBOM; verify signatures/hashes when available.
+- Evaluate model updates in a staging environment; document behavior changes.
+
+## Compliance & Auditability
+- Log decision rationale for automated actions (without sensitive content).
+- Keep configuration-as-code for prompts, tools, and safety policies.
+
+## PR Reviewer Checklist
+- [ ] Sensitive data is redacted/masked; no raw secrets in code or logs.
+- [ ] No long-term storage of prompts/outputs without a clear purpose.
+- [ ] Access tokens scoped and stored securely; least privilege enforced.
+- [ ] Telemetry avoids sensitive content; alerts configured for anomalies.
+- [ ] Risky capabilities gated; sandboxing and allowlists in place.
+- [ ] Dependencies/models pinned; update process documented.
+- [ ] Policies and prompts are versioned and reviewable.
+

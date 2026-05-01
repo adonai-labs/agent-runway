@@ -1,0 +1,73 @@
+---
+id: "701"
+category: "security"
+description: OWASP Top 10 for LLM Applications – actionable PR rules for AI features and agent tools.
+globs: *.py,*.ts,*.tsx,*.js,*.cs,*.java,*.go,*.rb,*.ps1,*.yml,*.yaml,*.json
+alwaysApply: true
+---
+
+# OWASP LLM Top 10 – PR Review Rules
+
+These rules translate the OWASP Top 10 for LLM Applications into concise checks for code reviews.
+
+## LLM01 – Prompt Injection
+- Treat all user/model-bound input as untrusted; validate and escape dynamic prompt parts.
+- Isolate system, developer, and user messages; never allow user input to modify system policies.
+- Block prompt string concatenation that mixes policy with user content; prefer templating with explicit placeholders and escaping.
+
+## LLM02 – Insecure Output Handling
+- Never execute model output directly (shell/SQL/http/file ops) without explicit allowlists and parsing.
+- Enforce strict schemas for tool outputs; use robust parsing with rejection on violations.
+- Sanitize URLs, file paths, and commands; disable dangerous flags by default.
+
+## LLM03 – Training Data Poisoning
+- Verify provenance for any PR-introduced datasets/prompts/examples; require source docs and checksums.
+- Disallow auto-learning from user content in production unless gated and audited.
+
+## LLM04 – Model DoS
+- Enforce token/size limits, timeouts, and exponential backoff with max retries.
+- Apply rate limiting and budget accounting per user/key.
+
+## LLM05 – Supply Chain
+- Pin SDK/model/tool versions; verify model/weights origin (hash or publisher signature when available).
+- Disallow unreviewed dynamic plugin/tool loading.
+
+## LLM06 – Sensitive Information Disclosure
+- Mask secrets/PII in logs and prompts; prohibit printing keys/tokens.
+- Minimize data in prompts; prefer identifiers to raw payloads; redact before send.
+
+## LLM07 – Insecure Plugin/Tool Design
+- Validate and type-check all tool parameters; reject on validation failure.
+- Enforce authZ and least privilege for tools (scoped tokens, read-only by default).
+- Restrict filesystem/network via allowlists; block wildcard writes and arbitrary hosts.
+
+## LLM08 – Excessive Agency
+- Require human-in-the-loop for high-risk actions (writes, network posts, privileged ops).
+- Default to disabled for destructive tools; require explicit enabling per environment.
+
+## LLM09 – Overreliance on LLM
+- Treat LLM output as untrusted; add deterministic validators/business-rule checks.
+- Require tests for safety-critical decisions; fail closed on parsing/validation errors.
+
+## LLM10 – Model Theft
+- Do not expose private endpoints/weights; rate-limit requests and responses.
+- Disable unrestricted export/debug dumps; scrub sensitive traces.
+
+## Logging & Telemetry (Cross-cutting)
+- Log minimal, non-sensitive metadata (durations, token counts, status) only.
+- Separate prompt traces; guard behind feature flag and secret redaction.
+
+## Deployment & Config
+- Keep secrets in secure variables/key vault; never hardcode keys.
+- Provide env toggles: LOG_PROMPTS, DRY_RUN, RATE_LIMITS, MAX_TOKENS, TIMEOUT_MS.
+
+## PR Reviewer Checklist
+- [ ] No execution of raw model output; strict parsing with allowlists.
+- [ ] Prompt assembly uses templates with escaping; system prompts cannot be user-edited.
+- [ ] Secrets/PII redacted from logs and prompts; no keys in code.
+- [ ] Rate limits/timeouts/token caps implemented; retries bounded.
+- [ ] Tools enforce authZ, validation, and allowlists for FS/network.
+- [ ] Dangerous capabilities gated behind approvals/human-in-the-loop.
+- [ ] Dependencies pinned; no dynamic unvetted plugin loading.
+- [ ] Tests cover parsing/validation and failure paths for safety-critical flows.
+

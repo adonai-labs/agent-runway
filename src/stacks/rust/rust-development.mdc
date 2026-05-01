@@ -1,0 +1,136 @@
+---
+description: Rust development guidelines — ownership, borrowing, lifetimes, error handling, performance, concurrency, async, and testing patterns. Applied when working with Rust code.
+globs: "**/*.rs,**/Cargo.toml"
+alwaysApply: false
+---
+
+# Rust Development Guidelines
+
+Directives for Rust development. Apply when working with `.rs` files or `Cargo.toml`.
+
+---
+
+## Ownership and Borrowing
+
+- Prefer borrowing over moving when the caller needs the value afterwards; use `&T` or `&mut T`.
+- Move by default when transferring ownership; assignment moves for non-`Copy` types.
+- Clone only when necessary — cloning is explicit and can be expensive; prefer references.
+- Use `&str` over `&String` for function parameters when you only need to read.
+- Return owned values from functions when the caller should own the result; avoid returning references to local data.
+- Borrow mutably (`&mut T`) only when you need to modify; avoid overlapping mutable borrows.
+- Use `into_iter()` when consuming a collection; use `iter()` when you need references.
+- Do not return references to temporary or stack-allocated data.
+
+```rust
+let s1 = String::from("hello");
+let s2 = s1;   // move; s1 invalid
+let s3 = &s2;  // borrow; s2 still valid
+```
+
+---
+
+## Lifetimes
+
+- Add explicit lifetimes when the compiler cannot infer them (e.g. function returns a reference derived from parameters).
+- Rely on elision when the rules apply: one input ref → output ref gets that lifetime; one `&self`/`&mut self` → output ref gets that lifetime.
+- Use `'static` only for data that lives for the whole program; avoid for general-purpose APIs.
+- Structs holding references need lifetime parameters: `struct Excerpt<'a> { part: &'a str }`.
+- Prefer owned types when lifetimes make the API complex; sometimes `String` is simpler than `&str` in public APIs.
+
+---
+
+## Smart Pointers
+
+- **Box\<T\>** — Single ownership, heap allocation; use for recursive types, large values, or trait objects.
+- **Rc\<T\>** — Shared ownership, single-threaded; use when multiple owners need the same value (e.g. graphs, shared config).
+- **Arc\<T\>** — Thread-safe shared ownership; use when sharing across threads; pair with `Mutex` or `RwLock` for mutability.
+- Avoid Rc/Arc when possible — they add overhead; prefer borrowing or owned values when ownership is clear.
+
+---
+
+## Error Handling
+
+- Use `Result<T, E>` for fallible operations; use `Option<T>` for optional values without an error.
+- Propagate errors with `?` instead of manual `match`; keep `main` and library boundaries in mind for error types.
+- Use `thiserror` for library error types: derive `Error`, implement `Display`, use `#[from]` for wrapping.
+- Use `anyhow` for application code when you need flexible error handling and context.
+- Avoid `unwrap()` and `expect()` in production — use `?`, `match`, or `if let`; reserve `expect()` for invariants with a clear message.
+- Prefer `unwrap_or_else` over `unwrap_or` when the default is expensive to compute.
+
+---
+
+## Performance
+
+- Use iterators — they are zero-cost abstractions; prefer `iter().map().filter().collect()` over manual loops.
+- Prefer `&[T]` and `&str` over `&Vec<T>` and `&String` for function parameters.
+- Use `Vec::with_capacity(n)` when the final length is known to avoid reallocations.
+- Use `Cow<'a, T>` when you may return either borrowed or owned data to avoid unnecessary cloning.
+- Avoid allocations in hot paths — reuse buffers, use `String::clear()` and `Vec::clear()` instead of creating new ones.
+- Prefer `iter()` over `into_iter()` when you only need to read; use `into_iter()` when consuming.
+
+---
+
+## Concurrency
+
+- Prefer channels (mpsc) for message passing between threads; they avoid shared mutable state.
+- Use `Arc<Mutex<T>>` when multiple threads need shared mutable access to the same data.
+- Use `Arc<RwLock<T>>` when reads dominate writes; `RwLock` allows multiple readers or one writer.
+- Use `thread::spawn` for CPU-bound work; use async for I/O-bound work.
+- Join spawned threads — call `join()` to handle panics and ensure completion; avoid detached threads unless intentional.
+- Move data into threads with `move`; clone `Arc` when sharing across threads.
+
+---
+
+## Async
+
+- Use `tokio` for async runtimes in applications; use `async`/`await` for I/O-bound operations.
+- Use `tokio::spawn` for concurrent tasks; use `join!` or `futures::join_all` for awaiting multiple futures.
+- Avoid blocking in async code — use `tokio::task::spawn_blocking` for CPU-bound or blocking work.
+- Prefer `#[tokio::main]` for application entry points; configure the runtime (e.g. `multi_thread`) as needed.
+- Use `?` in async functions — they work with `Result`; ensure error types implement `From` for propagation.
+
+---
+
+## Testing
+
+- Unit tests — place in `#[cfg(test)] mod tests` in the same file; use `#[test]` and `use super::*`.
+- Integration tests — place in `tests/*.rs`; each file is a separate crate; test public API only.
+- Arrange–Act–Assert — set up data, perform the action, assert the outcome.
+- Use descriptive test names — e.g. `test_returns_error_when_email_invalid`; avoid generic names.
+- Test error paths — use `assert!(result.is_err())` or `#[should_panic]` where appropriate.
+- Use `cargo test` — run tests; use `--no-fail-fast` to see all failures.
+
+---
+
+## Cargo Configuration
+
+- Release profile — use `opt-level = 3`, `lto = true`, `codegen-units = 1`, `panic = "abort"` for smaller, faster binaries.
+- Feature flags — use `[features]` and `#[cfg(feature = "name")]` for optional functionality; avoid default features that pull in heavy deps.
+- Dev-dependencies — put test/bench-only crates (e.g. `criterion`, `proptest`) in `[dev-dependencies]`.
+- Edition — use `edition = "2021"` for new projects.
+
+---
+
+## Common Anti-patterns
+
+- Unnecessary cloning — prefer `&T` or `&mut T`; clone only when ownership is required.
+- `unwrap()` in production — use `?` or explicit handling; `expect()` only for documented invariants.
+- Overly complex lifetimes — consider owned types or restructuring to simplify.
+- `Rc<RefCell<T>>` without justification — often a design smell; prefer clearer ownership or `Arc<Mutex<T>>` for threads.
+- Blocking in async — avoid `std::thread::sleep` or blocking I/O in async functions.
+- Ignoring compiler warnings — fix or document; do not suppress without reason.
+- `Box<dyn Error>` everywhere — use `thiserror`/`anyhow` for structured errors in libraries and apps.
+
+---
+
+## Checklist
+
+- [ ] Borrow when possible; clone only when necessary
+- [ ] Use `Result`/`Option` and `?`; avoid `unwrap()` in production paths
+- [ ] Prefer iterators over manual loops for collections
+- [ ] Use `Vec::with_capacity` when size is known
+- [ ] Channels for message passing; `Arc` + `Mutex`/`RwLock` for shared state
+- [ ] Unit tests in `#[cfg(test)]`; integration tests in `tests/`
+- [ ] Release profile tuned (LTO, `codegen-units = 1`, `panic = "abort"`)
+- [ ] Feature flags for optional behaviour; minimal default features
+- [ ] Australian English in comments and user-facing strings

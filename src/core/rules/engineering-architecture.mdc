@@ -1,0 +1,118 @@
+---
+description: Universal architecture and design principles — stack-agnostic. Applied when making structural decisions, reviewing design proposals, choosing patterns, or reasoning about system boundaries and evolution.
+globs: "**/*"
+alwaysApply: true
+---
+
+# Engineering Architecture
+
+Universal architecture principles applied when making structural decisions, reviewing proposals, or designing systems.
+
+---
+
+## Complexity must be proportionate to the problem
+
+- Introduce a pattern, layer, or abstraction only when the problem forces it
+- Patterns chosen by reputation rather than fit create accidental complexity
+- If the architecture is harder to explain than the problem, the design is probably wrong
+
+---
+
+## Dependencies should point toward policy, not detail
+
+- High-level business policy should not depend on infrastructure, framework, or transport
+- Dependencies should be inward: outer layers depend on inner layers; inner layers have no knowledge of outer layers
+- Framework and vendor types belong at the edges; they should not shape the core model
+
+---
+
+## Boundaries reflect different reasons to change
+
+- A module, service, or bounded context boundary is only useful when it separates concerns that change for different reasons
+- If two things always change together, keep them together
+- If two things change independently, separate them
+
+---
+
+## Contracts are stable interfaces for consumers
+
+- Public APIs are contracts designed for consumers, not exposures of internal implementation
+- Prefer additive changes over breaking changes
+- Do not leak internal models, persistence fields, or domain details to external consumers
+- Version only when the resource concept changes meaningfully
+
+---
+
+## Architecture should express the domain
+
+- Folder and module structure should communicate what the system does, not what framework it uses
+- Names should reflect domain capabilities: `Orders/`, `Payments/`, not `Controllers/`, `Services/`
+- A new developer should understand the system's purpose from its structure
+
+---
+
+## Testability is structural, not incidental
+
+- If important behaviour cannot be tested without infrastructure, it is in the wrong place
+- Each important layer should be independently testable
+- Prefer pure functions and injectable ports for business-critical logic
+
+---
+
+## Distribution requires justification
+
+- Distributing a system introduces latency, partial failure, operational complexity, and coordination cost
+- Use microservices only when independent deployment, ownership, or scaling are genuinely required
+- A modular monolith is the correct default for most systems
+
+---
+
+## Observability must be designed alongside behaviour
+
+- Log important events, state transitions, and failures with structured fields
+- Propagate correlation IDs through async and cross-service flows
+- Define health checks for all critical dependencies
+- Tracing, metrics, and alerting are operational requirements, not optional extras
+
+---
+
+## Earn reversibility where it matters
+
+- Some decisions are cheap to reverse (function placement, naming, internal refactoring)
+- Some decisions are expensive to reverse (public API contracts, data models, shared databases)
+- Invest more care in high-cost-to-reverse decisions; keep low-cost-to-reverse decisions simple and fast
+
+---
+
+## Architecture is a strategy for reducing cost of change
+
+- Every structural decision should make the system easier to understand, modify, operate, or extend
+- Complexity that cannot be justified in those terms is accidental complexity
+- Optimise architecture for the most likely changes, not the most exotic future
+
+---
+
+## Antipattern signals
+
+Raise these concerns when reviewing or designing:
+
+- `Is this pattern solving a real problem here, or is it applied by reflex?`
+- `Does this boundary separate different reasons to change, or just different technologies?`
+- `Can the important logic be tested without infrastructure?`
+- `Is the public contract designed for consumers, or for our implementation convenience?`
+- `Does this distributed design provide real autonomy, or just operational overhead?`
+- `If the database changes, does business logic need to change?`
+
+---
+
+## Useful defaults
+
+| Situation | Default recommendation |
+|-----------|----------------------|
+| System shape | Modular monolith |
+| Dependency direction | Inward toward domain |
+| API evolution | Additive changes; no version by reflex |
+| Consistency model | Match business need; earn strong consistency |
+| Pattern choice | Match forces; do not apply by reputation |
+| Refactor strategy | Incremental with safety net |
+| Test strategy | Test important logic at its natural level |

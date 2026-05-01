@@ -1,0 +1,219 @@
+---
+description: Database design guidelines — relational normalisation, indexing, constraints, NoSQL patterns, query optimisation, migrations, security, and backup strategies. Applied when working with database schemas and queries.
+globs: "**/migrations/**,**/schema/**,**/*.sql,**/models/**,**/entities/**"
+alwaysApply: false
+---
+
+# Database Design Guidelines
+
+Directives only. No full scripts, schemas, or pipelines.
+
+---
+
+## Relational Design Directives
+
+### Normalisation
+
+- Normalise to 3NF by default; remove transitive dependencies and repeating groups
+- Keep each table focused on a single entity; use junction tables for many-to-many
+- Denormalise only when: read-heavy workloads justify write cost, joins are proven bottlenecks, or a dominant query pattern is stable
+- Document denormalisation decisions; keep them reversible
+
+### Schema Structure
+
+- Use UUIDs or surrogate keys when natural keys are unstable or composite
+- Prefer `TIMESTAMP WITH TIME ZONE` for timestamps
+- Add `created_at` and `updated_at` on all mutable tables
+- Use `ON DELETE CASCADE` / `ON DELETE SET NULL` only when the business rule is explicit
+
+---
+
+## Indexing Strategy
+
+### Index Types and When to Use
+
+- **Primary key** — Automatic; unique per row; prefer clustered where supported
+- **Single-column** — Unique lookups (e.g. `email`), foreign keys, frequently filtered columns
+- **Composite** — Multi-column filters and sorts; order by selectivity (most selective first)
+- **Partial** — Subset of rows (e.g. `WHERE is_active = true`); reduces size and maintenance
+- **Text search** — GIN/GiST for full-text; B-tree for prefix/suffix
+
+### Indexing Rules
+
+- Index foreign keys used in joins
+- Avoid indexing low-cardinality columns alone
+- Avoid over-indexing write-heavy tables
+- Run `ANALYZE` after bulk loads; schedule `VACUUM` / `REINDEX` where needed
+- Monitor usage; drop unused indexes
+
+```sql
+CREATE INDEX idx_users_active_created ON users(is_active, created_at);
+CREATE INDEX idx_users_email ON users(email) WHERE is_active = true;
+```
+
+---
+
+## Data Integrity
+
+### Constraints
+
+- Use `NOT NULL` for required fields
+- Use `CHECK` for domain rules (e.g. `status IN ('draft', 'published')`)
+- Use `UNIQUE` for natural keys
+- Add cross-column checks where rules span columns (e.g. `published_at` required when `status = 'published'`)
+
+### Foreign Keys
+
+- Always define foreign keys for referential integrity
+- Choose `ON DELETE` / `ON UPDATE` behaviour explicitly
+
+### Soft Delete Pattern
+
+- Use `deleted_at` column; filter `deleted_at IS NULL` in all queries
+- Add partial indexes for active rows
+- Ensure parent references don't point to soft-deleted children
+
+---
+
+## NoSQL Directives
+
+### Document Design (MongoDB)
+
+- **Embed** when: data is always read together, rarely updated independently, or bounded in size
+- **Reference** when: data is shared, grows unbounded, or updated independently
+- Avoid deeply nested arrays; use `$lookup` for related collections when needed
+- Use schema validation (JSON Schema) for structure and types
+- Keep document size under 16MB; split large documents into separate collections
+
+### When to Choose NoSQL
+
+- Document store: flexible schema, hierarchical data, read-heavy workloads
+- Key-value: simple lookups, sessions, caching
+- Avoid NoSQL when: strong ACID, complex joins, or relational integrity are critical
+
+---
+
+## Redis Directives
+
+### Structure Selection
+
+- **Strings** — `SET`/`GET` with TTL for caching, sessions, simple key-value
+- **Hashes** — Object-like data (e.g. user profile fields)
+- **Sorted Sets** — Leaderboards, time-ordered data, range queries
+- **Lists** — Queues, recent activity
+- **Sets** — Uniqueness, tags, membership
+- **Pub/Sub** — Real-time notifications, fan-out; no persistence or message history
+
+### Patterns
+
+- Use `SETEX` with TTL for cache expiry
+- Use `INCR` + `EXPIRE` for rate limiting (set expiry on first increment)
+- Use `ZADD` + `ZREVRANGE` for leaderboards
+- Use namespaced keys (e.g. `session:{userId}`, `cache:{resource}:{id}`)
+
+---
+
+## Query Optimisation
+
+### Analysis
+
+- Run `EXPLAIN (ANALYZE, BUFFERS)` before optimising slow queries
+- Inspect sequential scans, index usage, and buffer hits
+
+### Projections and Pagination
+
+- Select only needed columns; avoid `SELECT *`
+- Use cursor-based pagination (`WHERE id < last_seen`) for large datasets instead of `OFFSET`
+- Use `LIMIT` with sensible bounds
+
+### Batch Operations
+
+- Prefer bulk inserts over row-by-row
+- Use `INSERT ... ON CONFLICT DO NOTHING/UPDATE` for upserts
+- Use `bulkWrite` in MongoDB for multiple updates
+
+### CTEs and Compiled Queries
+
+- Use CTEs for readability and to avoid repeated subqueries
+- Use prepared statements when the same query runs repeatedly with different parameters
+
+```sql
+WITH updated AS (UPDATE posts SET status = 'archived' WHERE author_id = $1 RETURNING id)
+SELECT COUNT(*) FROM updated;
+```
+
+---
+
+## Database Security
+
+### Injection Prevention
+
+- Use parameterised queries or ORM methods for all database access; never concatenate user input into SQL
+- Validate and sanitise input at the boundary
+
+### Row-Level Security (RLS)
+
+- Enable RLS on tables with multi-tenant or per-user access
+- Define policies per operation (SELECT, INSERT, UPDATE, DELETE)
+- Use `current_setting` or session variables for user context
+
+### Sensitive Data
+
+- Encrypt sensitive columns at rest (e.g. SSN, payment data)
+- Use application-level encryption or database extensions (e.g. `pgcrypto`)
+
+### Audit Logging
+
+- Log schema changes, sensitive data access, and bulk operations
+- Store `table_name`, `record_id`, `action`, `old_values`, `new_values`, `changed_by`, `changed_at`
+
+---
+
+## Migration Directives
+
+### Versioning
+
+- Use sequential, versioned migration files (e.g. `001_create_users.sql`, `002_add_roles.sql`)
+- Maintain a `schema_version` table for applied migrations
+
+### Transactional Migrations
+
+- Wrap migrations in transactions where possible
+- Document rollback steps for each migration
+- Test rollback in staging before production
+
+```sql
+BEGIN;
+ALTER TABLE users ADD COLUMN role VARCHAR(50) DEFAULT 'user';
+COMMIT;
+```
+
+---
+
+## Backup and Recovery Directives
+
+### Automated Backups
+
+- Schedule automated backups (e.g. daily full, hourly incremental)
+- Store backups off-host and in a separate region
+
+### Point-in-Time Recovery
+
+- Enable WAL archiving for point-in-time recovery where supported
+
+### Retention Policy
+
+- Define retention policy (e.g. 7 days daily, 4 weeks weekly)
+- Test restore procedures regularly
+
+---
+
+## Checklist
+
+- [ ] Schema normalised to 3NF unless denormalisation is justified
+- [ ] Indexes on foreign keys and frequently filtered/sorted columns
+- [ ] Constraints enforce domain rules (NOT NULL, CHECK, UNIQUE)
+- [ ] Parameterised queries for all user input
+- [ ] RLS enabled for multi-tenant or per-user access
+- [ ] Migrations versioned and transactional
+- [ ] Backup and retention policy defined and tested

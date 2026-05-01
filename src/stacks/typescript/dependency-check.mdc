@@ -1,0 +1,76 @@
+---
+id: "108"
+category: "quality"
+description: Dependency management and security vulnerability scanning guidelines for Node.js/npm projects.
+globs: "**/package.json,**/package-lock.json,**/yarn.lock,**/pnpm-lock.yaml"
+alwaysApply: false
+---
+
+## When I ask **"dependency health"** (or similar), do **all** of the following:
+
+1. **Detect unused dependencies**
+
+```bash
+npm run depcheck
+```
+
+Parse the JSON:
+- `dependencies` → list of unused production deps
+- `using` → map of used deps to file locations
+- `invalidFiles` → note any config parsing issues
+
+2. **Check security advisories**
+
+```bash
+npm audit --json
+```
+
+For each vulnerability, record:
+- Package name and severity (critical, high, moderate, low, info)
+- Whether it's direct or indirect dependency
+- Recommended fix version (if available)
+
+3. **Manual cross-check for common missed packages**
+
+Check these packages that depcheck often misses:
+- `date-fns` (used in calendar components)
+- `zod` (schema validation)
+- `react-flow-renderer` vs `reactflow` (version conflicts)
+
+4. **Produce dependency analysis table**
+
+| Package | Used? | Where Found / Status | Security Advisories (severity) |
+|---|----|----|-----|
+| [package] | ✅/❌ | Location or "Not found" | Advisory details |
+| **Overall Score** | **X / 10** | | |
+
+**Score calculation:**
+- Start at 10
+- -1 for each unused production dependency
+- -2 for each "info" or "low" advisory  
+- -3 for each "moderate" advisory
+- -4 for each "high" advisory
+- -5 for each "critical" advisory
+- Floor at 1, cap at 10
+
+5. **List concrete remediation steps**
+
+Examples:
+- `npm uninstall <unused-pkg>`
+- `npm update <pkg>@latest`
+- `npm audit fix`
+- Move dev tools from dependencies to devDependencies
+
+**Special considerations for your Vite+React setup:**
+- Check for UI component library usage (@radix-ui/*)
+- Verify 3D library usage (@react-three/*)
+- Look for duplicate React Flow packages
+- Ensure dev tools are in devDependencies
+
+**Notes:**
+- Only consider production dependencies for unused package scoring
+- For dynamic imports, add `/* depcheck: ignore */` near the import
+- Check both automatic and manual analysis for completeness
+- Fix TypeScript config syntax errors that may affect depcheck
+
+

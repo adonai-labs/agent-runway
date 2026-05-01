@@ -1,0 +1,152 @@
+---
+description: .NET-specific architecture, structural patterns, and IaC standards. Covers Clean Architecture in .NET, CQRS/MediatR, feature organisation, IaC with Bicep/Terraform, observability, and testing strategy for .NET solutions. Complements engineering-architecture.mdc.
+globs: **/*.cs,**/*.csproj,**/*.sln,**/*.tf,**/*.bicep,**/*.yaml,**/*.yml
+alwaysApply: false
+---
+
+# .NET Architecture Standards
+
+.NET-specific structural standards. For universal architecture principles, see `engineering-architecture.mdc`.
+
+> **Conflict resolution:** Where this file provides .NET-specific guidance that differs from `engineering-architecture.mdc`, this file takes precedence for `.cs`, `.csproj`, `.sln`, `.bicep`, `.tf`, `.yaml`, and `.yml` files. The universal rule provides the default; this rule provides the override.
+
+---
+
+## Clean Architecture in .NET
+
+Dependency direction: outer layers depend on inner layers; inner layers have no knowledge of outer layers.
+
+```
+Presentation (Api)  →  Application  →  Domain
+Infrastructure                      →  Domain
+Infrastructure                      →  Application (interfaces)
+```
+
+**Domain** — entities, value objects, domain events, domain exceptions. No framework dependencies.
+
+**Application** — commands, queries (CQRS), handlers, validators, application exceptions, `IRepository` interfaces. No infrastructure imports.
+
+**Infrastructure** — EF Core, message brokers, HTTP clients, external service adapters, DI registration.
+
+**Presentation (Api)** — controllers, Minimal API endpoints, middleware, global error handler, request/response mapping.
+
+---
+
+## CQRS and MediatR
+
+- Commands: change state, enforce domain rules, return `Result<T>` or void
+- Queries: read-only, project to consumer DTOs, use `AsNoTracking()`
+- Register pipeline behaviours: `ValidationBehavior`, `LoggingBehavior`, `TransactionBehavior`
+- Never return domain entities from handlers; return identifiers or DTOs
+
+```csharp
+// Command
+public record PlaceOrderCommand(Guid CustomerId, IReadOnlyList<OrderLineDto> Lines)
+    : IRequest<Result<Guid>>;
+
+// Query
+public record GetOrderByIdQuery(Guid OrderId) : IRequest<OrderDetailDto?>;
+```
+
+---
+
+## Feature-first organisation
+
+Organise by feature, not by technical role:
+
+```
+Application/
+├── Orders/
+│   ├── Commands/PlaceOrder/
+│   │   ├── PlaceOrderCommand.cs
+│   │   ├── PlaceOrderCommandHandler.cs
+│   │   └── PlaceOrderCommandValidator.cs
+│   └── Queries/GetOrderById/
+│       ├── GetOrderByIdQuery.cs
+│       ├── GetOrderByIdQueryHandler.cs
+│       └── OrderDetailDto.cs
+└── Common/
+    ├── Behaviours/
+    └── Exceptions/
+```
+
+---
+
+## Domain modelling
+
+- Entities enforce invariants through constructors and methods; avoid public property setters
+- Value objects are immutable, equality by value, self-validating on construction
+- Aggregate roots raise domain events; events are dispatched after the transaction commits
+- Keep aggregates small; if navigation requires multiple hops, consider splitting
+
+---
+
+## Infrastructure as Code
+
+- All cloud resources defined in code; no manual portal provisioning
+- Azure-native: prefer Bicep; multi-cloud or team preference: Terraform
+- Store IaC in `infra/` at repo root, mirrored to `dev/`, `staging/`, `prod/` environments
+- Parameterise environment differences via parameter files or CI variable groups
+- Tag all resources: `environment`, `application`, `owner`, `cost-centre`
+
+```bicep
+param environmentName string
+param location string = resourceGroup().location
+
+resource appServicePlan 'Microsoft.Web/serverfarms@2022-03-01' = {
+  name: 'plan-${environmentName}'
+  location: location
+  sku: { name: 'B1' }
+  tags: { environment: environmentName, application: 'myapp' }
+}
+```
+
+---
+
+## Observability
+
+- Use `ILogger<T>` with structured properties; never string interpolation in log messages
+- Emit health endpoints: `GET /health/live` (liveness) and `GET /health/ready` (readiness)
+- Use OpenTelemetry (`OpenTelemetry.Extensions.Hosting`) for distributed tracing
+- Add correlation IDs via middleware; propagate through `HttpContext.TraceIdentifier` or custom header
+
+```csharp
+// Correct structured logging
+_logger.LogInformation("Order {OrderId} placed for customer {CustomerId}", order.Id, order.CustomerId);
+
+// Incorrect — string interpolation loses structured fields
+_logger.LogInformation($"Order {order.Id} placed for customer {order.CustomerId}");
+```
+
+---
+
+## Testing strategy
+
+- Unit tests: domain entities, value objects, application handlers — no infrastructure
+- Integration tests: infrastructure adapters, EF Core repositories, HTTP clients — use Testcontainers or `WebApplicationFactory`
+- Functional tests: full request/response cycle through `WebApplicationFactory`
+- Target high coverage in domain and application layers; integration tests for critical end-to-end flows
+- Avoid testing implementation details; test observable behaviour and outputs
+
+---
+
+## Solution structure
+
+```
+Solution.sln
+src/
+├── MyApp.Domain/
+├── MyApp.Application/
+├── MyApp.Infrastructure/
+└── MyApp.Api/
+tests/
+├── MyApp.Domain.Tests/
+├── MyApp.Application.Tests/
+├── MyApp.Infrastructure.Tests/
+└── MyApp.Api.Tests/
+infra/
+├── modules/
+└── environments/
+    ├── dev/
+    └── prod/
+```

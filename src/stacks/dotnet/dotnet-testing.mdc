@@ -1,0 +1,194 @@
+---
+description: .NET-specific testing standards for ASP.NET Core applications. Covers test naming, project structure, unit and integration testing patterns, builders, Testcontainers, and WebApplicationFactory. Complements engineering-principles.mdc and dotnet-architecture.mdc.
+globs: **/*.cs,**/*.csproj
+alwaysApply: false
+---
+
+# .NET Testing Standards
+
+.NET-specific testing practices. For universal testability principles, see `engineering-principles.mdc`. For test strategy (what to test at each layer), see `dotnet-architecture.mdc`.
+
+> **Conflict resolution:** Where this file provides .NET-specific guidance that differs from `engineering-principles.mdc`, this file takes precedence for `.cs` and `.csproj` files.
+
+---
+
+## Test naming
+
+Use the `MethodName_StateUnderTest_ExpectedBehaviour` format for unit tests and `Given_When_Then` for scenario-based integration tests:
+
+```csharp
+// Unit test — method under test is explicit
+[Fact]
+public async Task PlaceOrder_WhenCustomerHasInsufficientCredit_ReturnsFailure() { }
+
+// Integration test — scenario is explicit
+[Fact]
+public async Task GivenAuthenticatedUser_WhenPlacingOrderWithInvalidLines_ThenReturnsBadRequest() { }
+```
+
+- Test class name matches the subject under test: `OrderServiceTests`, `PlaceOrderCommandHandlerTests`
+- Do not use `Test` suffix on test project folders; use `MyApp.Application.Tests`
+
+---
+
+## Project structure
+
+```
+tests/
+├── MyApp.Domain.Tests/          ← entity and value object behaviour
+├── MyApp.Application.Tests/     ← handler, validator, pipeline behaviour
+├── MyApp.Infrastructure.Tests/  ← EF Core, HTTP clients, adapters
+└── MyApp.Api.Tests/             ← full request/response via WebApplicationFactory
+```
+
+Each test project references only the layer it tests; it does not skip layers.
+
+---
+
+## Unit tests — handlers and domain
+
+- Use `xUnit` with `FluentAssertions`; avoid raw `Assert.*` calls
+- No infrastructure dependencies; stub with `NSubstitute` or `Moq`
+- Arrange/Act/Assert sections separated by a blank line; no inline comments labelling them
+
+```csharp
+[Fact]
+public async Task Handle_WhenOrderNotFound_ReturnsFailure()
+{
+    var repository = Substitute.For<IOrderRepository>();
+    repository.GetByIdAsync(Arg.Any<Guid>(), Arg.Any<CancellationToken>())
+              .Returns((Order?)null);
+
+    var handler = new GetOrderByIdQueryHandler(repository);
+    var result = await handler.Handle(new GetOrderByIdQuery(Guid.NewGuid()), default);
+
+    result.IsFailure.Should().BeTrue();
+    result.Error.Should().Contain("not found");
+}
+```
+
+---
+
+## Builder pattern for test data
+
+Use builders for any domain object constructed in more than one test. Do not repeat construction logic across tests.
+
+```csharp
+public class OrderBuilder
+{
+    private Guid _customerId = Guid.NewGuid();
+    private List<OrderLine> _lines = [OrderLine.Create(ProductId.New(), 1, 10.00m)];
+
+    public OrderBuilder WithCustomer(Guid customerId)
+    {
+        _customerId = customerId;
+        return this;
+    }
+
+    public OrderBuilder WithLines(params OrderLine[] lines)
+    {
+        _lines = [..lines];
+        return this;
+    }
+
+    public Order Build() => Order.Create(_customerId, _lines);
+}
+```
+
+- Place builders in a `Builders/` folder inside the test project
+- Builders return the subject type, not a DTO
+
+---
+
+## Integration tests — infrastructure layer
+
+Use `Testcontainers` for database and external service dependencies; do not use SQLite as a substitute for SQL Server or PostgreSQL in infrastructure tests.
+
+```csharp
+public class OrderRepositoryTests : IAsyncLifetime
+{
+    private readonly MsSqlContainer _db = new MsSqlBuilder().Build();
+
+    public async Task InitializeAsync() => await _db.StartAsync();
+    public async Task DisposeAsync() => await _db.DisposeAsync();
+
+    [Fact]
+    public async Task SaveAsync_PersistsOrderAndRaisesEvent()
+    {
+        await using var context = CreateDbContext(_db.GetConnectionString());
+        var repository = new OrderRepository(context);
+        var order = new OrderBuilder().Build();
+
+        await repository.SaveAsync(order, default);
+
+        var saved = await context.Orders.FindAsync(order.Id);
+        saved.Should().NotBeNull();
+    }
+}
+```
+
+---
+
+## Functional tests — API layer
+
+Use `WebApplicationFactory<Program>` for full pipeline tests. Override services and configuration at the factory level, not inside individual tests.
+
+```csharp
+public class OrdersApiTests : IClassFixture<ApiFactory>
+{
+    private readonly HttpClient _client;
+
+    public OrdersApiTests(ApiFactory factory)
+        => _client = factory.CreateClient();
+
+    [Fact]
+    public async Task PostOrder_WithValidPayload_Returns201()
+    {
+        var response = await _client.PostAsJsonAsync("/orders", new PlaceOrderRequest(...));
+
+        response.StatusCode.Should().Be(HttpStatusCode.Created);
+    }
+}
+
+public class ApiFactory : WebApplicationFactory<Program>
+{
+    protected override void ConfigureWebHost(IWebHostBuilder builder)
+    {
+        builder.ConfigureTestServices(services =>
+        {
+            // replace real DB with Testcontainer or in-memory stub
+        });
+    }
+}
+```
+
+- Use `IClassFixture<T>` for shared setup; use `ICollectionFixture<T>` only when the fixture is shared across multiple test classes
+- Do not call `Thread.Sleep` or `Task.Delay` to wait for async side effects; use polling helpers or outbox assertions
+
+---
+
+## Validators
+
+Test validators in isolation; do not route through MediatR for validator-only tests:
+
+```csharp
+[Fact]
+public void Validate_WhenCustomerIdIsEmpty_ReturnsError()
+{
+    var validator = new PlaceOrderCommandValidator();
+    var result = validator.TestValidate(new PlaceOrderCommand(Guid.Empty, []));
+
+    result.ShouldHaveValidationErrorFor(x => x.CustomerId);
+}
+```
+
+---
+
+## What not to test
+
+| Pattern | Reason |
+|---------|--------|
+| EF Core mapping configuration via SQLite | SQLite does not enforce SQL Server constraints or types |
+| Framework middleware in unit tests | Test at the functional layer via `WebApplicationFactory` |
+| Private methods directly | Test through the public surface; if private logic needs tests, extract it |
+| Auto-mapper/projection mapping in isolation | Cover through handler or query tests |

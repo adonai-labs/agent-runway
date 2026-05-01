@@ -1,0 +1,178 @@
+---
+description: React best practices — component patterns, hooks, state management, context, performance, testing, accessibility, and modern React 18+ features. Applied when working with React components.
+globs: "**/*.tsx,**/*.jsx"
+alwaysApply: false
+---
+# React Best Practices
+
+Directives for React development. Use Australian English spelling (organisation, behaviour, etc.).
+
+---
+
+## Directory Structure
+
+```
+src/
+├── components/
+│   ├── ui/           # Reusable UI (Button/, Input/, Modal/)
+│   ├── features/     # Feature-specific (auth/, dashboard/)
+│   └── layouts/      # MainLayout, Sidebar
+├── hooks/
+├── contexts/
+├── services/api/
+├── utils/
+├── types/
+├── pages/
+├── App.tsx
+└── main.tsx
+```
+
+- Co-locate component, styles, and tests in the same directory.
+- Each module has a single responsibility.
+- Avoid circular dependencies.
+
+---
+
+## File Naming Conventions
+
+- **Components**: PascalCase (`MyComponent.tsx`)
+- **Hooks**: camelCase prefixed with `use` (`useAuth.ts`)
+- **Contexts**: PascalCase + `Context` (`ThemeContext.tsx`)
+- **Services/Utils**: camelCase (`apiClient.ts`)
+- **CSS Modules**: `.module.css` or `.module.scss`
+
+---
+
+## Component Patterns
+
+- Use functional components only; no class components.
+- Define TypeScript props interfaces; extend `BaseComponentProps` for shared props (`className`, `children`).
+- Prefer composition over inheritance.
+- Use compound components (e.g. `Tabs` + `Tab`) for related UI.
+- Prefer custom hooks over HOCs and render props.
+- Use barrel exports (`index.ts`) for component directories.
+- Always provide a unique, stable `key` when rendering lists.
+
+---
+
+## Custom Hooks Patterns
+
+- Name hooks with `use` prefix; return a tuple or object.
+- Return `[value, setter] as const` for useState-like APIs.
+- Include cleanup in `useEffect` (event listeners, timers, subscriptions).
+- Use `useCallback` for returned callbacks to avoid unnecessary re-renders.
+- Document dependencies correctly in `useEffect` arrays.
+
+---
+
+## Modern React 18+
+
+- **useTransition**: Mark non-urgent updates (e.g. search results) so the UI stays responsive.
+- **useDeferredValue**: Defer expensive children when input changes rapidly.
+- **Server Components** (React 18.3+): Use for data fetching and static content; mark client components with `'use client'`.
+- **Automatic batching**: State updates are batched; no need for `unstable_batchedUpdates`.
+
+---
+
+## State Management Directives
+
+- **Local state** (`useState`): Component-specific UI state.
+- **Context**: Theme, auth, locale — infrequently changing, widely needed.
+- **External store** (Zustand, Redux): Complex shared state, frequent updates, or when Context causes performance issues.
+- **Server state** (React Query, SWR): Fetch, cache, and sync server data; keep separate from client state.
+- Treat state as immutable; never mutate directly.
+
+---
+
+## Context with Performance Optimisation
+
+- Wrap the context value in `useMemo` to avoid unnecessary re-renders.
+- Split contexts by update frequency (e.g. theme vs. user data).
+- Prefer small, focused contexts over one large context.
+- Provide a custom hook (e.g. `useTheme`) that throws if used outside the provider.
+
+```tsx
+const value = useMemo(() => ({ theme, toggleTheme }), [theme]);
+```
+
+---
+
+## Common Anti-patterns
+
+- **Prop drilling**: Extract to Context or composition; avoid passing props through many levels.
+- **Direct DOM manipulation**: Let React manage the DOM.
+- **Mutating state**: Use `setState` or the updater function; never mutate `state` directly.
+- **Over-memoising**: Do not wrap simple components in `React.memo`; profile first.
+- **Storing derived data in state**: Compute on render or use `useMemo` when expensive.
+- **Missing `useEffect` dependencies**: Include all values used inside the effect.
+- **Inline object/function creation as props**: Use `useMemo`/`useCallback` when passing to memoised children.
+
+---
+
+## Performance Directives
+
+- **React.memo**: Use for components that re-render often with the same props; skip for cheap renders.
+- **useMemo**: Use for expensive computations; avoid for trivial work.
+- **useCallback**: Use when passing callbacks to memoised children; avoid for inline handlers.
+- Use virtualisation (`react-window`, `react-virtualized`) for long lists.
+- Debounce or throttle high-frequency inputs (search, scroll).
+- Clean up subscriptions, listeners, and timers in `useEffect` return.
+
+---
+
+## Code Splitting
+
+- Use `React.lazy` for route-level and heavy components.
+- Wrap lazy components in `<Suspense>` with a fallback.
+- Prefer route-based splitting for pages; component-based for modals, charts, etc.
+- Use dynamic `import()` for conditional feature loading.
+
+```tsx
+const Dashboard = lazy(() => import('./pages/Dashboard'));
+<Suspense fallback={<LoadingSpinner />}><Dashboard /></Suspense>
+```
+
+---
+
+## Testing Directives
+
+- Use React Testing Library; test behaviour, not implementation.
+- Query by role, label, or test ID; avoid querying by class or internal structure.
+- Use `renderHook` and `act` for custom hooks.
+- Provide a custom `render` that wraps with providers (Theme, Router, Auth).
+- Mock API calls and external services; use MSW for network mocking.
+- Co-locate tests with components (`Button.test.tsx` next to `Button.tsx`).
+
+---
+
+## Accessibility Basics
+
+- Use semantic HTML (`<button>`, `<nav>`, `<main>`, `<article>`).
+- Add `aria-label` or `aria-labelledby` for icon-only buttons and custom controls.
+- Support keyboard navigation (Arrow keys, Enter, Escape) for dropdowns, modals, and menus.
+- Ensure focus management in modals (trap focus, return focus on close).
+- Use `role="dialog"` and `aria-modal="true"` for modals.
+
+---
+
+## Security
+
+- Do not use `dangerouslySetInnerHTML` with unsanitised user content.
+- If HTML is required, sanitise with DOMPurify or similar before rendering.
+- React escapes text content by default; rely on that for plain strings.
+- Validate and sanitise all user input; never trust client-side validation alone.
+
+---
+
+## Checklist
+
+- [ ] Components are functional with typed props
+- [ ] Hooks follow naming and cleanup conventions
+- [ ] State choice (local/context/external) is appropriate
+- [ ] Context values are memoised; contexts are split by concern
+- [ ] No prop drilling, direct DOM manipulation, or state mutation
+- [ ] Memoisation used only where profiling shows benefit
+- [ ] Routes and heavy components are lazy-loaded
+- [ ] Tests use React Testing Library and assert behaviour
+- [ ] Semantic HTML and ARIA used for accessibility
+- [ ] No unsanitised HTML via `dangerouslySetInnerHTML`

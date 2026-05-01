@@ -1,0 +1,171 @@
+---
+description: Pull request templates, commit conventions, code review standards, and quality gates. Applied when creating PRs, writing commits, or reviewing code.
+globs: ".github/**,**/*.md,PULL_REQUEST_TEMPLATE*"
+alwaysApply: false
+---
+
+# Pull Request Templates and Team Standards
+
+## Standard PR Template
+
+```markdown
+### Type of Change
+- [ ] Bug fix (non-breaking)
+- [ ] New feature (non-breaking)
+- [ ] Breaking change
+- [ ] Documentation | Performance | Refactoring | Test | CI/CD
+
+### Description
+Brief description of changes.
+
+### Related Issues
+Closes #123 | Fixes #456 | Related to #789
+
+### Testing
+- [ ] Unit | Integration | E2E tests pass
+- [ ] Manual testing completed
+
+### Checklist
+- [ ] Code follows style guidelines | Self-review done
+- [ ] No console.log/TODO in production code
+- [ ] Error handling | Security | Performance considered
+```
+
+## Feature PR Template
+
+```markdown
+### Feature Description
+Brief description of the feature.
+
+### Acceptance Criteria
+- [ ] Criterion 1
+- [ ] Criterion 2
+
+### Technical Summary
+Architecture, DB/API/Frontend changes, security considerations.
+
+### Breaking Changes
+- [ ] None | Document below
+
+### Rollback Plan
+How to rollback if issues arise.
+```
+
+## Bug Fix PR Template
+
+```markdown
+### Bug Description
+What the bug was and its impact.
+
+### Root Cause
+What caused it and why.
+
+### Fix
+How the bug was fixed.
+
+### Verification Steps
+1. Step 1
+2. Step 2
+
+### Regression Testing
+- [ ] Existing functionality intact
+- [ ] No new bugs | Performance | Security unchanged
+```
+
+## Hotfix PR Template
+
+```markdown
+### Issue
+Critical issue requiring immediate fix.
+
+### Severity
+Critical | High | Medium | Low — affected users, business impact.
+
+### Fix
+Quick description of the fix.
+
+### Deployment Plan
+- [ ] Ready for immediate deployment
+- [ ] Rollback plan prepared | Monitoring configured
+
+### Post-Deployment
+- [ ] Monitor 24h | Verify in production | Schedule follow-up
+```
+
+## Commit Conventions
+
+**Format:** `<type>[optional scope]: <description>`
+
+| Type | Use |
+|------|-----|
+| feat | New feature |
+| fix | Bug fix |
+| docs | Documentation only |
+| style | Formatting, no logic change |
+| refactor | Code change, no bug fix or feature |
+| perf | Performance improvement |
+| test | Add or fix tests |
+| chore | Build, tooling, deps |
+| ci | CI config |
+| build | Build system |
+| revert | Revert previous commit |
+
+**Good:** `feat(auth): add OAuth2 support` | `fix(api): handle null response` | `docs(readme): update install steps`
+
+**Bad:** `fix bug` | `update code` | `add stuff` | `wip` | `fixes`
+
+## Branch Naming
+
+**Format:** `<type>/<issue>-<description>`
+
+Examples: `feature/123-oauth2-integration` | `bugfix/456-login-error` | `hotfix/789-security-patch` | `refactor/101-extract-auth`
+
+## Code Review Standards
+
+### Review Checklist
+
+| Check | |
+|-------|---|
+| Code follows project conventions | |
+| No obvious bugs; error handling appropriate | |
+| Security and performance considered | |
+| Tests comprehensive; documentation updated | |
+| No debugging code left behind | |
+
+### Response Times
+
+| Change Size | Target |
+|------------|--------|
+| Small (< 50 lines) | 4 hours |
+| Medium (50–200 lines) | 8 hours |
+| Large (> 200 lines) | 24 hours |
+| Critical/Hotfix | 2 hours |
+
+### Approval Requirements
+
+| Branch Type | Approvals |
+|-------------|-----------|
+| Feature | Minimum 2 |
+| Bug fix | Minimum 1 |
+| All | CI passes, no conflicts, docs updated |
+
+## Quality Gates
+
+Checklist for CI/CD (implement as workflow steps):
+
+- [ ] Lint check
+- [ ] Type check
+- [ ] Unit tests
+- [ ] Integration tests
+- [ ] E2E tests
+- [ ] Security scan (e.g. `npm audit`)
+- [ ] Bundle size check (if applicable)
+- [ ] Code coverage threshold
+
+## Comment Standards
+
+- **Constructive:** Provide actionable feedback, not criticism
+- **Specific:** Point to lines/files; explain the issue
+- **Explain why:** Give reasoning for suggestions
+- **Suggest alternatives:** Offer better approaches when possible
+- **Acknowledge good work:** Recognise well-implemented features

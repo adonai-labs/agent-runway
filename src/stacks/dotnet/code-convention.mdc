@@ -1,0 +1,298 @@
+---
+description: Code convention analysis and enforcement — ESLint integration, naming conventions, type safety checks, and quality scoring with remediation steps. Applied when analysing code style and conventions.
+globs: "**/*.js,**/*.jsx,**/*.ts,**/*.tsx"
+alwaysApply: false
+---
+
+## When I ask **"code convention"** (or similar), do **all** of the following:
+
+1. **Run existing lint command first**
+
+```bash
+npm run lint
+```
+
+This uses your existing ESLint v9+ configuration with flat config.
+
+2. **Run focused code convention analysis**
+
+Since your existing lint command may not cover all convention rules, run additional checks:
+
+```bash
+# Check for naming convention violations
+npx eslint --format json . --rule '@typescript-eslint/naming-convention: ["error", {"selector": "variable", "format": ["camelCase"]}, {"selector": "variable", "modifiers": ["const"], "format": ["UPPER_CASE"]}, {"selector": "enum", "format": ["PascalCase"]}, {"selector": "function", "format": ["camelCase"]}, {"selector": ["class", "interface"], "format": ["PascalCase"]}]'
+
+# Check for any usage
+npx eslint --format json . --rule '@typescript-eslint/no-explicit-any: error'
+
+# Check for missing JSDoc on complex functions
+npx eslint --format json . --rule 'require-jsdoc: ["error", {"require": {"FunctionDeclaration": true, "ClassDeclaration": true}}]'
+
+# Check for React hooks violations
+npx eslint --format json . --rule 'react-hooks/exhaustive-deps: error'
+
+# Check for performance issues
+npx eslint --format json . --rule 'react-hooks/rules-of-hooks: error'
+```
+
+3. **Analyze results and classify violations**
+
+For each reported message, tag it as:
+
+| Tag               | ESLint rule                          | Weight    | Rule Source |
+| ----------------- | ------------------------------------ | --------- | ----------- |
+| `naming`          | @typescript-eslint/naming-convention | -1 point  | @react.mdc, @typescript.mdc |
+| `any`             | @typescript-eslint/no-explicit-any   | -2 points | @typescript.mdc |
+| `missing-comment` | require-jsdoc                        | -1 point  | @typescript.mdc |
+| `react-hooks`     | react-hooks/\*                       | -1 point  | @react.mdc |
+| `react-refresh`   | react-refresh/\*                     | -1 point  | @react.mdc |
+| `performance`     | Performance-related                   | -0.5 point | @performance.mdc |
+| `architecture`    | SOLID principles                     | -1 point  | @solid-principles.mdc |
+
+4. **Calculate enhanced score (optimized for React + TypeScript)**
+
+```
+Start at 10
+-2  for each use of `any` (Critical)
+-1  for each naming violation (Major)
+-1  for each missing-comment violation (Major)
+-1  for each React hooks violation (Major)
+-1  for each React refresh violation (Major)
+-1  for each architecture violation (Major)
+-0.5 for each performance issue (Minor)
+-0.1 for each style violation (Info)
++0.5 for excellent JSDoc documentation (Bonus)
++0.5 for advanced TypeScript patterns (Bonus)
++0.5 for performance optimizations (Bonus)
++0.5 for accessibility compliance (Bonus)
+Floor at 1, cap at 10
+```
+
+5. **Output enhanced Markdown report**
+
+### Code Convention Analysis Results
+
+#### A. Rule Compliance Summary
+
+| Rule Source | Score | Violations | Status |
+|-------------|-------|------------|--------|
+| @typescript.mdc | X/10 | X issues | ✅/⚠️/❌ |
+| @react.mdc | X/10 | X issues | ✅/⚠️/❌ |
+| @solid-principles.mdc | X/10 | X issues | ✅/⚠️/❌ |
+| @performance.mdc | X/10 | X issues | ✅/⚠️/❌ |
+
+#### B. Violations by Category
+
+| Category           | Count | Impact | Files Affected      | Rule Source |
+| ------------------ | ----- | ------ | ------------------- | ----------- |
+| Naming Conventions | X     | -X pts | file1.ts, file2.tsx | @react.mdc |
+| Any Usage          | X     | -X pts | file3.ts            | @typescript.mdc |
+| Missing Comments   | X     | -X pts | file4.tsx           | @typescript.mdc |
+| React Hooks        | X     | -X pts | component1.tsx      | @react.mdc |
+| Architecture       | X     | -X pts | service1.ts         | @solid-principles.mdc |
+| Performance        | X     | -X pts | component2.tsx      | @performance.mdc |
+| Other Issues       | X     | -X pts | various             | Multiple |
+
+#### C. Per-File Breakdown
+
+| File        | Violations | Details                          | Rule Sources |
+| ----------- | ---------- | -------------------------------- | ------------ |
+| src/foo.ts  | 2          | naming: `my_class`, any: line 42 | @react.mdc, @typescript.mdc |
+| src/bar.tsx | 1          | react-hooks: missing dependency  | @react.mdc |
+| src/service.ts | 1      | architecture: SRP violation      | @solid-principles.mdc |
+| ...         |            |                                  |              |
+
+#### D. Overall Score
+
+| **Overall Code-Convention Score** | **X / 10** | **Quality Level** |
+| --------------------------------- | ---------- | ----------------- |
+
+**Quality Levels:**
+
+- 9-10: Excellent (Production Ready)
+- 7-8: Good (Minor Issues)
+- 5-6: Fair (Needs Improvement)
+- 3-4: Poor (Significant Issues)
+- 1-2: Critical (Major Refactoring Required)
+
+6. **Generate remediation steps**
+
+#### Immediate Actions Required:
+
+**🔴 Critical Issues (Score Impact: -2 each):**
+
+- Replace `any` types with specific types (@typescript.mdc)
+- Add proper TypeScript interfaces (@typescript.mdc)
+- Fix security vulnerabilities (@solid-principles.mdc)
+
+**🟡 Major Issues (Score Impact: -1 each):**
+
+- Rename `my_class` → `MyClass` (@react.mdc)
+- Convert `user_name` → `userName` (@react.mdc)
+- Add JSDoc to exported functions >20 lines (@typescript.mdc)
+- Document public class methods (@typescript.mdc)
+- Fix React Hooks dependencies (@react.mdc)
+- Apply Single Responsibility Principle (@solid-principles.mdc)
+
+**🔵 Minor Issues (Score Impact: -0.5 each):**
+
+- Add React.memo for expensive components (@performance.mdc)
+- Implement useCallback for event handlers (@performance.mdc)
+- Add useMemo for expensive calculations (@performance.mdc)
+
+#### Quick Fix Commands:
+
+```bash
+# Auto-fix what ESLint can handle
+npm run lint -- --fix
+
+# Manual fixes required for:
+# - Complex type definitions (replace any)
+# - JSDoc comments on exported functions
+# - Naming convention violations
+# - Architecture refactoring
+# - Performance optimizations
+```
+
+### Integration with Existing Rules
+
+This code convention analysis builds upon and enforces the standards defined in:
+
+- **@typescript.mdc**: Type safety, `any` usage guidelines, and JSDoc requirements
+- **@react.mdc**: Component and hook naming conventions, React best practices
+- **@solid-principles.mdc**: Architecture patterns and design principles
+- **@performance.mdc**: Performance optimization guidelines
+- **@testing.mdc**: Testing conventions and coverage requirements
+
+For detailed guidelines, refer to the specific rule documentation.
+
+### Comprehensive Convention Matrix
+
+| Convention Type | Rule Source | Standard | Example | Impact | Priority |
+|----------------|-------------|----------|---------|---------|----------|
+| Component Naming | @react.mdc | PascalCase | `UserProfile` | -1 pt | High |
+| Hook Naming | @react.mdc | camelCase + 'use' | `useUserData` | -1 pt | High |
+| Type Safety | @typescript.mdc | No `any` | `UserData` | -2 pts | Critical |
+| Architecture | @solid-principles.mdc | SRP compliance | Single purpose | -1 pt | High |
+| Performance | @performance.mdc | Memoization | `React.memo` | -0.5 pt | Medium |
+| Documentation | @typescript.mdc | JSDoc required | `/** @description */` | -1 pt | High |
+| Testing | @testing.mdc | Coverage >80% | Unit tests | -0.5 pt | Medium |
+
+### Enhanced Naming Convention Matrix
+
+| Name Type       | Convention                    | Example            | React Context     | Rule Source |
+| --------------- | ----------------------------- | ------------------ | ----------------- | ----------- |
+| Component       | PascalCase                    | `UserProfile`      | React components  | @react.mdc |
+| Hook            | camelCase starting with 'use' | `useUserData`      | Custom hooks      | @react.mdc |
+| Context         | PascalCase + 'Context'        | `AuthContext`      | React contexts    | @react.mdc |
+| Type/Interface  | PascalCase                    | `UserData`         | TypeScript types  | @typescript.mdc |
+| Props Interface | PascalCase + 'Props'          | `UserProfileProps` | Component props   | @react.mdc |
+| Variable        | camelCase                     | `userName`         | Regular variables | @typescript.mdc |
+| Constant        | UPPER_CASE                    | `API_URL`          | Constants         | @typescript.mdc |
+| Enum            | PascalCase                    | `UserRole`         | Enums             | @typescript.mdc |
+| Function        | camelCase                     | `getUserName`      | Functions         | @typescript.mdc |
+| Service         | PascalCase + 'Service'        | `UserService`      | Business logic    | @solid-principles.mdc |
+| Utility         | camelCase                     | `formatDate`       | Helper functions  | @typescript.mdc |
+
+### React + TypeScript Specific Rules
+
+**Component Conventions:**
+
+```typescript
+// ✅ Good
+interface UserProfileProps {
+  userId: string;
+  onUpdate: (user: User) => void;
+}
+
+export function UserProfile({ userId, onUpdate }: UserProfileProps) {
+  // Component implementation
+}
+
+// ❌ Bad
+function userProfile(props: unknown) {
+  // Implementation
+}
+```
+
+**Hook Conventions:**
+
+```typescript
+// ✅ Good
+function useUserData(userId: string): UserData | null {
+  // Hook implementation
+}
+
+// ❌ Bad
+function getUserData(id: unknown): unknown {
+  // Implementation
+}
+```
+
+**Service Conventions:**
+
+```typescript
+// ✅ Good
+class UserService {
+  async getUser(id: string): Promise<User> {
+    // Implementation
+  }
+}
+
+// ❌ Bad
+class userService {
+  async getUser(id: any): Promise<any> {
+    // Implementation
+  }
+}
+```
+
+### Standard Integration Workflow
+
+1. **Pre-Development**: Run `@code-convention baseline` to establish current state
+2. **During Development**: Use `@code-convention check` for file-specific analysis
+3. **Pre-Commit**: Run `@code-convention validate` to ensure standards compliance
+4. **Code Review**: Use `@code-convention report` for detailed analysis
+5. **Continuous Improvement**: Track score trends with `@code-convention trends`
+
+### Quality Gates
+
+- **Minimum Score**: 7/10 for all new code
+- **Critical Issues**: Must be resolved before merge
+- **Performance**: Memoization required for expensive operations
+- **Documentation**: JSDoc required for public APIs
+- **Testing**: Minimum 80% coverage for business logic
+
+### Notes for Your Setup:
+
+- **ESLint v9+**: Uses flat config system (eslint.config.js)
+- **React Hooks Plugin**: Already installed, helps catch React-specific issues
+- **TypeScript ESLint**: v8.7.0 provides modern TypeScript linting
+- **Exclusions**: Ignores .d.ts files and node_modules
+- **Integration**: Works with your existing `npm run lint` command
+
+### Usage:
+
+Run this analysis by asking: **"@code-convention run"**
+
+The enhanced rule now:
+
+1. ✅ Uses your existing ESLint setup
+2. ✅ Works with ESLint v9+ flat config
+3. ✅ Includes React-specific conventions
+4. ✅ Provides actionable remediation steps
+5. ✅ Integrates with your package.json lint command
+6. ✅ Cross-references with all existing rules
+7. ✅ Provides comprehensive scoring system
+8. ✅ Includes quality gates and standards
+
+Run this analysis by asking: **"@code-convention run"**
+
+The refined rule now:
+
+1. ✅ Uses your existing ESLint setup
+2. ✅ Works with ESLint v9+ flat config
+3. ✅ Includes React-specific conventions
+4. ✅ Provides actionable remediation steps
+
+5. ✅ Integrates with your package.json lint command

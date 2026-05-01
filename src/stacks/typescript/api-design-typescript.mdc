@@ -1,0 +1,391 @@
+---
+description: API Design for TypeScript — Express, NestJS, Fastify patterns, middleware, validation, and error handling. Extends core/rules/api-design.mdc with TypeScript-specific guidance.
+globs: "**/*.ts,**/routes/**,**/controllers/**,**/handlers/**"
+alwaysApply: false
+---
+
+# API Design for TypeScript/Node.js
+
+Extends `core/rules/api-design.mdc` with TypeScript and Node.js specific patterns.
+
+---
+
+## Framework Selection
+
+### Express (Simple, flexible)
+
+```typescript
+import express, { Request, Response, NextFunction } from 'express';
+
+const app = express();
+
+app.get('/api/users/:id', async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const user = await userService.getUser(parseInt(req.params.id));
+    res.json(user);
+  } catch (error) {
+    next(error);
+  }
+});
+```
+
+### NestJS (Enterprise, opinionated)
+
+```typescript
+@Controller('users')
+export class UsersController {
+  constructor(private readonly usersService: UsersService) {}
+
+  @Get(':id')
+  @ApiResponse({ status: 200, type: UserDto })
+  @ApiResponse({ status: 404, description: 'User not found' })
+  async getUser(@Param('id', ParseIntPipe) id: number): Promise<UserDto> {
+    return this.usersService.findOne(id);
+  }
+}
+```
+
+### Fastify (Fast, low overhead)
+
+```typescript
+import Fastify from 'fastify';
+
+const fastify = Fastify({ logger: true });
+
+fastify.get<{ Params: { id: string } }>('/api/users/:id', async (request, reply) => {
+  const user = await userService.getUser(parseInt(request.params.id));
+  return user;
+});
+```
+
+---
+
+## Type-Safe Request/Response
+
+### Zod Validation
+
+```typescript
+import { z } from 'zod';
+
+const CreateUserSchema = z.object({
+  email: z.string().email().max(255),
+  name: z.string().min(2).max(100),
+  age: z.number().int().min(18).optional(),
+});
+
+type CreateUserDto = z.infer<typeof CreateUserSchema>;
+
+// Middleware
+const validate = (schema: z.ZodSchema) => {
+  return (req: Request, res: Response, next: NextFunction) => {
+    try {
+      schema.parse(req.body);
+      next();
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        res.status(400).json({ errors: error.errors });
+      }
+    }
+  };
+};
+
+// Usage
+app.post('/api/users', validate(CreateUserSchema), async (req, res) => {
+  const userData = req.body as CreateUserDto;
+  // ...
+});
+```
+
+### io-ts (Runtime type checking)
+
+```typescript
+import * as t from 'io-ts';
+import { isRight } from 'fp-ts/Either';
+
+const User = t.type({
+  id: t.number,
+  email: t.string,
+  name: t.string,
+});
+
+type User = t.TypeOf<typeof User>;
+
+const result = User.decode(req.body);
+if (isRight(result)) {
+  const user: User = result.right;
+  // ...
+} else {
+  res.status(400).json({ errors: result.left });
+}
+```
+
+---
+
+## Error Handling
+
+### Custom Error Classes
+
+```typescript
+class AppError extends Error {
+  constructor(
+    public statusCode: number,
+    public message: string,
+    public isOperational = true
+  ) {
+    super(message);
+    Error.captureStackTrace(this, this.constructor);
+  }
+}
+
+class NotFoundError extends AppError {
+  constructor(resource: string) {
+    super(404, `${resource} not found`);
+  }
+}
+
+class ValidationError extends AppError {
+  constructor(public errors: Record<string, string[]>) {
+    super(400, 'Validation failed');
+  }
+}
+```
+
+### Global Error Handler
+
+```typescript
+const errorHandler = (
+  err: Error,
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  if (err instanceof AppError) {
+    return res.status(err.statusCode).json({
+      status: 'error',
+      message: err.message,
+      ...(err instanceof ValidationError && { errors: err.errors }),
+    });
+  }
+
+  // Log unexpected errors
+  console.error(err);
+
+  res.status(500).json({
+    status: 'error',
+    message: 'Internal server error',
+  });
+};
+
+app.use(errorHandler);
+```
+
+---
+
+## Middleware Patterns
+
+### Async Handler Wrapper
+
+```typescript
+type AsyncHandler = (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => Promise<void>;
+
+const asyncHandler = (fn: AsyncHandler) => {
+  return (req: Request, res: Response, next: NextFunction) => {
+    Promise.resolve(fn(req, res, next)).catch(next);
+  };
+};
+
+// Usage
+app.get('/api/users/:id', asyncHandler(async (req, res) => {
+  const user = await userService.getUser(parseInt(req.params.id));
+  res.json(user);
+}));
+```
+
+### Authentication Middleware
+
+```typescript
+interface AuthRequest extends Request {
+  user?: { id: number; email: string };
+}
+
+const authenticate = async (
+  req: AuthRequest,
+  res: Response,
+  next: NextFunction
+) => {
+  const token = req.headers.authorization?.replace('Bearer ', '');
+
+  if (!token) {
+    throw new AppError(401, 'No token provided');
+  }
+
+  try {
+    const payload = jwt.verify(token, process.env.JWT_SECRET!);
+    req.user = payload as { id: number; email: string };
+    next();
+  } catch {
+    throw new AppError(401, 'Invalid token');
+  }
+};
+```
+
+---
+
+## Response Helpers
+
+```typescript
+class ApiResponse {
+  static success<T>(res: Response, data: T, statusCode = 200) {
+    return res.status(statusCode).json({
+      status: 'success',
+      data,
+    });
+  }
+
+  static error(res: Response, message: string, statusCode = 500) {
+    return res.status(statusCode).json({
+      status: 'error',
+      message,
+    });
+  }
+
+  static paginated<T>(
+    res: Response,
+    data: T[],
+    page: number,
+    limit: number,
+    total: number
+  ) {
+    return res.json({
+      status: 'success',
+      data,
+      pagination: {
+        page,
+        limit,
+        total,
+        pages: Math.ceil(total / limit),
+      },
+    });
+  }
+}
+```
+
+---
+
+## OpenAPI / Swagger
+
+### Express with Swagger
+
+```typescript
+import swaggerJsdoc from 'swagger-jsdoc';
+import swaggerUi from 'swagger-ui-express';
+
+const swaggerOptions = {
+  definition: {
+    openapi: '3.0.0',
+    info: {
+      title: 'API Documentation',
+      version: '1.0.0',
+    },
+  },
+  apis: ['./src/routes/*.ts'],
+};
+
+const swaggerSpec = swaggerJsdoc(swaggerOptions);
+app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
+
+/**
+ * @swagger
+ * /api/users/{id}:
+ *   get:
+ *     summary: Get user by ID
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ */
+```
+
+### NestJS with Swagger
+
+```typescript
+@ApiTags('users')
+@Controller('users')
+export class UsersController {
+  @Get(':id')
+  @ApiOperation({ summary: 'Get user by ID' })
+  @ApiParam({ name: 'id', type: Number })
+  @ApiResponse({ status: 200, type: UserDto })
+  async getUser(@Param('id') id: number) {}
+}
+
+// In main.ts
+const config = new DocumentBuilder()
+  .setTitle('API')
+  .setVersion('1.0')
+  .build();
+const document = SwaggerModule.createDocument(app, config);
+SwaggerModule.setup('api-docs', app, document);
+```
+
+---
+
+## Rate Limiting
+
+```typescript
+import rateLimit from 'express-rate-limit';
+
+const limiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 100, // limit each IP to 100 requests per windowMs
+  message: 'Too many requests, please try again later.',
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
+app.use('/api/', limiter);
+
+// Different limits for different routes
+const authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 5, // 5 attempts
+});
+
+app.post('/api/auth/login', authLimiter, loginHandler);
+```
+
+---
+
+## CORS Configuration
+
+```typescript
+import cors from 'cors';
+
+app.use(cors({
+  origin: process.env.NODE_ENV === 'production'
+    ? ['https://yourapp.com']
+    : ['http://localhost:3000'],
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
+}));
+```
+
+---
+
+## Checklist
+
+- [ ] Request/response types are validated with Zod or io-ts
+- [ ] Error handling uses custom error classes
+- [ ] Global error handler returns consistent format
+- [ ] Async handlers wrap async route handlers
+- [ ] Authentication middleware is type-safe
+- [ ] API documentation with Swagger/OpenAPI
+- [ ] Rate limiting protects against abuse
+- [ ] CORS is configured for production

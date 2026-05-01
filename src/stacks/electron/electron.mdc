@@ -1,0 +1,158 @@
+---
+description: Electron development guidelines — process model, security (context isolation, CSP, preload scripts), IPC communication, window management, project structure, and performance. Applied when working with Electron applications.
+globs: "src/main/**,src/renderer/**,**/preload.*,**/electron.*,electron.vite.config.*"
+alwaysApply: false
+---
+
+# Electron Development Guidelines
+
+Directives for building secure, performant Electron applications. Security first; process separation; resource management.
+
+## Process Model
+
+- **Main process**: Node.js environment, system APIs, window creation, IPC handlers
+- **Renderer process**: Chromium-based UI; no direct Node.js access
+- **IPC**: Secure typed communication between processes only
+
+Register global handlers for `uncaughtException`, `unhandledRejection`, and `render-process-gone`; log and shut down gracefully.
+
+## Project Structure
+
+```
+project-root/
+├── src/
+│   ├── main/                    # Main process
+│   │   ├── index.ts             # Entry point
+│   │   ├── preload.ts           # Preload script
+│   │   ├── services/            # Business logic, external services
+│   │   ├── handlers/            # IPC handlers
+│   │   ├── windows/             # Window management
+│   │   └── utils/
+│   ├── renderer/                # Renderer (React)
+│   │   ├── main.tsx, App.tsx
+│   │   ├── components/         # ui/, features/, layout/
+│   │   ├── pages/, hooks/, stores/, services/, utils/
+│   └── shared/                 # Shared between processes
+│       ├── types/              # TypeScript definitions
+│       ├── constants/
+│       └── ipc/                # IPC channel types
+├── assets/, dist/, tests/, config/
+```
+
+- Co-locate related files; single responsibility per module
+- Dependencies point inward toward domain logic
+- Use path aliases: `@main/*`, `@renderer/*`, `@shared/*`
+
+## Security Fundamentals
+
+### Context Isolation and Preload
+
+- **Always** set `nodeIntegration: false` and `contextIsolation: true`
+- **Always** use a preload script; never expose `process`, `require`, or `fs` to the renderer
+- Expose only the minimal API surface via `contextBridge.exposeInMainWorld`
+
+```typescript
+// Preload: validate before invoking
+saveFile: (data: string) => {
+  if (typeof data !== 'string' || data.length > 10000) throw new Error('Invalid data');
+  return ipcRenderer.invoke('save-file', data);
+}
+```
+
+### Content Security Policy
+
+- Apply CSP to all web contents via `web-contents-created` and `onHeadersReceived`
+- Restrict script sources to `'self'`; avoid `'unsafe-eval'` and `'unsafe-inline'` where possible
+
+```typescript
+'Content-Security-Policy': ["default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline';"]
+```
+
+### Web Preferences
+
+- Set `webSecurity: true`, `allowRunningInsecureContent: false`
+- Never disable these for convenience
+
+## IPC Communication
+
+- Use typed channels; define `IPC_CHANNELS` or similar in `shared/ipc/`
+- Validate sender: `event.sender.isMainFrame` before handling
+- Validate all payloads (type, length, format) in both main and preload
+- Prefer `ipcMain.handle` / `ipcRenderer.invoke` for request–response; avoid raw `send`/`on` for sensitive flows
+
+```typescript
+ipcMain.handle('save-file', async (event, data) => {
+  if (!event.sender.isMainFrame) throw new Error('Unauthorised sender');
+  if (typeof data !== 'string' || data.length > 1000000) throw new Error('Invalid data');
+  return await saveFile(data);
+});
+```
+
+## Window Management
+
+- Centralise window creation in a dedicated module; track windows by ID
+- On `closed`, remove from tracking and clean up references
+- Persist bounds and maximised state to user data; restore on launch
+- Ensure `webPreferences` (context isolation, preload) are applied to every window
+
+## Resource Management and Cleanup
+
+- Remove IPC listeners when handlers are torn down
+- Dispose BrowserWindow references on close; avoid holding stale references
+- Clean up timers, subscriptions, and file handles in `before-quit` or window `closed`
+- Use `try/finally` or explicit dispose patterns for resources
+
+## Performance Directives
+
+- **Memory**: Monitor heap usage; avoid retaining large objects across window lifecycles
+- **Lazy loading**: Use dynamic imports for heavy renderer modules; code-split routes
+- **IPC**: Batch related operations; avoid high-frequency small messages
+- **Preload**: Keep preload minimal; no heavy computation or large dependencies
+
+## Common Anti-patterns
+
+**Security**
+
+- Setting `nodeIntegration: true` or `contextIsolation: false`
+- Exposing `process`, `require`, `fs`, or other Node APIs in preload
+- Disabling `webSecurity` or trusting remote content without validation
+
+**Architecture**
+
+- Mixing window, IPC, database, and security logic in one class
+- Manipulating DOM from main via `executeJavaScript` with unsanitised data
+
+**Performance**
+
+- Failing to remove IPC or window event listeners on teardown
+- Creating windows without cleanup on `closed`
+- Loading all renderer code upfront instead of lazy-loading
+
+## Checklist
+
+### Security
+
+- [ ] Context isolation enabled; node integration disabled
+- [ ] Preload exposes minimal API via contextBridge
+- [ ] CSP applied to all web contents
+- [ ] All IPC messages validated (sender and payload)
+- [ ] Remote content restricted; certificate errors handled
+
+### Architecture
+
+- [ ] Main/renderer/shared structure in place
+- [ ] IPC handlers separated from business logic
+- [ ] Typed IPC channels in shared layer
+- [ ] Path aliases configured
+
+### Window and Resources
+
+- [ ] Window lifecycle managed; cleanup on close
+- [ ] Event listeners removed on teardown
+- [ ] Global error handlers registered
+
+### Performance
+
+- [ ] Lazy loading for heavy renderer modules
+- [ ] Preload kept minimal
+- [ ] Memory usage monitored in development

@@ -1,0 +1,195 @@
+---
+description: .NET-specific security standards for ASP.NET Core applications. Covers EF Core injection prevention, ASP.NET Core Identity, JWT validation, Key Vault integration, OWASP mitigations with .NET APIs, and HTTP security headers. Complements engineering-security.mdc.
+globs: **/*.cs,**/*.csproj,**/*.json,**/*.yaml,**/*.yml
+alwaysApply: false
+---
+
+# .NET Security Standards
+
+.NET-specific security practices. For universal security principles, see `engineering-security.mdc`.
+
+> **Conflict resolution:** Where this file provides .NET-specific guidance that differs from `engineering-security.mdc`, this file takes precedence for `.cs`, `.csproj`, `.json`, `.yaml`, and `.yml` files. The universal rule provides the default; this rule provides the override.
+
+---
+
+## Input validation in .NET
+
+Use FluentValidation in the MediatR pipeline; do not rely on manual inline checks:
+
+```csharp
+public class PlaceOrderCommandValidator : AbstractValidator<PlaceOrderCommand>
+{
+    public PlaceOrderCommandValidator()
+    {
+        RuleFor(x => x.CustomerId).NotEmpty();
+        RuleFor(x => x.Lines).NotEmpty().WithMessage("At least one line is required");
+        RuleFor(x => x.Email).EmailAddress().MaximumLength(254);
+    }
+}
+```
+
+---
+
+## EF Core — injection prevention
+
+- Use EF Core LINQ queries or `FromSqlRaw` with parameters exclusively; never concatenate user input
+
+```csharp
+// Correct
+dbContext.Users.FirstOrDefaultAsync(u => u.Email == email, ct);
+
+// Also correct (parameterised raw)
+dbContext.Products.FromSqlRaw("SELECT * FROM Products WHERE Category = {0}", category);
+
+// Incorrect — do not do this
+var sql = $"SELECT * FROM Products WHERE Category = '{category}'";
+```
+
+---
+
+## Authentication in ASP.NET Core
+
+```csharp
+builder.Services
+    .AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+    .AddJwtBearer(options =>
+    {
+        options.Authority = configuration["Auth:Authority"];
+        options.Audience = configuration["Auth:Audience"];
+        options.TokenValidationParameters = new TokenValidationParameters
+        {
+            ValidateIssuer = true,
+            ValidateAudience = true,
+            ValidateLifetime = true,
+            ClockSkew = TimeSpan.Zero
+        };
+    });
+```
+
+- Use ASP.NET Core Identity or a delegated identity provider (Entra ID, Okta, Auth0); do not implement custom auth
+- Validate `iss`, `aud`, `exp`, and `nbf` on every JWT; reject tokens that fail any check
+- Set `ClockSkew = TimeSpan.Zero` to prevent tokens being valid after expiry
+
+---
+
+## Authorisation in ASP.NET Core
+
+```csharp
+builder.Services.AddAuthorization(options =>
+{
+    options.FallbackPolicy = new AuthorizationPolicyBuilder()
+        .RequireAuthenticatedUser()
+        .Build();
+
+    options.AddPolicy("CanManageOrders", policy =>
+        policy.RequireClaim("permission", "orders:write"));
+});
+```
+
+- Apply `[Authorize]` globally via fallback policy; use `[AllowAnonymous]` to opt out
+- Do not hardcode roles in controller code; use named policies
+- Verify resource ownership in command handlers, not only in middleware
+
+---
+
+## Secrets management in .NET
+
+```csharp
+// Local development
+dotnet user-secrets set "ConnectionStrings:Default" "Server=..."
+
+// Production — Azure Key Vault with managed identity
+builder.Configuration.AddAzureKeyVault(
+    new Uri($"https://{vaultName}.vault.azure.net/"),
+    new DefaultAzureCredential());
+```
+
+- Never add secrets to `appsettings.json` or `appsettings.{env}.json`
+- Use `IOptions<T>` to access secrets from config; do not inject `IConfiguration` into domain or application layers
+- Use managed identity in Azure; no credential strings in connection strings
+
+---
+
+## HTTP security headers in ASP.NET Core
+
+```csharp
+app.UseHsts();
+app.UseHttpsRedirection();
+
+app.Use(async (context, next) =>
+{
+    context.Response.Headers["X-Content-Type-Options"] = "nosniff";
+    context.Response.Headers["X-Frame-Options"] = "DENY";
+    context.Response.Headers["Referrer-Policy"] = "strict-origin-when-cross-origin";
+    await next();
+});
+```
+
+---
+
+## XSS prevention in .NET
+
+- Use `HtmlEncoder.Default.Encode()` when rendering user-supplied content in HTML
+- Do not use `Html.Raw()` in Razor unless the source is guaranteed safe
+- Set `Content-Security-Policy` headers appropriate to the application context
+
+---
+
+## Insecure deserialisation
+
+- Never use `BinaryFormatter`; it is a known remote code execution vector
+- Use `System.Text.Json` with strict options:
+
+```csharp
+var options = new JsonSerializerOptions
+{
+    PropertyNameCaseInsensitive = true,
+    UnknownTypeHandling = JsonUnknownTypeHandling.JsonNode  // .NET 6+
+};
+```
+
+- Do not deserialise untrusted JSON into dynamic types or `object`
+
+---
+
+## CORS in ASP.NET Core
+
+```csharp
+builder.Services.AddCors(options =>
+    options.AddPolicy("AllowFrontend", policy =>
+        policy.WithOrigins(configuration["Cors:AllowedOrigins"]!.Split(','))
+              .AllowAnyMethod()
+              .AllowAnyHeader()));
+```
+
+- Never use `AllowAnyOrigin()` in production
+- Explicitly list allowed origins per environment
+
+---
+
+## Dependency vulnerability scanning
+
+Add to CI pipeline:
+
+```bash
+dotnet list package --vulnerable --include-transitive
+```
+
+Integrate with GitHub Dependabot or Azure DevOps security scanning for automated alerts.
+
+---
+
+## OWASP mitigations — .NET specific
+
+| Risk | .NET implementation |
+|------|-------------------|
+| Injection | EF Core LINQ + FluentValidation |
+| Auth failures | `AddJwtBearer` with strict token validation |
+| Sensitive data | `[JsonIgnore]`, masked logs, Key Vault for secrets |
+| XXE | `XmlReaderSettings { DtdProcessing = DtdProcessing.Prohibit }` |
+| Broken access control | Policy-based auth + resource ownership in handlers |
+| Security misconfiguration | Disable developer exception page in production; apply HSTS |
+| XSS | `HtmlEncoder`; CSP headers |
+| Insecure deserialisation | No `BinaryFormatter`; strict `System.Text.Json` |
+| Vulnerable components | `dotnet list package --vulnerable`; Dependabot |
+| Logging failures | Structured logs; alert on repeated auth failures |

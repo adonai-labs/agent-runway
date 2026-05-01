@@ -1,0 +1,150 @@
+---
+description: Advanced patterns for Electron development — multi-window management, typed IPC, plugin architecture, security policies, performance monitoring, and error recovery. Applied when building complex Electron applications.
+globs: "src/main/**,src/renderer/**,**/preload.*,**/electron.*"
+alwaysApply: false
+---
+
+# Advanced Patterns for Electron Development
+
+Directives for building complex, scalable Electron applications. Apply when implementing multi-window apps, typed IPC, plugins, or enterprise-level features.
+
+---
+
+## Security Best Practices
+
+- **Context isolation:** Always enable `contextIsolation: true` and `nodeIntegration: false` in `webPreferences`
+- **Preload scripts:** Expose only the minimal API surface via `contextBridge.exposeInMainWorld`; never expose raw `ipcRenderer` or `require`
+- **CSP:** Implement strict Content Security Policy headers; restrict script sources to trusted domains; use nonces or hashes for inline scripts when unavoidable
+- **IPC validation:** Validate all IPC messages (type, format, length) before processing; reject invalid payloads explicitly
+- **Origin verification:** Verify message origin for sensitive IPC channels
+- For detailed security guidance (auth, encryption, input validation), defer to `security.mdc` and `engineering-security.mdc`
+
+```typescript
+// Minimal BrowserWindow security
+webPreferences: { nodeIntegration: false, contextIsolation: true, preload: path.join(__dirname, 'preload.js') }
+```
+
+---
+
+## Multi-Window Management
+
+- Use a **centralised window manager** — a single module or class that owns creation, lookup, and teardown of all `BrowserWindow` instances
+- **Persist window state** (bounds, maximised/minimised) on close; restore on reopen; ensure restored bounds stay within screen
+- **Cleanup on close:** Remove windows from the manager map on `closed`; clear references to avoid leaks
+- **Unique IDs:** Assign a stable ID per window; use it for IPC routing and state persistence
+- **Parent-child relationships:** Set `parent` where appropriate; ensure child windows close with parent
+- Do not create windows ad hoc from multiple places; route all creation through the manager
+
+---
+
+## Advanced IPC Patterns
+
+- **Typed request-response:** Use a request ID, correlate responses, and support `invoke`-style async calls; avoid fire-and-forget for operations that need a result
+- **Timeout handling:** Set a timeout (e.g. 5s) for each request; reject and clean up pending requests on timeout
+- **Batching:** For high-frequency IPC, consider batching multiple operations into a single round-trip where latency allows
+- **Validation:** Validate payload shape and size before processing; return structured errors (code, message) rather than raw exceptions
+- **Channel naming:** Use a consistent naming scheme (e.g. `module:action`) and document the contract
+- Define shared TypeScript interfaces for request/response shapes in a `shared/types` module
+
+```typescript
+// Request shape example
+interface IPCRequest<T> { id: string; method: string; params: T; timestamp: number; }
+```
+
+---
+
+## Plugin Architecture
+
+- **Interface contract:** Define a minimal plugin interface (e.g. `name`, `version`, `init`, `destroy`) and optional hooks
+- **Lifecycle hooks:** Support hooks such as `onAppReady`, `onWindowCreated`; call them at well-defined points in the app lifecycle
+- **Validation:** Validate plugin shape before loading; reject plugins missing required fields or with invalid types
+- **Dynamic loading:** Use `import()` for plugin modules; load from a configured directory or manifest
+- **Isolation:** Run plugin code in a controlled context; avoid giving plugins direct access to app internals
+- **Error isolation:** Catch and log plugin hook errors; do not let one plugin crash the app or block others
+- **Unload support:** Call `destroy` (if present) when unloading; release references so plugins can be garbage-collected
+
+---
+
+## Performance Monitoring
+
+- **Metrics to track:** Heap used/total, RSS, window count, IPC message count and average response time
+- **Sampling interval:** Collect metrics at a fixed interval (e.g. 5–10s); avoid sampling too frequently
+- **Retention:** Keep a bounded history (e.g. last 100–1000 samples); do not grow unbounded
+- **Memory leak signals:** Monitor heap trend over time; flag if heap used increases monotonically without a corresponding user action
+- **When to alert:** Alert when heap exceeds a threshold, when leak trend is detected, or when IPC latency degrades significantly
+- **Resource usage:** Use `webContents.getProcessMemoryInfo()` for per-window memory when available
+- Do not log sensitive data in metrics; mask or exclude PII
+
+---
+
+## Error Handling and Recovery
+
+- **Error boundaries:** Catch `uncaughtException` and `unhandledRejection` in the main process; log with context and attempt graceful shutdown or recovery
+- **Renderer crashes:** Handle `render-process-gone`; optionally recreate the window or show a recovery UI
+- **Graceful degradation:** If a non-critical feature fails, disable it and continue; do not crash the whole app
+- **Retry strategies:** Use bounded retries with backoff for transient failures (e.g. network, IPC); cap retries and escalate after failure
+- **Recovery strategies:** Register per-error-type recovery (e.g. window crash → recreate window); escalate to user-facing error dialog when recovery fails
+- **Logging:** Log errors with timestamp, process, operation, and stack; avoid logging secrets or PII
+- **User feedback:** Show a clear, non-technical message when recovery fails; offer restart or report options
+
+---
+
+## Architecture Guidelines
+
+- **Process separation:** Keep the main process lightweight; move heavy computation to renderer or worker threads
+- **Dependency injection:** Inject dependencies (window manager, IPC handler, config) for testability and flexibility
+- **State management:** Use a centralised store or IPC for cross-process state; avoid storing sensitive data in renderer
+- **Separation of concerns:** Split main process into focused modules (window manager, IPC handler, security, plugins)
+- **Single responsibility:** Each module should have one reason to change
+- **Project structure:** Organise as `main/`, `renderer/`, `shared/`; keep types and contracts in `shared`
+
+---
+
+## Anti-Patterns to Avoid
+
+- Disabling `contextIsolation` or enabling `nodeIntegration` without a clear, documented reason
+- Exposing raw `ipcRenderer` or `require` to the renderer
+- Creating windows from multiple places without a central manager
+- Fire-and-forget IPC for operations that need a result or error handling
+- Unbounded metric or error history that grows with runtime
+- Swallowing errors silently; always log and optionally escalate
+- Trusting IPC payloads without validation
+- Loading plugins without validation or error isolation
+- Storing sensitive data in renderer process or in plaintext
+- Blocking the main process with long-running synchronous work
+
+---
+
+## Checklist
+
+### Security
+- [ ] Context isolation and `nodeIntegration: false` enabled
+- [ ] Preload exposes minimal API via `contextBridge`
+- [ ] All IPC messages validated before use
+- [ ] CSP configured for web contents
+
+### Multi-Window
+- [ ] Centralised window manager in use
+- [ ] Window state persisted and restored
+- [ ] Cleanup on close; no orphaned references
+
+### IPC
+- [ ] Typed request-response for operations needing results
+- [ ] Timeouts configured for pending requests
+- [ ] Shared request/response interfaces defined
+
+### Plugins
+- [ ] Plugin interface and lifecycle defined
+- [ ] Validation before load; error isolation in hooks
+- [ ] Unload/destroy supported
+
+### Performance
+- [ ] Key metrics tracked (memory, CPU, IPC)
+- [ ] Bounded history; no unbounded growth
+- [ ] Memory leak trend detected and alerted
+
+### Error Handling
+- [ ] `uncaughtException` and `unhandledRejection` handled
+- [ ] `render-process-gone` handled
+- [ ] Retry and recovery strategies for transient failures
+- [ ] User-facing error messages when recovery fails

@@ -1,0 +1,70 @@
+{
+  "name": "@adonai-labs/agent-runway",
+  "version": "1.0.0",
+  "description": "A structured, AI-assisted development framework for coding agents",
+  "main": "dist/index.js",
+  "bin": {
+    "agent-runway": "dist/index.js"
+  },
+  "scripts": {
+    "build:novalidate": "tsc",
+    "build": "tsc && node dist/validate.js",
+    "validate": "node dist/validate.js",
+    "smoke": "npm run build:novalidate && node dist/smoke.js",
+    "prepublishOnly": "npm run build && npm run smoke",
+    "dev": "tsc --watch",
+    "prepare": "npm run build"
+  },
+  "keywords": [
+    "cursor",
+    "claude-code",
+    "vscode",
+    "copilot",
+    "ai",
+    "development",
+    "framework",
+    "code-review",
+    "architecture",
+    "typescript",
+    "dotnet",
+    "react"
+  ],
+  "author": {
+    "name": "Cristian Cardenas",
+    "url": "https://github.com/crisstianK"
+  },
+  "license": "MIT",
+  "files": [
+    "dist",
+    "src/core",
+    "src/stacks",
+    "docs",
+    "README.md",
+    "USAGE.md",
+    "EXTENDING.md"
+  ],
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "@types/fs-extra": "^11.0.0",
+    "@types/inquirer": "^9.0.0",
+    "typescript": "^5.0.0"
+  },
+  "dependencies": {
+    "commander": "^11.0.0",
+    "inquirer": "^9.0.0",
+    "chalk": "^5.0.0",
+    "ora": "^7.0.0",
+    "fs-extra": "^11.0.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/adonai-labs/agent-runway"
+  },
+  "bugs": {
+    "url": "https://github.com/adonai-labs/agent-runway/issues"
+  },
+  "homepage": "https://github.com/adonai-labs/agent-runway#readme"
+}

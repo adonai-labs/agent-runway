@@ -1,0 +1,138 @@
+---
+description: Testing strategies and quality assurance — testing pyramid, unit/integration/E2E testing, TDD/BDD, test automation, and quality metrics. Applied when writing or reviewing tests.
+globs: "**/*.test.*,**/*.spec.*,**/tests/**,**/test/**,**/__tests__/**"
+alwaysApply: false
+---
+
+# Testing Strategies and Quality Assurance
+
+Directives for writing and reviewing tests. Use Australian English spelling throughout.
+
+---
+
+## Testing Pyramid
+
+- Structure the test suite as a pyramid: many unit tests at the base, fewer integration tests in the middle, few E2E tests at the top.
+- Prefer fast, cheap, reliable tests at the bottom; accept slower, more brittle tests only where necessary at the top.
+
+```
+     /\       E2E (few) — slow, expensive, brittle
+    /  \
+   /____\     Integration (some) — medium speed, more stable
+  /      \
+ /        \   Unit (many) — fast, cheap, reliable
+/__________\
+```
+
+---
+
+## Unit Testing
+
+- Test one behaviour per test; avoid testing multiple concerns in a single test.
+- Use Arrange–Act–Assert: set up data, perform the action, assert the outcome.
+- Mock external dependencies (APIs, databases, file system) to isolate the unit under test.
+- Use descriptive test names that state the scenario and expected outcome (e.g. `should return null when user is not found`).
+- Aim for 80–90% coverage of critical paths; avoid chasing 100% for its own sake.
+- Keep tests fast; avoid real I/O, sleeps, or heavy setup.
+
+---
+
+## Integration Testing
+
+- Test interactions between components, services, or modules.
+- Mock external services (third-party APIs, payment gateways) but use real or in-memory databases where appropriate.
+- Test database connections, queries, and transactions; use test fixtures and clean up after each run.
+- Verify API contracts, request/response shapes, and error handling.
+- Prefer bottom-up or sandwich approaches over big-bang integration.
+
+---
+
+## End-to-End Testing
+
+- Test complete user flows (e.g. login → create item → checkout).
+- Use `data-testid` attributes for stable selectors; avoid CSS classes or XPath that change with styling.
+- Prefer Cypress or Playwright for web E2E; avoid brittle, implementation-coupled selectors.
+- Keep E2E suites small and focused on critical paths; they are slow and costly to maintain.
+- Run E2E against a dedicated test environment; avoid production data.
+
+---
+
+## Performance Testing
+
+- **Load testing**: Measure response time, throughput, and error rate under expected load.
+- **Stress testing**: Identify breaking points and recovery behaviour beyond normal capacity.
+- **Endurance testing**: Run sustained load to detect memory leaks and resource exhaustion.
+- Track: response time (p50, p95, p99), requests per second, CPU/memory usage, error rate.
+- Use tools such as k6, Artillery, or JMeter; avoid ad-hoc scripts for production load tests.
+
+---
+
+## Security Testing
+
+- **SQL injection**: Test with payloads like `' OR '1'='1`, `'; DROP TABLE users; --`; ensure parameterised queries are used.
+- **XSS**: Test with payloads like `<script>alert(1)</script>`, `javascript:alert(1)`; verify output encoding.
+- **Authentication**: Test invalid credentials, expired sessions, and missing tokens.
+- **Authorization**: Test access to protected resources as unauthenticated and lower-privilege users.
+- Integrate OWASP ZAP or similar scanners in CI where feasible.
+
+---
+
+## Test-Driven Development (TDD)
+
+- Follow Red–Green–Refactor: write a failing test, make it pass with minimal code, then refactor.
+- Write tests before implementation for new behaviour or bug fixes when the expected behaviour is clear.
+- Use TDD for business logic, validation, and algorithms; consider skipping for trivial glue code or prototypes.
+- Keep the red phase short; avoid large batches of untested code.
+
+---
+
+## Behaviour-Driven Development (BDD)
+
+- Use Given–When–Then for scenarios: Given preconditions, When an action occurs, Then expected outcome.
+- Use BDD when requirements need to be readable by non-developers or when acceptance criteria drive tests.
+- Keep step definitions thin; delegate to helper functions or services.
+- Prefer Cucumber, SpecFlow, or similar when BDD is adopted; avoid mixing BDD syntax with ad-hoc test structure.
+
+---
+
+## Continuous Testing
+
+- Run unit tests on every commit; run integration and E2E tests on pull requests or before merge.
+- Enforce quality gates: minimum coverage, no critical security findings, no flaky tests in main branch.
+- Fail the pipeline on test failures; do not allow merging with broken or disabled tests.
+- Keep feedback loops fast: unit tests under a few minutes; E2E under ~15 minutes where possible.
+
+---
+
+## Test Automation
+
+- Use the Page Object Model for E2E: encapsulate page structure and actions in reusable objects.
+- Prefer data-driven tests for similar scenarios with different inputs (e.g. parameterised or table-driven).
+- Run tests in parallel where safe; avoid shared mutable state between parallel tests.
+- Generate clear reports (pass/fail, duration, coverage); integrate with CI dashboards.
+- Maintain test data separately; use factories or fixtures rather than hardcoded values.
+
+---
+
+## Quality Metrics
+
+- **Coverage thresholds**: Enforce minimums (e.g. 80% lines, branches, functions) for critical modules; exclude generated or trivial code.
+- **Defect density**: Track defects per module or per release; use to prioritise testing effort.
+- **Flakiness**: Treat intermittently failing tests as blockers; fix or remove them; avoid retries as a permanent fix.
+- **Execution time**: Monitor total suite duration; keep unit suite under a few minutes.
+- **Defect escape rate**: Track production incidents; use to improve test design and coverage.
+
+---
+
+## Checklist
+
+- [ ] Unit tests use Arrange–Act–Assert and test one behaviour each
+- [ ] Integration tests cover component interactions and external service contracts
+- [ ] E2E tests use `data-testid` and cover critical user flows
+- [ ] Dependencies are mocked; tests are isolated and repeatable
+- [ ] Test names are descriptive and scenario-based
+- [ ] Coverage thresholds are enforced for critical paths
+- [ ] No flaky tests in the main branch
+- [ ] Security tests include injection and auth scenarios
+- [ ] Electron/React tests mock main/renderer APIs appropriately
+- [ ] CI runs tests and blocks merge on failure

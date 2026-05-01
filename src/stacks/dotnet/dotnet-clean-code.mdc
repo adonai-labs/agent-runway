@@ -1,0 +1,164 @@
+---
+description: C#/.NET-specific clean code standards and idioms. Covers naming conventions, C# language patterns, async/await correctness, DI, and .NET tooling hygiene. Complements engineering-principles.mdc.
+globs: **/*.cs,**/*.csproj,**/*.sln
+alwaysApply: false
+---
+
+# .NET Clean Code Standards
+
+C#-specific coding standards. For universal principles (naming intent, SRP, DRY, error handling), see `engineering-principles.mdc`.
+
+> **Conflict resolution:** Where this file provides C#-specific guidance that differs from `engineering-principles.mdc`, this file takes precedence for `.cs`, `.csproj`, and `.sln` files. The universal rule provides the default; this rule provides the override.
+
+---
+
+## C# naming conventions
+
+- PascalCase: types, methods, properties, constants, public fields
+- camelCase: parameters, local variables, private fields (with `_` prefix for instance fields)
+- `I` prefix for interfaces: `IOrderRepository`, not `OrderRepository`
+- Async methods end in `Async`: `GetOrderAsync`, `SaveChangesAsync`
+- Boolean properties: `IsActive`, `HasPermission`, `CanRetry`
+- Event delegates end in `EventHandler`; events use past tense: `OrderPlaced`, `PaymentFailed`
+
+---
+
+## Dependency injection
+
+Always inject via constructor; do not use `new` directly for services.
+
+```csharp
+// Correct
+public class OrderService(IOrderRepository repository, ILogger<OrderService> logger) { }
+
+// Incorrect
+public class OrderService
+{
+    private readonly OrderRepository _repository = new OrderRepository();
+}
+```
+
+- Use constructor injection; avoid property injection except in framework-controlled types
+- Keep constructors lean; inject only what the class needs
+- Do not call services inside constructors; defer to method bodies
+
+---
+
+## Async/await correctness
+
+```csharp
+// Correct: async all the way, CancellationToken passed through
+public async Task<Order> GetOrderAsync(Guid id, CancellationToken ct)
+    => await _repository.GetByIdAsync(id, ct);
+
+// Incorrect: blocking async call — causes deadlocks
+var order = GetOrderAsync(id).Result;
+```
+
+- Always `await` async calls; never use `.Result` or `.Wait()`
+- Accept `CancellationToken` in all public async methods and pass it downstream
+- Never use `async void` except for event handlers; always `async Task`
+- Use `ConfigureAwait(false)` in library code; not required in ASP.NET Core application code
+
+---
+
+## Guard clauses and early returns
+
+```csharp
+// Correct: early returns reduce nesting
+public Result Process(Order order)
+{
+    if (order is null) return Result.Failure("Order is required");
+    if (!order.IsValid()) return Result.Failure("Order is invalid");
+    return Execute(order);
+}
+
+// Incorrect: deep nesting
+public Result Process(Order order)
+{
+    if (order != null)
+    {
+        if (order.IsValid())
+        {
+            return Execute(order);
+        }
+    }
+    return Result.Failure("Invalid");
+}
+```
+
+---
+
+## Null handling
+
+- Enable nullable reference types (`<Nullable>enable</Nullable>`) in all projects
+- Use `?` on reference types where null is a valid value; treat the absence of `?` as a non-null contract
+- Prefer null-coalescing (`??`, `??=`) and conditional access (`?.`) over explicit null checks where readable
+- Do not suppress nullable warnings with `!` unless genuinely certain
+
+---
+
+## Result pattern and error handling
+
+```csharp
+// Preferred for expected failures
+public async Task<Result<Order>> GetOrderAsync(Guid id, CancellationToken ct)
+{
+    var order = await _repository.GetByIdAsync(id, ct);
+    return order is null
+        ? Result.Failure<Order>($"Order {id} not found")
+        : Result.Success(order);
+}
+```
+
+- Use `Result<T>` or `OneOf<T>` for expected domain failures
+- Throw exceptions for unexpected, unrecoverable failures only
+- Never catch `Exception` and swallow it silently
+- Log exceptions with enough context: operation name, relevant IDs, and the exception itself
+
+---
+
+## Records and immutability
+
+- Use `record` for value-semantic types, DTOs, commands, queries, and domain events
+- Use `record struct` for value types without heap allocation
+- Prefer immutable types; only expose setters on mutable state where mutation is genuinely needed
+
+```csharp
+public record PlaceOrderCommand(Guid CustomerId, IReadOnlyList<OrderLineDto> Lines);
+public record OrderDetailDto(Guid Id, string Status, decimal Total);
+```
+
+---
+
+## File and project hygiene
+
+- One primary type per file; file name matches the primary type name
+- Use file-scoped namespaces (`namespace MyApp.Orders;`)
+- Keep `using` directives tidy; remove unused imports
+- Run `dotnet format` as part of CI; maintain `.editorconfig` for consistent style
+- Avoid `#region` blocks; they signal the class is too large
+
+---
+
+## LINQ guidelines
+
+- Prefer LINQ method syntax for readability in code; query syntax for complex multi-join queries
+- Do not chain more than 4–5 operators without extracting a well-named method
+- Avoid `ToList()` mid-chain unless materialisation is actually required
+- Use `FirstOrDefaultAsync` with predicate in EF Core; avoid `Where(...).FirstOrDefaultAsync()`
+
+---
+
+## C#-specific antipatterns
+
+| Pattern | Issue |
+|---------|-------|
+| `.Result` / `.Wait()` on Tasks | Deadlock risk; blocks thread pool |
+| `async void` | Unhandled exceptions crash the process |
+| `new()` for injected services | Defeats DI; untestable |
+| `catch (Exception) { }` | Silently swallows failures |
+| `public` fields on classes | Breaks encapsulation |
+| Mutable statics | Thread safety and test isolation issues |
+| Missing `CancellationToken` | Cannot cancel slow operations |
+| `Thread.Sleep` in async code | Blocks thread; use `Task.Delay` |

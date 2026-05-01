@@ -1,0 +1,118 @@
+---
+description: .NET and C# development guidelines — naming conventions, async patterns, dependency injection, EF Core, error handling, configuration, security, testing, and performance. Applied when working with .NET/C# code.
+globs: "**/*.cs,**/*.csproj,**/*.sln,**/*.razor"
+alwaysApply: false
+---
+
+# .NET and C# Development Guidelines
+
+Directives for .NET Core and C# development. Use Australian English spelling throughout.
+
+## Naming Conventions
+
+- **Public members**: PascalCase (classes, methods, properties, constants)
+- **Private fields**: camelCase with leading underscore (`_userRepository`)
+- **Constants**: UPPER_CASE or PascalCase for public API constants
+- **Interfaces**: Prefix with `I` (e.g. `IUserRepository`)
+- **Async methods**: Suffix with `Async` (e.g. `GetUserByIdAsync`)
+- **File names**: Match primary type (e.g. `UserService.cs`)
+
+## Modern C# Features
+
+- **Records**: Prefer records for immutable DTOs, value objects, and API responses. Use positional syntax for simple data; add computed properties or `with` expressions when needed.
+- **Pattern matching**: Use switch expressions and property patterns instead of long if-else chains. Prefer pattern matching in exception handlers for mapping to HTTP status codes.
+- **Nullable reference types**: Enable `<Nullable>enable</Nullable>`. Use `T?` for optional returns; avoid `null!` except where framework requires it. Validate constructor parameters with `?? throw new ArgumentNullException(nameof(param))`.
+- **Primary constructors**: Use for DI-injected services and simple DTOs where it reduces boilerplate.
+
+## Async/Await Rules
+
+- Use `async`/`await` for all I/O (database, HTTP, file system). Never use `.Result` or `.Wait()` — they block and can deadlock.
+- Use `Task.WhenAll` for independent parallel operations; avoid sequential awaits when operations are independent.
+- Use `ConfigureAwait(false)` only in library code, not in ASP.NET Core request handlers.
+- Never use `async void` except for event handlers.
+
+## Dependency Injection
+
+- Register services by interface. Use `AddScoped` for DbContext and request-scoped services; `AddSingleton` for caches and configuration; `AddTransient` for stateless, lightweight services.
+- Prefer constructor injection. Validate dependencies with `?? throw new ArgumentNullException(nameof(x))`.
+- Use extension methods (e.g. `AddApplicationServices`) to group registrations.
+
+## Controller and API Best Practices
+
+- Use `[ApiController]` and `[Route("api/[controller]")]`. Return `ActionResult<T>` or `IResult`.
+- Use `[FromQuery]` for query params, `[FromBody]` for request bodies. Validate with `ModelState.IsValid` or FluentValidation before processing.
+- Return appropriate status codes: `Ok`, `NotFound`, `CreatedAtAction`, `BadRequest`, `NoContent`. Use `ProblemDetails` for errors.
+
+## Model Validation
+
+- Prefer FluentValidation over data annotations for complex rules. Use `AbstractValidator<T>` and inject validators.
+- Validate at the boundary (controller or minimal API). Return validation errors as `ProblemDetails` or structured error responses.
+- Use data annotations only for simple constraints (e.g. `[Required]`, `[EmailAddress]`, `[StringLength]`).
+
+## Entity Framework Core
+
+- Use repository or unit-of-work patterns to abstract `DbContext`. Keep queries in repositories; avoid `DbContext` in controllers.
+- Use projections (`.Select()` to DTOs) to avoid over-fetching. Never load full entities when only a subset of columns is needed.
+- Use `EF.CompileAsyncQuery` for hot-path queries executed frequently.
+- Implement pagination with `Skip`/`Take`; use cursor-based pagination for large, ordered datasets.
+- Apply global query filters (e.g. soft delete) in `OnModelCreating`. Use `IEntityTypeConfiguration<T>` for entity configuration.
+
+## Configuration
+
+- Use strongly typed options: `IOptions<T>`, `IOptionsSnapshot<T>`, or `IOptionsMonitor<T>`. Define classes with `SectionName` constant and bind via `GetSection()`.
+- Load `appsettings.json`, `appsettings.{Environment}.json`, environment variables, and user secrets. Validate required settings at startup and fail fast if missing.
+- Never commit secrets. Use User Secrets in development and a secrets store in production.
+
+## Error Handling
+
+- Register a global `IExceptionHandler` implementation. Map domain exceptions (e.g. `NotFoundException`, `ValidationException`) to appropriate HTTP status codes and `ProblemDetails`.
+- Use custom exceptions for domain failures. Include context (e.g. entity name, key) in exception messages. Do not expose stack traces or internal details to clients.
+- Use `catch (Exception ex) when (ex is not DomainException)` to re-throw domain exceptions and handle unexpected ones.
+
+## Logging
+
+- Use `ILogger<T>` with structured parameters. Prefer `LogInformation`, `LogWarning`, `LogError` with named placeholders (e.g. `{UserId}`) for structured logging.
+- Log at appropriate levels: Debug for diagnostics, Information for business events, Warning for recoverable issues, Error for failures.
+- Never log sensitive data (passwords, tokens, PII). Use correlation IDs for request tracing.
+
+## Caching
+
+- Use `IMemoryCache` for single-instance caching; `IDistributedCache` for multi-instance or shared cache.
+- Set `SlidingExpiration` and/or `AbsoluteExpiration` on cache entries. Use consistent cache key patterns (e.g. `entity_type:id`).
+- Invalidate or update cache when underlying data changes. Consider cache-aside pattern for read-through.
+
+## Security
+
+- Validate and sanitise all input. Use parameterised queries; never concatenate user input into SQL. Defer to `engineering-security.mdc` and `dotnet-security.mdc` for detailed guidance.
+- Use JWT or cookie-based auth with short-lived tokens. Implement RBAC with policies; authorise at resource level, not just role level.
+- Use HTTPS, secure headers (e.g. HSTS, X-Content-Type-Options), and avoid storing secrets in configuration.
+
+## Testing Directives
+
+- Use xUnit. Structure tests with Arrange–Act–Assert. Name tests descriptively: `MethodName_Scenario_ExpectedResult`.
+- Mock dependencies with Moq or NSubstitute. Verify interactions when behaviour matters; avoid over-specification.
+- Use `WebApplicationFactory<Program>` for integration tests. Replace real services (e.g. database, external APIs) with test doubles. Dispose `HttpClient` and factory in teardown.
+- Test success paths, validation failures, not-found, and unauthorised scenarios. Prefer testing behaviour over implementation details.
+
+## Performance
+
+- Use `StringBuilder` for string concatenation in loops or when building large strings. Avoid `+=` in loops.
+- Use `Span<T>` and `ReadOnlySpan<T>` for high-performance parsing or slicing when appropriate.
+- Use `ObjectPool<T>` for frequently allocated, expensive objects (e.g. `StringBuilder`).
+- Optimise LINQ: use projections, avoid `ToList()` before filtering, use `AsNoTracking()` for read-only queries. Prefer `Any()` over `Count() > 0` for existence checks.
+
+## Checklist
+
+- [ ] Naming conventions followed (PascalCase, camelCase, Async suffix)
+- [ ] Nullable reference types enabled; optional returns use `T?`
+- [ ] Async/await for I/O; no `.Result` or `.Wait()`
+- [ ] Services registered by interface; constructor injection used
+- [ ] FluentValidation for complex validation; validation at boundary
+- [ ] EF Core: projections, pagination, compiled queries where beneficial
+- [ ] Strongly typed configuration; required settings validated at startup
+- [ ] Global exception handler; custom exceptions mapped to ProblemDetails
+- [ ] Structured logging with ILogger; no sensitive data logged
+- [ ] Caching with appropriate expiration; invalidation considered
+- [ ] Input validated; parameterised queries; auth/authorisation at resource level
+- [ ] Unit tests (xUnit, Moq); integration tests with WebApplicationFactory
+- [ ] StringBuilder for concatenation; LINQ optimised; AsNoTracking for read-only queries

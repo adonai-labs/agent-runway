@@ -1,0 +1,199 @@
+---
+description: DevOps practices — CI/CD pipeline design, Docker containerisation, Kubernetes orchestration, Infrastructure as Code, monitoring, logging, and security. Applied when working with deployment and infrastructure files.
+globs: ".github/**,**/*.yml,**/*.yaml,Dockerfile*,docker-compose*,**/k8s/**,**/terraform/**,**/bicep/**"
+alwaysApply: false
+---
+
+# DevOps Practices
+
+Directives for CI/CD, containerisation, orchestration, IaC, monitoring, and logging.
+
+---
+
+## CI/CD Pipeline Directives
+
+### Stages and quality gates
+
+- Use separate stages: test → build → deploy; do not run deploy without passing test and build.
+- Run lint, type-check, and unit tests before build; fail the pipeline on any failure.
+- Run security audit (`npm audit --audit-level=high` or equivalent) before build; treat high/critical as blocking.
+- Build and push images only after tests pass; tag images with commit SHA or short hash, not only `latest`.
+- Deploy only from protected branches (e.g. `main`); gate deployments on approval or environment checks.
+- Use matrix builds for multi-version testing when relevant; cache dependencies between jobs.
+- Upload coverage reports; fail if coverage falls below thresholds.
+
+### What to include
+
+- Checkout, dependency install, lint, test, security audit in sequence.
+- Build stage with caching (e.g. `cache-from` / `cache-to` for Docker).
+- Deploy stage with explicit rollout verification (e.g. `kubectl rollout status`).
+- Use secrets for credentials; never commit secrets or use env vars in config files.
+
+---
+
+## Docker Directives
+
+### Multi-stage builds
+
+- Use multi-stage builds: separate build stage from runtime stage; copy only built artefacts.
+- Use `FROM` for each stage; do not mix build and runtime tools in the final image.
+- Use `--only=production` or equivalent for install when building runtime images.
+
+### Non-root and security
+
+- Create and use a non-root user; run as that user in the final stage.
+- Use `COPY --chown=user:group` to avoid root-owned files.
+- Apply security updates in the base image (`apk update && apk upgrade` or equivalent).
+- Remove cache, temp files, and unnecessary tools before final image.
+
+### Health checks and image size
+
+- Add `HEALTHCHECK` with `interval`, `timeout`, `start-period`, and `retries`.
+- Point health checks at a dedicated `/health` or similar endpoint; avoid heavy logic.
+- Prefer smaller base images (e.g. `-alpine`); avoid `latest` tag; pin versions.
+- Use `.dockerignore` to exclude build artefacts, tests, and docs from the build context.
+
+### Essential pattern
+
+```dockerfile
+FROM node:18-alpine AS builder
+# ... build steps ...
+FROM node:18-alpine AS production
+RUN addgroup -g 1001 -S nodejs && adduser -S nodejs -u 1001
+COPY --from=builder --chown=nodejs:nodejs /app/dist ./dist
+USER nodejs
+HEALTHCHECK --interval=30s --timeout=3s --retries=3 CMD curl -f http://localhost:3000/health || exit 1
+CMD ["node", "dist/index.js"]
+```
+
+---
+
+## Docker Compose Directives
+
+- Separate services by concern (app, db, cache, queue, reverse proxy).
+- Use named volumes for persistent data; avoid `bind` mounts for production data.
+- Define explicit networks; isolate services per environment where possible.
+- Use `depends_on` for startup order; do not rely on it for readiness.
+- Use `environment` or `.env` for config; avoid hardcoding secrets.
+- Use `healthcheck` for services that need health verification.
+- Use `replicas` for scaling only when needed; prefer orchestration for production.
+
+---
+
+## Kubernetes Directives
+
+### Deployments
+
+- Set `replicas` and use `RollingUpdate` with `maxSurge` and `maxUnavailable`.
+- Use `selector` and `matchLabels` consistently; ensure pods match labels.
+- Use `resource.requests` and `resource.limits` for CPU and memory.
+
+### Probes
+
+- Define `livenessProbe` and `readinessProbe`; use HTTP for HTTP services.
+- Use `initialDelaySeconds` and `periodSeconds` appropriate to startup time.
+- Use readiness to avoid sending traffic before the app is ready.
+
+### ConfigMaps and Secrets
+
+- Store non-sensitive config in ConfigMaps; use Secrets for credentials, URLs, keys.
+- Use `secretKeyRef` and `configMapKeyRef` for env vars; avoid inline secrets.
+- Base64-encode secrets in manifests; prefer external secret stores.
+
+### Services and Ingress
+
+- Use ClusterIP for internal services; use Service type appropriate to use case.
+- Use Ingress for HTTP(S) with TLS; enable SSL redirect and HSTS.
+- Use annotations for ingress class, cert-manager, and other controllers.
+
+### Security context
+
+- Set `runAsNonRoot: true` and `runAsUser`; avoid root.
+- Set `allowPrivilegeEscalation: false` and `readOnlyRootFilesystem: true`.
+- Use `emptyDir` for writable paths (e.g. `/tmp`); drop all capabilities.
+
+### Essential pattern
+
+```yaml
+containers:
+  - name: app
+    securityContext: { runAsNonRoot: true, runAsUser: 1001, allowPrivilegeEscalation: false, readOnlyRootFilesystem: true }
+    resources: { requests: { memory: "128Mi", cpu: "100m" }, limits: { memory: "256Mi", cpu: "200m" } }
+    livenessProbe: { httpGet: { path: /health, port: 3000 } }
+```
+
+---
+
+## Infrastructure as Code Directives
+
+### Terraform / Bicep best practices
+
+- Pin provider and module versions; pin Terraform version.
+- Use remote state (e.g. S3, Azure Storage) with locking; avoid local state in production.
+- Use variables for all environment-specific values; avoid hardcoding.
+- Use modules for reusable components; keep modules small and focused.
+- Use `default_tags` or equivalent for consistent tagging.
+- Use `output` for values needed by other stacks or pipelines.
+
+### State management
+
+- Use separate state files per environment; avoid sharing state.
+- Enable state locking; avoid concurrent `apply` in the same workspace.
+- Use `terraform plan` before `apply`; review plan output.
+- Do not commit state files; use `.gitignore` for `*.tfstate`.
+
+---
+
+## Monitoring Directives
+
+### Prometheus
+
+- Expose metrics on a dedicated path (e.g. `/metrics`).
+- Use standard labels (e.g. `job`, `instance`, `method`, `status`).
+- Define alert rules for error rate, latency, and availability.
+- Use recording rules for expensive aggregations.
+
+### Grafana and alerting
+
+- Create dashboards for request rate, latency percentiles, error rate, resource usage.
+- Alert on high error rate, latency, and availability degradation.
+- Set alert thresholds and routing; avoid alert fatigue.
+
+### What to measure
+
+- Request rate, latency (p50, p95, p99), error rate.
+- Resource utilisation (CPU, memory, disk).
+- Dependency health and latency.
+
+---
+
+## Logging Directives
+
+- Use structured logging (JSON); include timestamp, level, message, and context.
+- Propagate correlation IDs across services and async flows.
+- Exclude sensitive data from logs; mask or redact where needed.
+- Use centralised logging (e.g. ELK, Loki, cloud logging) for aggregation.
+- Set log retention and retention policies per environment.
+
+---
+
+## Container Security Directives
+
+- Run as non-root; drop all capabilities.
+- Use read-only root filesystem; mount writable paths only where needed.
+- Scan images for vulnerabilities in CI; fail on high/critical issues.
+- Use minimal base images; keep images updated.
+- Do not run as privileged; avoid `--privileged` or equivalent.
+
+---
+
+## Checklist
+
+- [ ] CI/CD: test → build → deploy; quality gates block failures
+- [ ] Docker: multi-stage, non-root user, health check, small image
+- [ ] Compose: separate services, named volumes, explicit networks
+- [ ] Kubernetes: resource limits, probes, security context, ConfigMaps/Secrets
+- [ ] IaC: versioned state, remote backend, locked state
+- [ ] Monitoring: metrics exposed, dashboards, alerts for key SLOs
+- [ ] Logging: structured, correlation IDs, no sensitive data
+- [ ] Security: non-root, read-only fs, minimal capabilities, image scanning

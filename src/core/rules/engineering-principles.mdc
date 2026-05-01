@@ -1,0 +1,187 @@
+---
+description: Universal software engineering principles — stack-agnostic. Clean code, SOLID, clean architecture, error handling, testability, naming, and design quality. Applied whenever writing, reviewing, or reasoning about any code.
+globs: "**/*"
+alwaysApply: true
+---
+
+# Engineering Principles
+
+These principles apply to all code, regardless of language, framework, or layer.
+
+---
+
+## Simplicity first
+
+Write the simplest solution that correctly solves the current problem.
+
+- Do not design for hypothetical futures
+- Earn complexity before introducing it
+- Every abstraction must isolate real instability or real variation
+- If you cannot explain why a layer or pattern exists here, it probably should not
+
+---
+
+## Single reason to change
+
+Each module, class, or function should have one reason to change.
+
+- Group things that change together for the same reason
+- Separate things that change for different reasons
+- A class that mixes HTTP concerns, business rules, and persistence has too many reasons to change
+
+---
+
+## Naming communicates intent
+
+Names are the primary documentation.
+
+- Name variables, functions, and types for what they represent, not how they are implemented
+- Avoid abbreviations, single-letter variables (except loop counters), and generic names (`Manager`, `Helper`, `Utils`, `Service` without qualification)
+- A function named `Process` tells nothing; `PlaceOrder` or `ValidatePayment` communicates intent
+- If a name needs a comment to explain it, the name is not good enough
+
+---
+
+## Functions do one thing
+
+- Functions should be short, focused, and at a single level of abstraction
+- Extract sub-steps into well-named helper functions rather than layering nested conditionals and logic in one place
+- A function doing more than one thing is a candidate for extraction
+- Side effects should be obvious from the name and placement
+
+---
+
+## Explicit over implicit
+
+- Prefer explicit over convention-based, framework-magic behaviour in business-critical paths
+- Hidden conventions that affect correctness create debugging cost
+- Make dependencies, side effects, and failure modes visible
+
+---
+
+## Error handling is a first-class concern
+
+- Handle expected failure paths explicitly; do not silently swallow exceptions
+- Use structured result types (`Result<T>`) for expected failures; throw exceptions for truly unexpected failures
+- Log errors with enough context to understand what failed and where
+- Clean up resources explicitly; use `using` or `try/finally`
+
+---
+
+## Testability signals design quality
+
+- If important business logic can only be tested through a full stack, it is probably in the wrong place
+- Hard-to-test code usually indicates excessive coupling, misplaced responsibility, or hidden dependencies
+- Prefer pure functions and injected dependencies for core logic
+- Design for tests before writing them; do not retrofit testability as an afterthought
+
+---
+
+## Avoid duplication of knowledge
+
+- Every business rule, algorithm, and significant decision should have a single, authoritative representation
+- Duplication of code is sometimes acceptable; duplication of business logic is not
+- If the same change must be made in multiple places to achieve a single business goal, that is a signal of design debt
+
+---
+
+## Observability is part of the design
+
+- Production code should explain what it is doing at runtime
+- Add structured logging for important operations, state changes, and failures
+- Correlation identifiers should propagate through async and distributed flows
+- Telemetry is not decoration — it is a reliability concern
+
+---
+
+## Least privilege and secure by default
+
+- Functions, services, and APIs should request only the permissions they need
+- Default to restrictive; require explicit opt-in for permissive behaviour
+- Validate all inputs before use; never trust caller-supplied data without verification
+
+---
+
+## Do not suppress warnings silently
+
+- Compiler warnings and linter findings represent real risk
+- Fix warnings rather than suppressing them; if suppression is genuinely required, document why
+- Treat security and null-safety warnings as blockers, not suggestions
+
+---
+
+## Dependency inversion
+
+High-level modules should not depend on low-level modules. Both should depend on abstractions.
+
+- High-level policy depends on abstractions; low-level details implement them
+- Use interfaces or abstract types to define contracts; inject implementations at runtime
+- Avoid direct instantiation of concrete dependencies in business logic
+
+---
+
+## Open for extension, closed for modification
+
+Add behaviour by extending, not by changing existing code.
+
+- Use interfaces, abstract classes, or composition to allow new behaviour without editing stable code
+- Prefer composition and strategy patterns over inheritance for variation
+- When a change forces edits in many places, the design may be closed for extension
+
+---
+
+## Interface segregation
+
+Clients should not depend on interfaces they do not use.
+
+- Prefer small, focused interfaces over large, monolithic ones
+- Split fat interfaces into role-specific contracts; clients depend only on what they need
+- A class implementing many unrelated methods is a candidate for interface extraction
+
+---
+
+## Substitutability
+
+Subtypes must be substitutable for their base types without breaking the application.
+
+- Derived types must honour the contract of the base type; no surprising behaviour when substituted
+- Overrides must not weaken preconditions or strengthen postconditions
+- If substitution requires callers to check the concrete type, the hierarchy is broken
+
+---
+
+## Clean Architecture directive
+
+Separate business logic from infrastructure and UI; dependencies point inward.
+
+- Domain and application layers contain no framework or infrastructure types
+- Outer layers (UI, persistence, transport) depend on inner layers; inner layers define interfaces
+- Use interfaces to abstract external dependencies; keep domain logic pure and framework-agnostic
+
+---
+
+## Common anti-pattern signals
+
+Raise these concerns when reviewing or designing:
+
+- *God objects* — One class or module doing many unrelated things
+- *Tight coupling* — Direct dependencies on concrete implementations instead of abstractions
+- *Interface pollution* — Large interfaces forcing clients to depend on methods they never use
+- *Mixed concerns* — HTTP, business rules, and persistence in the same place
+- *Magic numbers* — Literals without named constants; business rules hidden in code
+- *Testing implementation details* — Tests that assert internal state instead of observable behaviour
+
+---
+
+## Self-review before completion
+
+Before a piece of work is considered done:
+
+- [ ] Naming is clear and communicates intent
+- [ ] Functions are focused and at a single level of abstraction
+- [ ] Error paths are handled explicitly
+- [ ] No hardcoded values that should be configurable
+- [ ] No sensitive data in log output
+- [ ] Test coverage exists for the important behaviour
+- [ ] No commented-out code
+- [ ] No `TODO` without a linked issue or ticket

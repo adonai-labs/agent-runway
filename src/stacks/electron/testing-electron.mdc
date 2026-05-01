@@ -1,0 +1,127 @@
+---
+description: Testing patterns for Electron applications — main process, renderer process, IPC, and E2E testing. Extends core/rules/testing.mdc with Electron-specific guidance.
+globs: "**/*.test.*,**/*.spec.*,**/tests/**,**/test/**,**/__tests__/**"
+alwaysApply: false
+---
+
+# Testing Electron Applications
+
+Extends `core/rules/testing.mdc` with Electron-specific testing patterns.
+
+---
+
+## Main Process Testing
+
+- Mock Electron APIs (`app`, `BrowserWindow`, `ipcMain`) for unit tests
+- Test window creation, lifecycle, and configuration in isolation
+- Test IPC handler registration and message routing
+- Mock file system operations and native modules
+- Test app lifecycle events (ready, window-all-closed, etc.)
+
+**Example:**
+```typescript
+import { BrowserWindow } from 'electron';
+
+jest.mock('electron', () => ({
+  BrowserWindow: jest.fn(),
+  app: {
+    on: jest.fn(),
+    quit: jest.fn(),
+  },
+}));
+```
+
+---
+
+## Renderer Process Testing
+
+- Mock `window.electronAPI` or `contextBridge` exports
+- Avoid real Electron APIs in unit tests
+- Test components independently of IPC
+- Mock preload script exports
+- Use JSDOM or similar for DOM testing
+
+**Example:**
+```typescript
+// Mock window.electronAPI
+global.window.electronAPI = {
+  send: jest.fn(),
+  on: jest.fn(),
+};
+```
+
+---
+
+## IPC Testing
+
+- **Handler validation**: Test that IPC handlers validate input types and shapes
+- **Return values**: Assert handlers return expected data structures
+- **Error handling**: Test error scenarios and ensure proper error messages
+- **Bidirectional**: Test both `ipcMain.handle` and `ipcRenderer.invoke` paths
+- **Security**: Verify handlers check permissions before performing sensitive operations
+
+**Example:**
+```typescript
+// Test IPC handler
+const result = await ipcMain.handlers.get('get-user')(event, userId);
+expect(result).toMatchObject({ id: userId, name: expect.any(String) });
+```
+
+---
+
+## React + Electron Testing
+
+- **Custom hooks**: Use `@testing-library/react-hooks` with `renderHook` and `act`
+- **Context providers**: Wrap components under test with Electron context providers
+- **Electron APIs in hooks**: Mock Electron APIs before invoking hooks that call them
+- **Event listeners**: Test cleanup of IPC event listeners on unmount
+
+**Example:**
+```typescript
+import { renderHook } from '@testing-library/react-hooks';
+
+const { result } = renderHook(() => useElectronStore(), {
+  wrapper: ElectronProvider,
+});
+```
+
+---
+
+## End-to-End Testing
+
+- Use **Playwright** for Electron E2E testing (Spectron is deprecated)
+- Launch app with test configuration
+- Test full user flows including main/renderer interaction
+- Test IPC communication in real scenarios
+- Test native menus, dialogs, and system integrations
+
+**Example:**
+```typescript
+import { _electron as electron } from 'playwright';
+
+const app = await electron.launch({ args: ['main.js'] });
+const window = await app.firstWindow();
+await window.click('[data-testid="save-button"]');
+```
+
+---
+
+## Common Pitfalls
+
+- ❌ Don't use real Electron in unit tests (slow, brittle)
+- ❌ Don't forget to clean up IPC listeners
+- ❌ Don't test IPC and business logic together
+- ✅ Mock Electron APIs at the boundary
+- ✅ Test IPC handlers separately from business logic
+- ✅ Use integration tests for IPC communication paths
+
+---
+
+## Checklist
+
+- [ ] Main process tests mock Electron APIs
+- [ ] Renderer tests mock preload/contextBridge exports
+- [ ] IPC handlers validate input and handle errors
+- [ ] Custom hooks clean up listeners on unmount
+- [ ] E2E tests use Playwright (not Spectron)
+- [ ] Test data isolation between test runs

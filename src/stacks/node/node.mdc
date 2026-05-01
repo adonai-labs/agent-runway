@@ -1,0 +1,55 @@
+---
+description: Node.js runtime and backend best practices — configuration, process lifecycle, API robustness, async error handling, observability, and security. Applied when working on Node.js services, CLIs, or server-side code.
+globs: "**/*.js,**/*.cjs,**/*.mjs,**/*.ts"
+alwaysApply: false
+---
+
+# Node.js Best Practices
+
+Use these directives for Node.js services, APIs, workers, and CLIs.
+
+---
+
+## Configuration and Environment
+
+- Validate required environment variables at startup and fail fast when missing.
+- Keep secrets out of source control and logs.
+- Use explicit defaults only for non-sensitive optional config.
+- Keep runtime config typed and centralised in one module.
+
+---
+
+## Error Handling and Reliability
+
+- Handle promise rejections explicitly; avoid fire-and-forget without supervision.
+- Map unexpected errors to safe external responses; never leak stack traces to clients.
+- Use structured error classes or error codes for predictable handling.
+- Add timeout and retry policy for outbound calls where retries are safe.
+
+---
+
+## Process Lifecycle
+
+- Handle `SIGTERM` and `SIGINT` for graceful shutdown.
+- Stop accepting new work before shutting down dependencies.
+- Close DB connections, message consumers, and HTTP servers cleanly.
+- Exit with non-zero code on unrecoverable startup failures.
+
+---
+
+## Observability
+
+- Use structured logs (JSON or key-value) with consistent fields.
+- Include correlation/request IDs across async boundaries.
+- Emit health and readiness endpoints for services.
+- Track latency, error rates, and saturation for critical paths.
+
+---
+
+## Security Basics
+
+- Validate all external input at boundaries.
+- Apply strict CORS, auth, and rate limiting for public endpoints.
+- Avoid dynamic code execution (`eval`, `new Function`) in production paths.
+- Keep dependencies updated and review high/critical vulnerabilities.
+

@@ -1,0 +1,199 @@
+---
+description: .NET-specific observability standards for ASP.NET Core APIs. Covers structured logging with ILogger, OpenTelemetry tracing, correlation IDs, health endpoints, ProblemDetails error responses, and middleware patterns. Complements dotnet-architecture.mdc.
+globs: **/*.cs,**/*.csproj,**/*.json,**/*.yaml,**/*.yml
+alwaysApply: false
+---
+
+# .NET Observability Standards
+
+.NET-specific observability practices for ASP.NET Core APIs. For general observability principles, see `engineering-principles.mdc`. For strategy-level guidance, see `dotnet-architecture.mdc`.
+
+> **Conflict resolution:** Where this file provides .NET-specific guidance that differs from `engineering-architecture.mdc`, this file takes precedence for `.cs`, `.csproj`, `.json`, `.yaml`, and `.yml` files.
+
+---
+
+## Structured logging
+
+Use `ILogger<T>` with message templates; never use string interpolation in log messages — it destroys structured field indexing.
+
+```csharp
+// Correct — fields are indexed and queryable
+_logger.LogInformation("Order {OrderId} placed for customer {CustomerId}", order.Id, order.CustomerId);
+
+// Incorrect — fields are lost; only raw string is stored
+_logger.LogInformation($"Order {order.Id} placed for customer {order.CustomerId}");
+```
+
+- Log at `Information` for significant state transitions (order placed, payment processed)
+- Log at `Warning` for recoverable business rule violations (retry exhausted, fallback used)
+- Log at `Error` for unhandled exceptions and infrastructure failures; always include the exception object
+- Log at `Debug` for diagnostic detail; never log sensitive fields (PAN, passwords, tokens) at any level
+
+```csharp
+// Error with exception — always pass exception as the last parameter
+_logger.LogError(ex, "Failed to persist order {OrderId}", command.OrderId);
+```
+
+---
+
+## Correlation IDs
+
+Propagate a correlation ID through every request. Accept from the `X-Correlation-Id` header if present; generate one if absent. Add to response headers and to the logging scope.
+
+```csharp
+public class CorrelationIdMiddleware(RequestDelegate next)
+{
+    private const string HeaderName = "X-Correlation-Id";
+
+    public async Task InvokeAsync(HttpContext context)
+    {
+        var correlationId = context.Request.Headers[HeaderName].FirstOrDefault()
+                            ?? Guid.NewGuid().ToString();
+
+        context.Response.Headers[HeaderName] = correlationId;
+
+        using (_logger.BeginScope(new Dictionary<string, object>
+               { ["CorrelationId"] = correlationId }))
+        {
+            await next(context);
+        }
+    }
+}
+```
+
+Register before routing:
+
+```csharp
+app.UseMiddleware<CorrelationIdMiddleware>();
+app.UseRouting();
+```
+
+---
+
+## ProblemDetails for error responses
+
+Use `ProblemDetails` (RFC 7807) for all error responses. Do not return raw strings or custom error envelopes.
+
+```csharp
+builder.Services.AddProblemDetails();
+builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
+```
+
+```csharp
+public class GlobalExceptionHandler(IProblemDetailsService problemDetailsService)
+    : IExceptionHandler
+{
+    public async ValueTask<bool> TryHandleAsync(
+        HttpContext context,
+        Exception exception,
+        CancellationToken ct)
+    {
+        (int statusCode, string title) = exception switch
+        {
+            ValidationException => (400, "Validation failed"),
+            NotFoundException   => (404, "Resource not found"),
+            _                   => (500, "An unexpected error occurred")
+        };
+
+        context.Response.StatusCode = statusCode;
+
+        return await problemDetailsService.TryWriteAsync(new()
+        {
+            HttpContext = context,
+            ProblemDetails = { Title = title, Status = statusCode }
+        });
+    }
+}
+```
+
+- Never expose stack traces, exception messages, or internal identifiers in production error responses
+- Log the full exception server-side; return only `title` and `status` to callers
+
+---
+
+## OpenTelemetry
+
+Register tracing, metrics, and logging exporters at startup:
+
+```csharp
+builder.Services.AddOpenTelemetry()
+    .WithTracing(tracing => tracing
+        .AddAspNetCoreInstrumentation()
+        .AddHttpClientInstrumentation()
+        .AddEntityFrameworkCoreInstrumentation()
+        .AddOtlpExporter())
+    .WithMetrics(metrics => metrics
+        .AddAspNetCoreInstrumentation()
+        .AddRuntimeInstrumentation()
+        .AddOtlpExporter());
+```
+
+- Use `ActivitySource` for custom spans in application and domain layer operations
+- Do not add custom spans for framework operations already instrumented (HTTP, EF Core)
+- Export to OTLP; avoid vendor-specific SDKs in application code
+
+```csharp
+private static readonly ActivitySource Source = new("MyApp.Orders");
+
+public async Task<Result<Guid>> Handle(PlaceOrderCommand command, CancellationToken ct)
+{
+    using var activity = Source.StartActivity("PlaceOrder");
+    activity?.SetTag("order.customerId", command.CustomerId);
+    // ...
+}
+```
+
+---
+
+## Health endpoints
+
+Register liveness and readiness endpoints separately. Readiness checks include external dependencies; liveness checks do not.
+
+```csharp
+builder.Services.AddHealthChecks()
+    .AddDbContextCheck<AppDbContext>(tags: ["ready"])
+    .AddUrlGroup(new Uri(config["ExternalApi:BaseUrl"]!), tags: ["ready"]);
+
+app.MapHealthChecks("/health/live", new HealthCheckOptions
+{
+    Predicate = _ => false   // no checks — process is alive if it responds
+});
+
+app.MapHealthChecks("/health/ready", new HealthCheckOptions
+{
+    Predicate = check => check.Tags.Contains("ready"),
+    ResponseWriter = UIResponseWriter.WriteHealthCheckUIResponse
+});
+```
+
+- `/health/live` — used by container orchestrator to decide restart
+- `/health/ready` — used by load balancer to decide traffic routing
+- Do not add business logic to health checks; only infrastructure connectivity
+
+---
+
+## Minimal API vs controller observability
+
+In Minimal APIs, use endpoint filters for cross-cutting logging rather than middleware when the concern is endpoint-specific:
+
+```csharp
+app.MapPost("/orders", HandleAsync)
+   .AddEndpointFilter<RequestLoggingFilter>();
+```
+
+In controller-based APIs, use action filters or global filters registered in `AddControllers()`.
+
+Do not mix both approaches within the same application.
+
+---
+
+## Antipatterns
+
+| Pattern | Issue |
+|---------|-------|
+| String interpolation in `ILogger` | Loses structured fields; prevents log indexing |
+| Logging inside domain entities | Domain layer must not reference infrastructure |
+| `Console.WriteLine` for diagnostics | Not captured by log pipeline; lost in production |
+| Swallowing exceptions before logging | Loses root cause; debug becomes impossible |
+| Correlation ID generated per log line | Must be generated once per request and propagated |
+| Vendor SDK in application layer | Couples domain/application code to observability vendor |

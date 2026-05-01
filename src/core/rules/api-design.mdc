@@ -1,0 +1,188 @@
+---
+description: API design guidelines — REST principles, GraphQL patterns, versioning, pagination, error handling, documentation, security, caching, and testing. Applied when designing or reviewing API endpoints.
+globs: "**/controllers/**,**/routes/**,**/endpoints/**,**/resolvers/**,**/api/**"
+alwaysApply: false
+---
+
+# API Design Guidelines
+
+Directives for designing and reviewing APIs. For detailed security patterns, defer to `security.mdc` and `engineering-security.mdc`.
+
+---
+
+## REST Principles
+
+### Resource-based URLs
+
+- Use nouns, not verbs: `/api/users`, `/api/orders` — not `/api/getUsers` or `/api/createOrder`
+- Use plural nouns for collections: `/api/users` — not `/api/user`
+- Nest resources only when there is a true parent-child relationship: `/api/users/123/posts`
+- Avoid query params for resource identity: prefer `/api/users/123` over `/api/user?id=123`
+
+### HTTP Methods and Status Codes
+
+| Method | Use for | Success |
+|--------|---------|---------|
+| GET | Read (idempotent) | 200 OK |
+| POST | Create | 201 Created |
+| PUT | Full replace | 200 OK |
+| PATCH | Partial update | 200 OK |
+| DELETE | Remove | 204 No Content |
+
+| Status | Use when |
+|--------|----------|
+| 200 | Success with body |
+| 201 | Created; include `Location` header |
+| 204 | Success, no body |
+| 400 | Validation error, bad request |
+| 401 | Unauthenticated |
+| 403 | Unauthorised (authenticated but forbidden) |
+| 404 | Resource not found |
+| 409 | Conflict (e.g. duplicate) |
+| 429 | Rate limit exceeded |
+| 500 | Internal server error |
+
+---
+
+## Request/Response Models
+
+- Define explicit DTOs for request bodies; do not accept raw `any` or untyped objects
+- Use separate DTOs for create vs update (create: required fields; update: optional fields)
+- Wrap success responses in a consistent envelope; use a standard error envelope
+- Exclude internal fields (e.g. `passwordHash`) from response DTOs
+- Use ISO 8601 for dates in JSON
+
+**Success envelope:** `{ data: T, message?: string, timestamp: string }`
+
+**Error envelope:** `{ error: { code: string, message: string, details?: object }, timestamp: string }`
+
+---
+
+## Versioning Strategies
+
+| Strategy | When to use | Example |
+|----------|-------------|---------|
+| URL | Public APIs, breaking changes | `/api/v1/users`, `/api/v2/users` |
+| Header | Content negotiation, same URL | `Accept: application/vnd.company.api-v1+json` |
+| Query | Internal APIs, optional version | `/api/users?version=1` |
+
+- Prefer URL versioning for public APIs; it is explicit and cache-friendly
+- Do not version by default; version only when the resource contract changes meaningfully
+- Support at least one previous version during deprecation; document sunset dates
+
+---
+
+## Pagination and Filtering
+
+### Pagination
+
+- Support `page` and `limit` (or `per_page`) for offset-based pagination; cap `limit` (e.g. max 100)
+- For large or real-time datasets, prefer cursor-based pagination: `?cursor=xyz&limit=20`
+- Include pagination metadata in responses: `page`, `limit`, `total`, `totalPages`, `hasNext`, `hasPrev` (or equivalent)
+- Default sort: `createdAt` descending unless the use case requires otherwise
+
+### Filtering
+
+- Use query params for filters: `?status=active&role=admin`
+- Support date ranges: `?createdFrom=2024-01-01&createdTo=2024-12-31`
+- Support search: `?search=term`; document behaviour (exact match, partial, etc.)
+- Whitelist filterable fields; reject unknown params or document them
+
+### Response shape
+
+- Offset-based: `{ data: T[], pagination: { page, limit, total, totalPages, hasNext, hasPrev } }`
+- Cursor-based: `{ data: T[], nextCursor?: string, hasMore: boolean }`
+
+---
+
+## Error Handling
+
+- Use a base `ApiException` with `statusCode`, `code`, `message`, and optional `details`
+- Derive specific exceptions: `ValidationException` (400), `NotFoundException` (404), `UnauthorisedException` (401)
+- Apply a global exception filter so all errors return the same envelope shape
+- Do not expose stack traces, DB errors, or internal paths to clients
+- Log full error context server-side; return minimal, safe messages to clients
+- Use machine-readable `code` values (e.g. `VALIDATION_ERROR`, `NOT_FOUND`) for client handling
+
+---
+
+## API Documentation
+
+- Generate OpenAPI/Swagger from code or maintain a spec file; keep it in sync with implementation
+- Document every endpoint: summary, description, request/response schemas, status codes
+- Document query params, path params, and request body schemas
+- Include example requests and responses for non-trivial endpoints
+- Document authentication requirements (e.g. Bearer token, API key)
+- For GraphQL: publish schema; document custom scalars, directives, and deprecations
+
+---
+
+## GraphQL Directives
+
+### Schema design
+
+- Use `input` types for mutation arguments; avoid deep nesting
+- Use `!` for non-null where appropriate; avoid over-constraining
+- Prefer specific field names over generic ones
+- Deprecate fields with `@deprecated(reason: "...")`; do not remove without a migration path
+
+### Resolver patterns
+
+- Keep resolvers thin; delegate business logic to services
+- Use DataLoader (or equivalent) for batched lookups to prevent N+1 queries
+- Validate and sanitise inputs in resolvers; do not trust client data
+- Return `null` for missing optional data; use errors for exceptional cases
+
+### N+1 prevention
+
+- Batch database queries by parent ID in list resolvers
+- Use DataLoader or similar batching/caching for foreign-key lookups
+- Avoid per-item queries in list resolvers; prefer bulk fetches
+
+---
+
+## API Security
+
+- Require authentication by default; opt-in for public endpoints
+- Validate JWT (or equivalent) on protected routes; reject invalid or expired tokens
+- Enforce RBAC or resource-level checks; verify the caller can access the requested resource
+- Apply rate limiting per client/IP; use stricter limits for auth and write endpoints
+- Use HTTPS only; set security headers (HSTS, X-Content-Type-Options, etc.)
+- For detailed patterns, see `security.mdc` and `engineering-security.mdc`
+
+---
+
+## Caching Directives
+
+- Cache GET responses where data is stable and idempotent; avoid caching user-specific or volatile data without care
+- Use `Cache-Control` headers: `max-age`, `private`/`public`, `no-store` where appropriate
+- Support `If-None-Match` (ETag) or `If-Modified-Since` for conditional requests; return 304 when unchanged
+- Use Redis (or similar) for shared cache when running multiple instances; define TTLs per resource type
+- Invalidate or version cache keys when data changes; avoid stale reads for critical data
+- Do not cache responses that include sensitive or user-specific data without proper scoping
+
+---
+
+## API Testing Directives
+
+- Write integration tests that hit real HTTP endpoints (or equivalent); mock external services only
+- Test success paths and expected error paths (400, 401, 403, 404)
+- Test validation: required fields, formats, ranges; assert error codes and messages
+- Use a test client (e.g. `supertest`, `WebApplicationFactory`) rather than unit-testing controllers in isolation
+- Mock or stub databases/external APIs to keep tests fast and deterministic
+- Assert response shape, status codes, and critical fields; avoid overspecifying implementation details
+
+---
+
+## Checklist
+
+- [ ] Resource-based URLs; correct HTTP methods and status codes
+- [ ] Request/response DTOs defined; no internal fields in responses
+- [ ] Versioning strategy chosen and applied consistently
+- [ ] Pagination and filtering supported; limits enforced
+- [ ] Standardised error envelope; global exception handling
+- [ ] OpenAPI/Swagger (or equivalent) documented and up to date
+- [ ] GraphQL: schema published; N+1 avoided via batching
+- [ ] Authentication and authorisation enforced; rate limiting applied
+- [ ] Caching strategy defined for cacheable endpoints
+- [ ] Integration tests cover main flows and error cases

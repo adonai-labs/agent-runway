@@ -1,0 +1,136 @@
+---
+description: Universal security principles — stack-agnostic. Applied when writing any code that handles input, authentication, authorisation, secrets, or sensitive data. Aligned with OWASP Top 10.
+globs: "**/*"
+alwaysApply: true
+---
+
+# Engineering Security
+
+Universal security principles applied whenever writing or reviewing code that handles input, identity, secrets, or sensitive data.
+
+These principles apply regardless of language, framework, or technology stack.
+
+---
+
+## Validate all input at the boundary
+
+- Never trust caller-supplied data; validate type, format, range, and length before use
+- Reject invalid input explicitly; do not attempt to sanitise and proceed
+- Validation belongs at the entry point of the system, before any processing
+
+---
+
+## Least privilege
+
+- Code, services, and users should request only the permissions they need
+- Default to restrictive; require explicit grant for elevated access
+- If a service does not need write access to a database table, it should not have it
+
+---
+
+## Authenticate before authorising
+
+- Always verify identity before checking permissions
+- Do not allow partial or anonymous access to sensitive operations unless intentional and documented
+- Enforce authentication and authorisation at the boundary; do not rely on callers doing it correctly
+
+---
+
+## Authorise at the resource level
+
+- Check that the authenticated user is permitted to access the specific resource being requested
+- Do not rely only on role checks; verify resource ownership in business logic
+- Missing authorisation on one endpoint is sufficient for an access control failure
+
+---
+
+## Secrets belong in secrets management
+
+- Never store secrets in source code, configuration files committed to source control, or environment variables set in code
+- Inject secrets from a secrets store at runtime (vault, environment, or managed identity)
+- Rotate secrets on compromise; prefer short-lived tokens over long-lived credentials
+
+---
+
+## Protect against injection
+
+- Use parameterised queries or ORM methods for all database access; never concatenate user input into SQL
+- Validate and escape output in rendering contexts; do not trust stored data as safe to render
+- Treat all external input — headers, query parameters, request bodies, file names — as potentially hostile
+
+---
+
+## Secure by default
+
+- New endpoints are authenticated by default; opt-in for public access, not opt-out
+- New fields are not logged by default; sensitive data is explicitly excluded
+- New services start with minimal permissions; expand only as needed
+
+---
+
+## Never log sensitive data
+
+Do not include in log output:
+
+- Passwords, tokens, API keys, private keys
+- Full payment card numbers (PAN), CVV, bank account numbers
+- National identity numbers, tax file numbers
+- Full names combined with addresses, birthdates, or health data
+
+Mask or exclude these fields at the log sink level, not by developer discipline alone.
+
+---
+
+## Cryptography: use the standard
+
+- Do not implement custom cryptographic algorithms
+- Use platform-provided, industry-standard implementations (AES-256, RSA-2048, SHA-256 or higher)
+- Never use MD5 or SHA-1 for security purposes
+- Use TLS 1.2+ for all network transport; enforce HSTS for web applications
+
+---
+
+## Dependency hygiene
+
+- Keep dependencies updated; outdated packages with known CVEs are a vulnerability
+- Check for vulnerable packages regularly (automated scanning in CI/CD)
+- Remove unused dependencies
+
+---
+
+## Error responses do not reveal internals
+
+- Return generic error messages to unauthenticated or unauthorised callers
+- Do not expose stack traces, database errors, or internal exception details in API responses
+- Log detailed errors server-side for diagnostics; return minimal details client-side
+
+---
+
+## OWASP Top 10 quick reference
+
+| Risk | Default mitigation |
+|------|------------------|
+| A01 Broken access control | Authorise at boundary and resource level |
+| A02 Cryptographic failures | Use standard libraries; enforce TLS |
+| A03 Injection | Parameterise all queries; validate all inputs |
+| A04 Insecure design | Threat model; architecture review |
+| A05 Security misconfiguration | Remove defaults; restrict CORS; disable debug in production |
+| A06 Vulnerable components | Automated dependency scanning; regular updates |
+| A07 Auth and session failures | Short token TTL; validate all JWT claims |
+| A08 Software and data integrity | Signed packages; secure CI/CD pipelines |
+| A09 Logging and monitoring failures | Structured logs; alert on auth anomalies |
+| A10 SSRF | Allowlist outbound URLs; validate scheme and host |
+
+---
+
+## Security review checklist
+
+- [ ] All inputs are validated before use
+- [ ] No parameterised query exceptions or raw SQL with user input
+- [ ] No secrets in configuration files or code
+- [ ] All endpoints require authentication unless explicitly public
+- [ ] Resource ownership is verified in handlers
+- [ ] No sensitive data in log output
+- [ ] Dependencies are current and not flagged as vulnerable
+- [ ] Error responses do not reveal internal details
+- [ ] TLS is enforced; HSTS is configured for web apps

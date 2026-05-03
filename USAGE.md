@@ -189,7 +189,7 @@ Use this to reduce recurring mistakes across future cycles.
 
 After `spec-creator` generates a spec, it should ask:
 
-`Generate human summary?` (default: `yes`)
+`Generate human summary?` (requires explicit confirmation)
 
 If accepted, it creates:
 
@@ -281,8 +281,10 @@ Decision: Should we use event-driven architecture for order notifications?
 
 ### Other Commands
 
-- `/validate` - Check if a ticket is ready for development
-- `/po-eval` - Evaluate spec/ticket quality from a Product Owner perspective
+- `/validate` - Deprecated wrapper; use `ticket-eval` directly
+- `/po-eval` - Deprecated wrapper; use `po-eval` directly
+
+Note: deprecated wrappers (/spec, /ticket, /validate, /po-eval) will be removed in the next minor release.
 - `/refactor` - Guided refactoring workflow
 - `/express` - Fast implementation for simple changes
 - `/fast-lead` - Accelerated workflow when you have a plan
@@ -386,6 +388,24 @@ Enable or disable systematic search categories:
 ---
 
 ## Workflow Examples
+
+### Example 0: Multi-tenant End-to-End (Spec -> Ticket -> Lead)
+
+```bash
+# 1) Create the spec
+spec-creator Implement tenant isolation with tenant_id across API and data access
+
+# 2) Derive a delivery ticket
+ticket-creator
+
+# 3) Execute with quality gates
+/lead
+```
+
+Expected outcome:
+- Spec with explicit boundaries and acceptance criteria
+- Delivery ticket with implementation-ready scope
+- Layered implementation validated by DRY/SOLID/security/test checks
 
 ### Example 1: Implementing a New Feature
 
@@ -623,4 +643,6 @@ description: Deployment workflow with safety checks
 - [Contributing Guide](CONTRIBUTING.md) - How to contribute
 - [Extending Guide](EXTENDING.md) - Adding new stacks
 - [src/README.md](src/README.md) - Package internals
+
+
 

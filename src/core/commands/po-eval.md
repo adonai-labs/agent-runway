@@ -1,5 +1,7 @@
 # PO Eval
 
-Read and follow the skill at `.cursor/skills/po-eval/SKILL.md`.
+Deprecated wrapper command.
 
-Evaluate the provided spec or ticket from a Product Owner perspective and produce a product-readiness verdict with concrete gaps and actions.
+Use `po-eval` directly.
+
+Read and follow the skill at `.cursor/skills/po-eval/SKILL.md`.

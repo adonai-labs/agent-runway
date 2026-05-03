@@ -193,7 +193,8 @@ Options:
   - no: No
 ```
 
-Default: `yes`.
+This gate requires explicit user confirmation. Do not auto-select an option.
+If no explicit answer is provided, do not create the summary.
 
 If `yes`:
 - create `.agent-runway/specs/proposed/<implementation-slug>/<implementation-slug>-summary.md`

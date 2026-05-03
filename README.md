@@ -126,13 +126,15 @@ After initialization:
 
 ## Demo
 
-### Spec creation (`/spec`)
+Note: some recordings may still show legacy wrappers (`/spec`, `/ticket`). Preferred usage is `spec-creator` and `ticket-creator`.
+
+### Spec creation (`/spec-creator`)
 
 Create and refine implementation specs before coding.
 
 ![Spec Creator Demo](assets/demo-spec.gif)
 
-### Ticket creation (`/ticket`)
+### Ticket creation (`/ticket-creator`)
 
 Generate implementation-ready tickets from specs or direct chat context.
 
@@ -143,8 +145,6 @@ Generate implementation-ready tickets from specs or direct chat context.
 Run phased implementation with checks and review handoff.
 
 ![Lead Workflow Demo](assets/demo-lead.gif)
-
-> TODO: replace these placeholder GIFs with final recordings (or MP4 links).
 
 ---
 
@@ -192,6 +192,67 @@ review
 
 ---
 
+## Engineering Flow, End to End
+
+Example scenario: **add multi-tenant isolation** (`tenant_id`) across API, services, and persistence.
+
+### 1) `/spec` output (excerpt)
+
+```md
+# Multi-tenant Data Isolation Spec
+
+## Goal
+Ensure each tenant can only access its own resources in all read/write paths.
+
+## Scope
+- Add tenant context propagation from auth/session to application layer
+- Enforce tenant filters in repositories and query handlers
+- Add tenant-aware authorization checks in API endpoints
+
+## Acceptance Criteria
+1. Requests without tenant context are rejected with 401/403
+2. Cross-tenant reads and writes are blocked
+3. Integration tests cover positive and negative isolation cases
+```
+
+### 2) `/ticket` output (excerpt)
+
+```md
+# task-01-multi-tenant-isolation-enforcement.md
+
+## Objective
+Implement tenant isolation for customer-facing resources.
+
+## Scope Includes
+- TenantContext provider
+- Repository filters by tenant_id
+- API policy checks for tenant ownership
+
+## Scope Excludes
+- Tenant billing
+- Tenant-level branding
+
+## Acceptance Criteria
+- All queries include tenant filter
+- Unauthorized cross-tenant access returns 403
+- Existing non-tenant flows remain unaffected
+```
+
+### 3) `/lead` flow (what it enforces)
+
+1. Classifies complexity and boundaries
+2. Validates scope and assumptions
+3. Runs DRY analysis before coding
+4. Plans implementation by layers
+5. Applies incremental checks during implementation
+6. Runs self-review (SOLID, DRY, security, tests)
+7. Delegates independent validation to `/review`
+8. Delivers with explicit evidence and outcomes
+
+This is the core value: **from idea to production-ready engineering flow, point to point**.
+
+---
+
 ## Learning Loop (Error Memory)
 
 Agent Runway introduces a semi-automatic learning loop.
@@ -223,7 +284,7 @@ After creating a spec, `spec-creator` asks:
 
 > "Generate human summary?"
 
-Default is `yes`. If confirmed, it generates:
+It only generates the summary after explicit user confirmation:
 
 ```
 .agent-runway/specs/proposed/<implementation-slug>/<implementation-slug>-summary.md
@@ -333,8 +394,8 @@ Activated based on your stack:
 ### Slash Commands
 
 * `/start` — entry point (routes to the right workflow)
-* `/spec` — create/refine a spec (spec-first)
-* `/ticket` — create/refine a ticket (ticket-first or spec-derived)
+* `/spec` - deprecated wrapper; use `spec-creator` directly
+* `/ticket` - deprecated wrapper; use `ticket-creator` directly
 * `/lead` — full implementation workflow (quality gates)
 * `/fast-lead` — accelerated `/lead` when you already have a plan
 * `/express` — minimal-friction path for small, well-scoped changes
@@ -343,8 +404,10 @@ Activated based on your stack:
 * `/security-scan` — focused security search pass
 * `/review` — structured code review
 * `/architect` — design decisions and trade-offs
-* `/validate` - ticket readiness check
-* `/po-eval` - product-owner evaluation for specs/tickets
+* `/validate` - deprecated wrapper; use `ticket-eval` directly
+* `/po-eval` - deprecated wrapper; use `po-eval` directly
+
+Deprecated wrapper commands (/spec, /ticket, /validate, /po-eval) are scheduled for removal in the next minor release.
 * `/refactor` — guided safe refactoring (no behavior change)
 * `/dotnet` — .NET/C# guidance (when relevant)
 * `/iac` — Infrastructure as Code guidance (Bicep/Terraform)
@@ -412,4 +475,5 @@ Agent Runway is not just a framework.
 It is a shift:
 
 > from prompt engineering → to structured, disciplined AI development
+
 

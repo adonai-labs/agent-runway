@@ -251,6 +251,11 @@ Implement tenant isolation for customer-facing resources.
 
 This is the core value: **from idea to production-ready engineering flow, point to point**.
 
+Production-grade full examples:
+- [example-spec.md](examples/example-spec.md)
+- [example-epic.md](examples/example-epic.md)
+- [example-ticket.md](examples/example-ticket.md)
+
 ---
 
 ## Learning Loop (Error Memory)
@@ -364,6 +369,7 @@ Recommended for teams and portability.
 | **VS Code** | `.github/copilot-instructions.md`, `.github/instructions/`, `.github/prompts/`, `.github/agents/`, `.github/skills/` |
 
 `.agent-runway/docs/` is also created on first install as a scaffold for project context.
+It includes practical starter examples under `.agent-runway/docs/examples/` (spec, epic, and ticket).
 
 ### Core Rules (always included)
 
@@ -475,5 +481,3 @@ Agent Runway is not just a framework.
 It is a shift:
 
 > from prompt engineering → to structured, disciplined AI development
-
-

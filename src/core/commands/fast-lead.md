@@ -28,6 +28,10 @@ If signals are detected, surface them before proceeding:
 
 The developer can still proceed — signals are informational, not blocking. If the developer confirms, activate Fast-Track Mode as defined in the skill.
 
+Decision-governance override:
+- If risk profile is high impact + hard-to-reverse/irreversible, or uncertainty is high, do not continue in `/fast-lead`.
+- Route to `/lead` with contrarian gate.
+
 ---
 
 Activate **Fast-Track Mode** as defined in the skill. Collapse Phases 0–2 into a single Fast-Track Validation step. If any risk signal is detected, fall back to the full workflow.

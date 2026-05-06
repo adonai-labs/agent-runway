@@ -36,6 +36,19 @@ Use these templates when presenting gate output to the developer.
 ### Recommendation
 **Option [X]** — [One-sentence rationale]
 
+### Decision Risk Profile
+- Impact: [low/medium/high]
+- Reversibility: [reversible/hard-to-reverse/irreversible]
+- Uncertainty: [low/medium/high]
+- Cost of error: [low/medium/high]
+
+### Contrarian Review (Required when triggered)
+- Triggered: [yes/no]
+- Strongest counter-argument: [brief]
+- Viable alternative: [brief]
+- Invalidation signals: [what would prove recommendation wrong]
+- Verdict: [Go / Go with conditions / Stop]
+
 ---
 **GATE: Approve to proceed to Phase 1, or request changes.**
 ```
@@ -71,6 +84,18 @@ Use these templates when presenting gate output to the developer.
 
 ### Open Questions
 1. [Question needing dev clarification]
+
+### Data Model and Contract Questions (if applicable)
+- Entity ownership/lifecycle: [resolved/open]
+- Invariants/uniqueness constraints: [resolved/open]
+- Migration/backfill required: [yes/no + notes]
+- Consumer compatibility constraints: [resolved/open]
+
+### Technology Decision Questions (if applicable)
+- Candidate technologies considered: [A, B, C]
+- Operational constraints (latency/cost/observability): [notes]
+- Team/maintainability constraints: [notes]
+- Decision status: [resolved/open]
 
 ---
 **GATE: Confirm scope and answer open questions before Phase 2.**
@@ -110,6 +135,10 @@ Use these templates when presenting gate output to the developer.
 
 ### Reuse Identified (preliminary)
 [Phase 3 will confirm via search]
+
+### Assumptions to Convert Into Checks
+- [Assumption] -> [validation/test/rollback check]
+- [Assumption] -> [validation/test/rollback check]
 
 ---
 **GATE: Approve plan before implementation begins.**

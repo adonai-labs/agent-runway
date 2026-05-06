@@ -23,6 +23,13 @@ When you have decomposed delivery (for example an epic plus multiple markdown ti
 ## Problem
 [What problem exists today and why it matters now.]
 
+## Decision Classification
+- Impact: [Low | Medium | High]
+- Reversibility: [Reversible | Hard to reverse | Irreversible]
+- Uncertainty: [Low | Medium | High]
+- Cost of error: [Low | Medium | High]
+- Delivery mode: [Express | Lead | Lead + Contrarian]
+
 ## Goals
 - [Goal 1]
 - [Goal 2]
@@ -48,6 +55,31 @@ The system SHALL [clear behavioural expectation].
 
 ## Proposed Design
 [Implementation-oriented design notes. Keep concise but actionable.]
+
+## Solution Options (Required)
+### Option A - [Name]
+- Summary: [1-2 lines]
+- Pros: [key strengths]
+- Cons: [key weaknesses]
+- Risks: [main failure modes]
+
+### Option B - [Name]
+- Summary: [1-2 lines]
+- Pros: [key strengths]
+- Cons: [key weaknesses]
+- Risks: [main failure modes]
+
+### Recommended Option
+- Choice: [A | B | C]
+- Why now: [why this option is best under current constraints]
+- Why not others: [short explicit rejection reasons]
+
+## Contrarian Review (When Threshold Applies)
+- Triggered: [Yes | No]
+- Trigger reason: [architecture/domain behavior/interface/risk threshold]
+- Main counter-argument: [strongest disagreement with recommended option]
+- What would make this wrong: [falsification signals]
+- Final verdict: [Go | Go with conditions | Stop]
 
 ## Proposed Solution Structure
 Concrete folder and file layout for this implementation (new files, touched files, and where logic lives). Use a tree; align with the active stack template when present.
@@ -89,6 +121,12 @@ Concrete folder and file layout for this implementation (new files, touched file
 
 ## Open Questions
 - [Question needing decision]
+
+## Spec to Ticket Derivation
+- Ticket slices proposed: [list delivery slices]
+- Suggested order: [T1 -> T2 -> T3]
+- Critical dependencies between slices: [if any]
+- Contrarian required again at ticket level: [which slices and why]
 
 ## Known Pitfalls
 - [Pitfall 1 and how to avoid it]

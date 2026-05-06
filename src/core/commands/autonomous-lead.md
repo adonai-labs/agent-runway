@@ -3,3 +3,4 @@
 Read and follow the skill at `.cursor/skills/autonomous-lead/SKILL.md`.
 
 Execute autonomously without interactive approval gates, but always persist decision logs in `.agent-runway/logs/autonomous-runs/` and create ADRs when architectural impact exists.
+Apply internal risk scoring and enforce a mandatory contrarian gate for high-impact/high-uncertainty work before implementation starts.

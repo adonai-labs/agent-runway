@@ -36,6 +36,10 @@ Checked in Phase 0. Also surface inline during Phase 2 if unexpected complexity 
 
 Signals are **non-blocking** — the developer always sees them and always decides. They are never a hard stop.
 
+Simplicity policy:
+- `/express` is only for low-risk, reversible, low-uncertainty changes.
+- If risk profile does not match this, recommend `/lead` and stop instead of stretching `/express`.
+
 ### Detection criteria
 
 | Signal | Condition |
@@ -78,6 +82,14 @@ Ask the developer one single question:
 > "What are you building or fixing? One sentence."
 
 From the answer, run escalation signal detection (see above). If signals are found, surface them immediately using the presentation format above. Do not proceed to Phase 1 until the developer has seen the signals and confirmed they want to continue with `/express`.
+
+Also classify:
+- impact
+- reversibility
+- uncertainty
+- cost of error
+
+If risk profile is not low + reversible + low uncertainty, recommend `/lead` and stop.
 
 If no signals are found, proceed to Phase 1 without asking anything else. No gates, no approval requests.
 

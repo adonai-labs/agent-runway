@@ -161,7 +161,15 @@ Prerequisite: Phase 0 must have completed. Active configuration is available for
 
    After receiving answers, proceed without asking anything further — generate with what you have.
 
-4. **Classify task type**
+4. **Improvement/Issue intake normalization**
+   - If source is an issue, incident, or vague improvement request, extract:
+     - current pain (symptom)
+     - desired behavior/outcome
+     - constraints and urgency
+   - If solution space is still wide (multiple architecture or technology paths), stop ticket-only flow and propose `spec-creator` first.
+   - If scope is already narrow and implementation-ready, continue with ticket generation.
+
+5. **Classify task type**
    - Ask the user if not obvious from input:
 
    ```
@@ -174,7 +182,7 @@ Prerequisite: Phase 0 must have completed. Active configuration is available for
      - task: Task — technical or operational work (no new user-facing functionality)
    ```
 
-5. **For Bugs — gather error context**
+6. **For Bugs — gather error context**
    - Ask the user to describe the error or what they believe is failing
    - Reproduction steps are **optional** — offer to capture them if the user wants to reproduce in real time, but do not require them
 
@@ -349,6 +357,32 @@ Internally, apply the criteria from the `ticket-eval` skill — but never refere
    > Want me to fill these in, or would you like to provide the details?
 
    Apply the user's response, then proceed without further iteration.
+
+**Proceed to Phase 6.**
+
+### Phase 5.5: Memory Sync (Automatic on Repeated Patterns)
+
+After completeness check, detect repeated patterns from this ticket content and context.
+
+Detection signals:
+- same failure mode appears in multiple recent tickets (validation miss, integration mismatch, recurring bug class)
+- same design doubt repeats across tickets/specs (alternative repeatedly rejected, assumption repeatedly failing)
+
+When detected, write concise entries automatically:
+
+1. Execution memory:
+- append to `.agent-runway/memory/execution-memory.md`
+- include: pattern type, where, trigger, consequence, next guardrail, linked artifact
+
+2. Reasoning memory:
+- append to `.agent-runway/memory/reasoning-memory.md`
+- include: initial recommendation, counter-argument, alternatives, final choice, rule update
+
+Rules:
+- do not block ticket creation for memory writes
+- avoid duplicates; if near-identical entry exists, update it instead of appending
+- keep entries non-sensitive and implementation-relevant
+- limit writes to max 1 execution-memory entry and max 1 reasoning-memory entry per ticket run
 
 **Proceed to Phase 6.**
 

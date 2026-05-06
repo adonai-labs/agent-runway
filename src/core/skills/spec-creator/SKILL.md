@@ -93,6 +93,23 @@ Use `architect` when one or more apply:
 
 If design review is required, produce a concise "design decision note" and merge outcomes into `Proposed Design` and `Design Notes`.
 
+### Phase 2.6: Critical Reasoning Gate (Contrarian)
+
+Run a mandatory contrarian pass when any of these thresholds are true:
+- high impact and hard-to-reverse outcome
+- domain behavior change with uncertain outcomes
+- public interface or contract change
+- architecture decision with multiple viable alternatives
+
+When triggered:
+- challenge the recommended path with the strongest counter-argument
+- generate at least one credible alternative
+- document key uncertainty and failure signals
+- produce a verdict: `Go`, `Go with conditions`, or `Stop`
+
+When not triggered:
+- keep normal execution path, no forced contrarian overhead
+
 ### Phase 3: Spec Generation
 
 Generate a complete spec using the template in [template.md](template.md).
@@ -106,6 +123,8 @@ Required sections:
 - Goals / Non-Goals
 - Requirements (Requirement + Scenario blocks)
 - Proposed Design
+- Solution Options (required)
+- Contrarian Review (required when threshold applies)
 - Proposed Solution Structure (folder/file tree; mandatory)
 - Design Notes
 - Trade-offs
@@ -114,6 +133,7 @@ Required sections:
 - Quality Gates (checklist)
 - Risks
 - Open Questions
+- Spec to Ticket Derivation
 - Known Pitfalls
 - Learnings (optional)
 - Spec Delta

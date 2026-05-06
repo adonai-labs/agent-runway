@@ -16,6 +16,12 @@ Narrative sections use free prose. Structured sections use consistent, parseable
 ## Summary
 [One sentence describing what this delivers and who it benefits.]
 
+## Source Intake
+- Source type: [improvement | issue | incident | request]
+- Source reference: [ticket/link/file/chat]
+- Problem signal: [symptom or pain]
+- Desired outcome: [what success looks like]
+
 ## User Story
 As a [specific role],
 I want [specific capability],
@@ -39,6 +45,11 @@ Concrete folder and file layout for this ticket (new files, touched files, modul
 [example: src/...]
 ```
 
+## Chosen Approach
+- Approach: [name]
+- Why this approach: [short rationale]
+- Alternatives checked: [1-2 options or "captured in parent spec"]
+
 ## Acceptance Criteria
 - [ ] **[Scenario name]** — Given [precondition] → [expected outcome]
 - [ ] **[Scenario name]** — Given [precondition] → [expected outcome]
@@ -58,6 +69,7 @@ Concrete folder and file layout for this ticket (new files, touched files, modul
 - Test [error / failure scenario]
 - Test [edge case]
 - Regression risk: [Low / Medium / High] — [brief reason]
+- Decision risk: [Low / Medium / High] — [impact x reversibility x uncertainty]
 ```
 
 ## Markdown filename convention

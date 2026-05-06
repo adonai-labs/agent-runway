@@ -1,39 +1,39 @@
-﻿# Agent Runway
+# Agent Runway
 
 [![npm version](https://img.shields.io/npm/v/%40adonai-labs%2Fagent-runway)](https://www.npmjs.com/package/@adonai-labs/agent-runway)
 [![license](https://img.shields.io/github/license/adonai-labs/agent-runway)](LICENSE)
 [![stars](https://img.shields.io/github/stars/adonai-labs/agent-runway?style=social)](https://github.com/adonai-labs/agent-runway)
 [![downloads](https://img.shields.io/npm/dm/%40adonai-labs%2Fagent-runway)](https://www.npmjs.com/package/@adonai-labs/agent-runway)
 
-Agent Runway is a structured, AI-assisted development framework installable via npm.
+Agent Runway is a practical engineering layer for teams building with coding agents.
 
-It acts as a **portable planning, execution, and control layer for coding agents**, with install targets for Cursor, Claude Code, and VS Code Copilot.
+Think of it as a portable discipline system for planning, execution, and governance, with install targets for Cursor, Claude Code, and VS Code Copilot.
 
-> Agent Runway turns AI coding agents from guessers into disciplined engineers.
+> AI tools made code generation easy. Agent Runway makes delivery more reliable.
 
 ---
 
-## Why Agent Runway?
+## Why teams use Agent Runway
 
-AI coding agents are powerful, but without structure they:
+Coding agents are fast, but they can still drift if the process is loose. Common failure modes:
 
 - drift from requirements
 - repeat the same mistakes
 - produce inconsistent code
 - lose context between sessions
 
-Agent Runway fixes this with:
+Agent Runway helps by adding:
 
 - structured planning (spec-first or ticket-first)
 - controlled execution workflows
-- enforced quality gates
+- quality gates
 - persistent project memory
 
 ---
 
-## Core Concept
+## Core idea
 
-Agent Runway is artifact-driven. It separates development into four layers:
+Agent Runway is artifact-driven. It separates work into four layers:
 
 ```text
 Spec -> define intent
@@ -42,7 +42,7 @@ Rules -> enforce standards
 Memory -> learn over time
 ```
 
-Artifacts are not passive documentation. Specs, epics, tickets, and memory files act as executable guides that shape agent behavior.
+Artifacts are active engineering context, not passive docs. Specs, epics, tickets, and memory files shape how agents execute.
 
 ---
 
@@ -67,7 +67,21 @@ After initialization:
 
 ---
 
-## Development Entry Points
+## What gets installed (quick view)
+
+In every project, Agent Runway creates a local `.agent-runway/` folder with the core artifact layer:
+
+- `specs`
+- `docs`
+- `memory`
+- `workflows`
+- `config`
+
+Then it installs target-specific commands/skills for your environment (Cursor, Claude Code, or VS Code).
+
+---
+
+## How work usually starts
 
 ### Spec-first (`spec-creator`)
 
@@ -85,9 +99,15 @@ Start from backlog items, chat context, or production issues.
 
 Both paths converge to `lead`, with quality gates and validation.
 
+If you want a concrete flow, check:
+
+```text
+src/core/docs/examples/example-issue-to-spec-to-tickets.md
+```
+
 ---
 
-## Artifact Model
+## Artifact model
 
 Delivery knowledge stays in repository artifacts, not only in chat:
 
@@ -96,15 +116,19 @@ Delivery knowledge stays in repository artifacts, not only in chat:
 - `.agent-runway/memory/...` for repeated errors, decisions, and recurring patterns
 - `.agent-runway/docs/...` for business, contract, architecture, and testing context
 
-Commands and skills are the execution runtime on top of this artifact layer.
+Commands and skills are the execution runtime on top of this layer.
+
+For high-impact work, apply explicit decision governance (execution vs critical reasoning planes):
+
+- `src/core/docs/architecture/decision-governance.md`
 
 Note: docs are now repository-local under `.agent-runway/docs/` (not a top-level `docs/` workspace for runtime context).
 
 ---
 
-## Autonomous Mode
+## Autonomous mode
 
-Use `/autonomous-lead` when you want low-supervision execution with the same quality bar as `/lead`.
+Use `/autonomous-lead` when you want the agent to keep moving while you're away, with the same quality bar as `/lead`.
 
 What it guarantees:
 
@@ -125,9 +149,15 @@ Recommended template:
 .agent-runway/docs/examples/autonomous-run-log-template.md
 ```
 
+Issue-to-spec-to-tickets flow example:
+
+```text
+src/core/docs/examples/example-issue-to-spec-to-tickets.md
+```
+
 ---
 
-## Global vs Project Installation
+## Global vs project installation
 
 ### Global
 
@@ -144,13 +174,13 @@ A local `.agent-runway/` scaffold (including `.agent-runway/docs/`) is still cre
 npx @adonai-labs/agent-runway init --scope project --target vscode --preset web-fullstack-ts
 ```
 
-Recommended for teams and portability.
+Recommended for team use and portability.
 
 ---
 
-## What Gets Installed
+## Installation details
 
-`.agent-runway/` is always created and is the local artifact layer (`memory`, `specs`, `config`, `workflows`, `docs`).
+`.agent-runway/` is always created and acts as the local artifact layer (`memory`, `specs`, `config`, `workflows`, `docs`).
 
 Target-specific files:
 
@@ -160,27 +190,33 @@ Target-specific files:
 
 ---
 
-## Commands
+## Commands by intent
 
-### Slash Commands
+### Planning and definition
 
 - `/start` - entry point (routes to the right workflow)
 - `/spec` - deprecated wrapper; use `spec-creator` directly
 - `/ticket` - deprecated wrapper; use `ticket-creator` directly
+- `/architect` - design decisions and trade-offs
+- `/validate` - deprecated wrapper; use `ticket-eval` directly
+- `/po-eval` - deprecated wrapper; use `po-eval` directly
+
+### Execution
+
 - `/lead` - full implementation workflow (quality gates)
 - `/autonomous-lead` - autonomous implementation with mandatory decision logs and ADR gate
 - `/fast-lead` - accelerated `lead` when you already have a plan
 - `/express` - minimal-friction path for small, well-scoped changes
+- `/refactor` - guided safe refactoring (no behavior change)
+- `/iac` - Infrastructure as Code guidance (Bicep/Terraform)
+- `/dotnet` - .NET/C# guidance
+
+### Review and quality
+
 - `/dry-check` - reuse analysis before building
 - `/self-review` - structured self-review checklist
 - `/security-scan` - focused security search pass
 - `/review` - structured code review
-- `/architect` - design decisions and trade-offs
-- `/validate` - deprecated wrapper; use `ticket-eval` directly
-- `/po-eval` - deprecated wrapper; use `po-eval` directly
-- `/refactor` - guided safe refactoring (no behavior change)
-- `/dotnet` - .NET/C# guidance
-- `/iac` - Infrastructure as Code guidance (Bicep/Terraform)
 
 ### CLI
 
@@ -194,7 +230,7 @@ agent-runway status
 
 ---
 
-## How It Works
+## How it works
 
 ```text
 Developer -> Request
@@ -212,13 +248,26 @@ Artifacts and memory refine next iterations
 
 ---
 
-## Operational Discipline
+## Operational discipline
 
 Artifact-driven workflows stay rigorous only if artifacts are maintained continuously.
 
 If specs, tickets, decisions, and memory are not kept current, execution quality can degrade quickly and become chaotic.
 
-For teams operating at scale, a documentation management workflow (clear ownership + review cadence) is strongly recommended to keep specs and decisions alive.
+For teams operating at scale, it's worth setting clear ownership and review cadence so specs and decisions stay current.
+
+---
+
+## Who this is for
+
+Agent Runway is usually most valuable when:
+
+- your codebase is long-lived
+- onboarding happens often
+- architecture consistency matters
+- you want safer autonomous execution
+
+For very small or short-lived projects, you can still use it, but you'll likely prefer the lighter paths (`/express`, `/fast-lead`) most of the time.
 
 ---
 
@@ -230,7 +279,7 @@ For teams operating at scale, a documentation management workflow (clear ownersh
 
 ---
 
-## Final Thought
+## Final thought
 
 Agent Runway is a shift:
 

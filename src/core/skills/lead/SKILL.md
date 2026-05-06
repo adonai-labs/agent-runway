@@ -37,6 +37,19 @@ Before any phase, classify the task. This determines which phases are required.
 | **Standard** | Any one: Yes | Full 10-phase workflow. |
 | **Complex** | Two or more: Yes, or involves a new subsystem or breaking change | Full workflow, Phase 0 **mandatory** with `/architect` skill. |
 
+Also classify decision risk for gating depth:
+
+- Impact: low/medium/high
+- Reversibility: reversible/hard-to-reverse/irreversible
+- Uncertainty: low/medium/high
+- Cost of error: low/medium/high
+
+Contrarian trigger (any true):
+- impact is high and reversibility is hard-to-reverse or irreversible
+- uncertainty is high
+- contract/public interface change with ambiguous outcomes
+- architecture decision with multiple viable paths
+
 > Example trivial: fix a typo in a log message, add a missing null guard on an existing method, update a config value.
 > Example standard: add a new query endpoint, extend an existing handler, add a validator.
 > Example complex: introduce a new aggregate, change an event schema, split a service.
@@ -50,6 +63,14 @@ During planning and implementation, enforce atomic decomposition:
 - Keep orchestration separate from domain logic, validation, and I/O.
 - If a function starts mixing concerns (validation + mapping + persistence + side effects), extract immediately.
 - Prefer simple composition of small functions over adding new abstraction layers.
+
+### Simplicity Guardrail (Mandatory)
+
+Default to the simplest implementation that satisfies requirements.
+
+- Do not introduce new layers, interfaces, base classes, or frameworks unless a clear risk/scale signal requires them.
+- If new structural complexity is introduced, provide a one-line justification in Phase 7.
+- If no clear justification exists, remove the added complexity before final handoff.
 
 ---
 
@@ -140,6 +161,11 @@ Evaluate the description against these minimum thresholds:
 - **If any are insufficient:** ask a maximum of 2 targeted questions to fill the gaps, then proceed. Do not ask about signals that are already clear.
 - **If the description is a single vague sentence with none of the three:** use `AskQuestion` to collect the missing context before proceeding. Frame questions in plain language, not technical jargon.
 
+Question budget rule:
+- low risk + reversible + low uncertainty: max 1 targeted question
+- medium risk: max 2 targeted questions
+- high risk or contrarian trigger: focused questions as needed, only on blocking ambiguity
+
 ---
 
 ### Phase 0 — Exploration & Alternatives `[GATE]`
@@ -158,12 +184,18 @@ Apply the shared policy **Minimum context** and **Simplicity before abstraction*
    - For pattern selection, read [../architect/patterns.md](../architect/patterns.md) to identify the right structural fit.
    - For antipattern detection in the proposed approach, read [../architect/antipatterns.md](../architect/antipatterns.md).
 4. Recommend one approach with rationale. Apply decision heuristics from [../architect/decision-heuristics.md](../architect/decision-heuristics.md) to defend the recommendation.
+5. If contrarian trigger is active, add mandatory disagreement analysis:
+   - strongest counter-argument against the recommendation
+   - at least one viable alternative path
+   - top risks and invalidation signals
+   - verdict: `Go`, `Go with conditions`, or `Stop`
 
 **Present findings using Phase 0 template from [validation-templates.md](validation-templates.md).**
 
 Use the `AskQuestion` tool to collect approval before proceeding:
 - One single-select question asking which approach to proceed with (list the proposed options by name, plus an "Other / discuss first" option)
 - One optional multi-select question for concerns or constraints to factor in
+- One optional single-select question for technology direction when more than one stack/tooling option is viable
 
 **STOP. Do not proceed to Phase 1 until the developer selects an approach.**
 
@@ -178,11 +210,21 @@ Use the `AskQuestion` tool to collect approval before proceeding:
    - Dependencies: external services, events, scheduled jobs
    - Non-functional requirements: security, performance, observability
 2. If there are open questions, use the `AskQuestion` tool to collect answers before documenting requirements. Ask only what is genuinely ambiguous — do not ask for information that can be reasonably inferred from the codebase or the request.
+3. If data model or contract ambiguity exists, ask targeted gating questions before Phase 2:
+   - entity ownership and lifecycle
+   - required invariants and uniqueness constraints
+   - migration/backfill expectations
+   - compatibility constraints for existing consumers
+4. If technology ambiguity exists, ask targeted gating questions before Phase 2:
+   - preferred persistence/integration mechanism
+   - operational constraints (latency/cost/observability)
+   - team constraints (skills, maintainability window)
 
 **Present using Phase 1 template.**
 
 Use the `AskQuestion` tool to confirm scope before proceeding:
 - One single-select question asking whether the requirements are understood correctly or if corrections are needed (options: "Correct, proceed", "Minor correction — I'll clarify below", "Stop — requirements need discussion")
+- If open data/technology decisions remain, one additional single-select gate: "Resolve now" / "Proceed with explicit assumptions" / "Stop and escalate"
 
 **STOP. Do not proceed to Phase 2 until scope is confirmed.**
 
@@ -201,6 +243,10 @@ Use the `AskQuestion` tool to confirm scope before proceeding:
    - Function decomposition plan (which responsibilities become separate functions/modules)
 2. Identify anti-patterns to avoid — reference [antipatterns.md](antipatterns.md).
 3. Identify reuse opportunities (Phase 3 will confirm via search).
+4. Convert unresolved assumptions into explicit checks:
+   - validation rule to add
+   - test case to add
+   - rollback condition to monitor
 
 **Present using Phase 2 template.**
 

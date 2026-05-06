@@ -88,6 +88,28 @@ Apply the three classification signals from `/lead`:
 | Any one | **Standard** |
 | Two or more, or new subsystem, or breaking change | **Complex** |
 
+Then apply decision-governance risk scoring:
+
+- Impact: low/medium/high
+- Reversibility: reversible/hard-to-reverse/irreversible
+- Uncertainty: low/medium/high
+- Cost of error: low/medium/high
+
+Contrarian trigger (any true):
+- impact is high and reversibility is hard-to-reverse or irreversible
+- uncertainty is high
+- contract/public interface change with ambiguous outcomes
+- architecture decision with multiple viable paths
+
+Execution routing class:
+- **Execution-only**: low risk + reversible + low uncertainty
+- **Execution+validation**: medium risk or multi-layer change
+- **Execution+contrarian**: contrarian trigger active
+
+Short-path rule:
+- If routing class is `Execution-only`, prefer minimal process path (`/express` or `/fast-lead` when plan is already clear).
+- Do not force extended discovery gates for execution-only tasks.
+
 **Then load project context** (only what exists — skip gracefully if files are absent):
 
 - If docs exist at `.agent-runway/docs/architecture/architecture.md` or similar: read and summarise the relevant bounded context
@@ -161,9 +183,10 @@ Present the routing decision clearly.
 
 For **Implementation and Bug fix** tasks, use the following routing rules in order:
 
-1. If **Complex** → recommend `/lead`. Always. A Complex task routed to `/express` or `/fast-lead` should only happen if the developer explicitly overrides after seeing an escalation signal.
-2. If **Standard** and the developer mentions they already have a plan or approach → recommend `/fast-lead`.
-3. If **Standard** and no plan mentioned:
+1. If routing class is **Execution+contrarian**: recommend `/lead` with mandatory contrarian gate before implementation.
+2. If **Complex** → recommend `/lead`. Always. A Complex task routed to `/express` or `/fast-lead` should only happen if the developer explicitly overrides after seeing an escalation signal.
+3. If **Standard** and the developer mentions they already have a plan or approach → recommend `/fast-lead`.
+4. If **Standard** and no plan mentioned:
    - Small, well-scoped, single-layer → suggest `/express` as an option alongside `/lead`
    - Anything else → recommend `/lead`
 
@@ -174,6 +197,8 @@ The recommendation is always a suggestion, not a command. Present it as:
 
 **Intent**: [Implementation — Standard / Bug fix — Trivial / Refactor / IaC / Architecture / Review]
 **Classification**: [Trivial / Standard / Complex]
+**Risk profile**: [Impact / Reversibility / Uncertainty / Cost of error]
+**Routing class**: [Execution-only / Execution+validation / Execution+contrarian]
 
 **Why**: [One sentence — e.g. "This adds a new endpoint and touches Application and API layers, which makes it a Standard implementation task."]
 
@@ -183,7 +208,7 @@ The recommendation is always a suggestion, not a command. Present it as:
 - [Layer(s) in scope]
 - [Anything the developer should know before starting]
 
-Task classification: [Standard / Complex]
+Task classification: [Trivial / Standard / Complex]
 Recommended: /[command] ([brief reason])
 Alternatives: [other applicable commands]
 ```
@@ -197,6 +222,13 @@ If the task is **Complex**, add:
 ```
 > This is a Complex task. /lead will invoke /architect in Phase 0 before any code is written.
 > Before starting, consider reading: .agent-runway/docs/[relevant section] (if it exists)
+```
+
+If routing class is **Execution+contrarian**, also add:
+
+```
+> Contrarian gate required before build:
+> /lead must document strongest counter-argument, at least one viable alternative, and a Go/Go-with-conditions/Stop verdict.
 ```
 
 If no project docs exist for a Complex task, surface it explicitly:

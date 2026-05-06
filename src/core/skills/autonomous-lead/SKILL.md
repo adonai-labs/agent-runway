@@ -40,6 +40,26 @@ Autonomy is allowed for execution decisions, but every material decision must be
 
 If any `lead` quality gate would fail, autonomous execution must fail too.
 
+## Decision Governance (Mandatory)
+
+Before implementation, classify risk with:
+
+- Impact: low/medium/high
+- Reversibility: reversible/hard-to-reverse/irreversible
+- Uncertainty: low/medium/high
+- Cost of error: low/medium/high
+
+Contrarian trigger (any true):
+- impact is high and reversibility is hard-to-reverse or irreversible
+- uncertainty is high
+- contract/public interface change with ambiguous outcomes
+- architecture decision with multiple viable paths
+
+Execution mode:
+- Execution-only: low risk + reversible + low uncertainty
+- Execution+validation: medium risk or multi-layer change
+- Execution+contrarian: contrarian trigger active
+
 ## Required Artifacts
 
 Before code changes, create:
@@ -82,6 +102,31 @@ If this structure is missing, the run is incomplete.
 3. Create run log file and write initial contract.
 
 Do not stop for approval unless a hard blocker exists.
+
+### Phase 0.5 - Internal Risk Scoring and Routing
+
+1. Score impact, reversibility, uncertainty, and cost of error.
+2. Record the score in run log under "Classification and rationale".
+3. Determine execution mode:
+   - Execution-only
+   - Execution+validation
+   - Execution+contrarian
+
+If execution mode is `Execution+contrarian`, run the mandatory contrarian gate before Phase 1.
+
+### Phase 0.6 - Contrarian Gate (Mandatory for High Impact)
+
+When triggered, document in run log:
+- recommended path
+- strongest counter-argument
+- at least one viable alternative
+- top risks and invalidation signals
+- verdict: `Go`, `Go with conditions`, or `Stop`
+
+Policy:
+- `Stop`: halt execution and escalate with blocker details
+- `Go with conditions`: continue only after conditions are translated into explicit implementation checks
+- `Go`: continue to Phase 1
 
 ### Phase 1 - Discovery and Plan
 
@@ -147,6 +192,8 @@ Update run log with:
 - Recommended follow-ups
 
 Append stable lessons to `.agent-runway/memory/project-decisions.md`.
+Append recurring operational patterns to `.agent-runway/memory/execution-memory.md` when observed.
+Append recurring reasoning lessons to `.agent-runway/memory/reasoning-memory.md` when observed.
 
 ## Mandatory Evidence Sections (Run Log)
 
@@ -154,14 +201,15 @@ Run log must include these sections, in order:
 
 1. Objective and boundaries
 2. Classification and rationale
-3. Planned implementation
-4. Decision log (table)
-5. Files changed
-6. Validation evidence
-7. Security and contract impact
-8. Residual risks
-9. Rollback notes
-10. Follow-up actions
+3. Contrarian review (or "not triggered" with reason)
+4. Planned implementation
+5. Decision log (table)
+6. Files changed
+7. Validation evidence
+8. Security and contract impact
+9. Residual risks
+10. Rollback notes
+11. Follow-up actions
 
 ## Output Requirements
 
@@ -180,6 +228,7 @@ Stop and escalate only for:
 - Missing critical requirement that cannot be inferred
 - Conflicting constraints that make safe progress impossible
 - High-risk change with unclear rollback
+- Contrarian verdict is `Stop`
 - Any destructive or irreversible operation pending explicit human approval
 
 In stop mode, write blocker details to run log before returning.

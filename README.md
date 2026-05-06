@@ -67,6 +67,16 @@ After initialization:
 
 ---
 
+## Demo
+
+Note: some recordings may still show legacy wrappers (`/spec`, `/ticket`). Preferred usage is `spec-creator` and `ticket-creator`.
+
+| Spec creation (`/spec-creator`) | Ticket creation (`/ticket-creator`) | Execution with quality gates (`/lead`) |
+|---|---|---|
+| ![Spec Creator Demo](assets/demo-spec.gif) | ![Ticket Creator Demo](assets/demo-ticket.gif) | ![Lead Workflow Demo](assets/demo-lead.gif) |
+
+---
+
 ## What gets installed (quick view)
 
 In every project, Agent Runway creates a local `.agent-runway/` folder with the core artifact layer:

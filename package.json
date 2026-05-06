@@ -1,6 +1,6 @@
 {
   "name": "@adonai-labs/agent-runway",
-  "version": "1.2.2",
+  "version": "1.2.3",
   "description": "A structured, AI-assisted development framework for coding agents",
   "main": "dist/index.js",
   "bin": {

@@ -74,7 +74,7 @@ Concrete folder and file layout for this ticket (new files, touched files, modul
 
 ## Markdown filename convention
 
-When saving to disk, follow **Artefact naming** in the skill: `task-<nn>-<implementation-slug>-<ticket-slice-slug>.md` (or the epic/spec filenames under `.agent-runway/specs/proposed/<implementation-slug>/`). Do not use bare `ticket.md` or a generic slug with no solution name.
+When saving to disk, follow **Artefact naming** in the skill: `.agent-runway/specs/<implementation-slug>/tickets/task-<nn>-<ticket-slice-slug>.md`. Do not use bare `ticket.md` or a filename with no ticket description.
 
 ---
 

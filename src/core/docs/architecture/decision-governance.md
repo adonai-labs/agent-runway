@@ -31,8 +31,10 @@ Mandatory disagreement simulation for:
 - critical interface/contract changes
 - high-risk migration paths
 
-Output must include:
-- strongest counter-argument
+The contrarian gate runs as an **isolated agent** (`contrarian`) with a clean context window. This is intentional — the implementation agent accumulates bias toward its chosen approach during exploration; the contrarian agent has no access to that reasoning and can challenge it without anchoring effects.
+
+Invoked via the `/contrarian Handoff` template. Output must include:
+- strongest counter-argument (grounded in codebase evidence)
 - viable alternative
 - failure signals
 - verdict: `Go`, `Go with conditions`, `Stop`

@@ -116,16 +116,22 @@ If execution mode is `Execution+contrarian`, run the mandatory contrarian gate b
 
 ### Phase 0.6 - Contrarian Gate (Mandatory for High Impact)
 
-When triggered, document in run log:
-- recommended path
-- strongest counter-argument
-- at least one viable alternative
-- top risks and invalidation signals
-- verdict: `Go`, `Go with conditions`, or `Stop`
+Delegate to the `contrarian` agent via the `/contrarian Handoff` template from `.agent-runway/skills/lead/validation-templates.md`.
+
+Complete the handoff with:
+- problem statement
+- chosen approach and rationale
+- risk classification scores from Phase 0.5
+- alternatives already considered
+- active constraints
+
+The contrarian agent runs with an isolated context window — it has no access to the reasoning built up in this session, which is intentional.
+
+Record the full contrarian output in the run log under "Contrarian review".
 
 Policy:
-- `Stop`: halt execution and escalate with blocker details
-- `Go with conditions`: continue only after conditions are translated into explicit implementation checks
+- `Stop`: halt execution, write blocker details to run log, and escalate
+- `Go with conditions`: translate each condition into an explicit implementation check before Phase 1
 - `Go`: continue to Phase 1
 
 ### Phase 1 - Discovery and Plan

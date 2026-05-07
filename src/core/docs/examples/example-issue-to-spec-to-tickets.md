@@ -19,7 +19,7 @@ Routing decision:
 ## 2. Spec Extract (summary)
 
 Spec path:
-- `.agent-runway/specs/proposed/payment-email-idempotency/payment-email-idempotency-spec.md`
+- `.agent-runway/specs/payment-email-idempotency/spec.md`
 
 Key options evaluated:
 1. DB unique constraint on notification key
@@ -35,13 +35,13 @@ Contrarian review:
 ## 3. Derived Delivery Tickets
 
 Epic path:
-- `.agent-runway/specs/proposed/payment-email-idempotency/payment-email-idempotency-epic.md`
+- `.agent-runway/specs/payment-email-idempotency/epic.md`
 
 Tickets:
-1. `.agent-runway/specs/proposed/payment-email-idempotency/task-01-payment-email-idempotency-outbox-schema-and-migration.md`
-2. `.agent-runway/specs/proposed/payment-email-idempotency/task-02-payment-email-idempotency-dispatcher-and-idempotency-check.md`
-3. `.agent-runway/specs/proposed/payment-email-idempotency/task-03-payment-email-idempotency-observability-and-alerts.md`
-4. `.agent-runway/specs/proposed/payment-email-idempotency/task-04-payment-email-idempotency-integration-tests-and-regression.md`
+1. `.agent-runway/specs/payment-email-idempotency/tickets/task-01-outbox-schema-and-migration.md`
+2. `.agent-runway/specs/payment-email-idempotency/tickets/task-02-dispatcher-and-idempotency-check.md`
+3. `.agent-runway/specs/payment-email-idempotency/tickets/task-03-observability-and-alerts.md`
+4. `.agent-runway/specs/payment-email-idempotency/tickets/task-04-integration-tests-and-regression.md`
 
 ## 4. Memory Updates
 

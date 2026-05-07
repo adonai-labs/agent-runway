@@ -156,28 +156,23 @@ When implementing:
 
 ## Output Path Convention
 
-**Do not** use generic filenames such as `spec.md`, `epic.md`, or `ticket.md` alone. Every artefact name must include the **implementation slug** (kebab-case, ASCII, derived from the solution title).
-
 1. Derive `implementation-slug` from the spec title or agreed solution name (short, unique, filesystem-safe).
-2. Use one directory per implementation:
+2. Create one directory per implementation under `.agent-runway/specs/<implementation-slug>/`.
+3. Spec, epic, and summary files live at the root of that folder with simple names. Tickets go in a `tickets/` subfolder.
 
-`.agent-runway/specs/proposed/<implementation-slug>/`
-
-3. Name files with that slug:
-
-| Artefact | Filename |
+| Artefact | Path |
 |---|---|
-| Main spec | `<implementation-slug>-spec.md` |
-| Human summary | `<implementation-slug>-summary.md` |
-| Epic (when epic mode) | `<implementation-slug>-epic.md` |
-| Delivery ticket *n* | `task-<nn>-<implementation-slug>-<ticket-slice-slug>.md` |
+| Main spec | `.agent-runway/specs/<implementation-slug>/spec.md` |
+| Human summary | `.agent-runway/specs/<implementation-slug>/summary.md` |
+| Epic (when epic mode) | `.agent-runway/specs/<implementation-slug>/epic.md` |
+| Delivery ticket *n* | `.agent-runway/specs/<implementation-slug>/tickets/task-<nn>-<ticket-slice-slug>.md` |
 
 Examples (`implementation-slug` = `react-login-oauth`):
 
-- `.agent-runway/specs/proposed/react-login-oauth/react-login-oauth-spec.md`
-- `.agent-runway/specs/proposed/react-login-oauth/react-login-oauth-summary.md`
-- `.agent-runway/specs/proposed/react-login-oauth/react-login-oauth-epic.md`
-- `.agent-runway/specs/proposed/react-login-oauth/task-01-react-login-oauth-api-login-endpoint.md`
+- `.agent-runway/specs/react-login-oauth/spec.md`
+- `.agent-runway/specs/react-login-oauth/summary.md`
+- `.agent-runway/specs/react-login-oauth/epic.md`
+- `.agent-runway/specs/react-login-oauth/tickets/task-01-api-login-endpoint.md`
 
 Use this unless the user asks for a different destination.
 

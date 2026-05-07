@@ -13,8 +13,8 @@ description: Evaluates product quality of specs and tickets before implementatio
 
 Examples:
 - `/po-eval PROJ-501`
-- `/po-eval .agent-runway/specs/proposed/order-flow/order-flow-spec.md`
-- `/po-eval .agent-runway/docs/tickets/task-03-order-flow-email-notifications.md`
+- `/po-eval .agent-runway/specs/order-flow/spec.md`
+- `/po-eval .agent-runway/specs/order-flow/tickets/task-03-email-notifications.md`
 
 ---
 

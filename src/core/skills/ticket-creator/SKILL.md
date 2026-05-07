@@ -46,9 +46,9 @@ Apply shared policy: [../shared/caveman-skill-engineering.md](../shared/caveman-
 ## Artefact naming (mandatory)
 
 - Derive an **`implementation-slug`** (kebab-case, ASCII) from the epic title, feature name, or agreed solution name. Use it in every markdown filename — never ship only `spec.md`, `epic.md`, or anonymous `ticket.md`.
-- **Epic** file: `.agent-runway/specs/proposed/<implementation-slug>/<implementation-slug>-epic.md`
-- **Spec** (when originating from spec flow): same folder, `<implementation-slug>-spec.md` / `<implementation-slug>-summary.md` per `spec-creator` template.
-- **Delivery tickets** (markdown): `task-<nn>-<implementation-slug>-<ticket-slice-slug>.md` with zero-padded `nn` (`01`, `02`, …). Place them in the same folder when they belong to that epic/spec bundle; otherwise default to `.agent-runway/docs/tickets/` with the same filename pattern.
+- **Epic** file: `.agent-runway/specs/<implementation-slug>/epic.md`
+- **Spec** (when originating from spec flow): same folder, `spec.md` / `summary.md` per `spec-creator` template.
+- **Delivery tickets** (markdown): `.agent-runway/specs/<implementation-slug>/tickets/task-<nn>-<ticket-slice-slug>.md` with zero-padded `nn` (`01`, `02`, …). Always in the `tickets/` subfolder of the slug — never alongside spec files or in a separate `docs/tickets/` location.
 - **Type line wording:** use `Feature (epic + N tickets)` — never "child tickets".
 
 ## 8-Phase Workflow
@@ -112,7 +112,7 @@ Options:
 ```
 
 Rules:
-- **epic**: produce an epic-level artifact (goal, scope, non-goals, success criteria, dependencies) plus a proposed ticket breakdown; then ask whether to generate those markdown tickets now or stop at epic output. Save the epic using **Artefact naming** (`<implementation-slug>-epic.md`).
+- **epic**: produce an epic-level artifact (goal, scope, non-goals, success criteria, dependencies) plus a proposed ticket breakdown; then ask whether to generate those markdown tickets now or stop at epic output. Save the epic using **Artefact naming** (`.agent-runway/specs/<implementation-slug>/epic.md`).
 - **ticket**: proceed with normal ticket flow; if complexity threshold is exceeded, require a split proposal before final approval.
 - **auto**: if complexity threshold is exceeded, switch to epic mode; otherwise continue in single-ticket mode.
 
@@ -139,7 +139,7 @@ Prerequisite: Phase 0 must have completed. Active configuration is available for
 
    The origin tag drives complexity detection behaviour in Phase 2 and Phase 3.
 
-2. **Derive `implementation-slug`** (kebab-case, ASCII) for markdown output per **Artefact naming**. Use the agreed solution or epic title, or reuse the folder slug when working inside `.agent-runway/specs/proposed/<implementation-slug>/`.
+2. **Derive `implementation-slug`** (kebab-case, ASCII) for markdown output per **Artefact naming**. Use the agreed solution or epic title, or reuse the folder slug when working inside `.agent-runway/specs/<implementation-slug>/`.
 
 3. **Assess input richness**
 
@@ -426,7 +426,7 @@ Rules:
    e. Return the Jira ticket URL to the user.
 
 3. **If markdown:**
-   - Ask the user for the file path, or default to `.agent-runway/docs/tickets/task-<nn>-<implementation-slug>-<ticket-slice-slug>.md` (or under `.agent-runway/specs/proposed/<implementation-slug>/` when part of that bundle)
+   - Ask the user for the file path, or default to `.agent-runway/specs/<implementation-slug>/tickets/task-<nn>-<ticket-slice-slug>.md`
    - Save the ticket as a well-formatted markdown file
 
 4. **Confirm output** — show the user where the ticket was created (Jira URL or file path)

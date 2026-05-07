@@ -184,11 +184,11 @@ Apply the shared policy **Minimum context** and **Simplicity before abstraction*
    - For pattern selection, read [../architect/patterns.md](../architect/patterns.md) to identify the right structural fit.
    - For antipattern detection in the proposed approach, read [../architect/antipatterns.md](../architect/antipatterns.md).
 4. Recommend one approach with rationale. Apply decision heuristics from [../architect/decision-heuristics.md](../architect/decision-heuristics.md) to defend the recommendation.
-5. If contrarian trigger is active, add mandatory disagreement analysis:
-   - strongest counter-argument against the recommendation
-   - at least one viable alternative path
-   - top risks and invalidation signals
-   - verdict: `Go`, `Go with conditions`, or `Stop`
+5. If contrarian trigger is active, delegate to the `contrarian` agent before presenting findings:
+   - Complete the `/contrarian Handoff` template from [validation-templates.md](validation-templates.md) with the problem, chosen approach, risk classification, and constraints.
+   - The contrarian agent runs with an isolated context window — it challenges the chosen approach without the bias of the exploration reasoning built up in this session.
+   - Surface the contrarian verdict as part of Phase 0 output. If the verdict is `Stop`, do not proceed — escalate with blocker details before asking for approach selection.
+   - If the verdict is `Go with conditions`, include the conditions in the Phase 0 output and carry them into Phase 2 as explicit implementation checks.
 
 **Present findings using Phase 0 template from [validation-templates.md](validation-templates.md).**
 
@@ -484,7 +484,7 @@ Did this cycle reveal anything that should be captured for system improvement?
 
 **If "None" is selected:** close the session. No further action.
 
-**If any other option is selected:** append an entry to `.cursor/config/system-improvements.md` (create the file if it does not exist) with the following format:
+**If any other option is selected:** append an entry to `.agent-runway/config/system-improvements.md` (create the file if it does not exist) with the following format:
 
 ```markdown
 ### YYYY-MM-DD — [Short description]

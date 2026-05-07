@@ -222,6 +222,40 @@ Pass this context block to the `architect` subagent when delegating a Complex ta
 
 ---
 
+
+---
+
+## Phase 0 — /contrarian Handoff
+
+Pass this context block to the `contrarian` subagent when the contrarian trigger is active. This must be **self-contained** — the contrarian agent has no access to prior conversation history.
+
+```markdown
+## /contrarian Handoff
+
+### Problem Statement
+[What needs to be decided or built — one clear paragraph]
+
+### Chosen Approach
+[Name of the selected approach + one paragraph rationale for why it was chosen over alternatives]
+
+### Risk Classification
+- **Impact**: low / medium / high
+- **Reversibility**: reversible / hard-to-reverse / irreversible
+- **Uncertainty**: low / medium / high
+- **Cost of error**: low / medium / high
+
+### Alternatives Already Considered
+| Option | Why it was not selected |
+|--------|------------------------|
+| [Name] | [Reason] |
+| [Name] | [Reason] |
+
+### Constraints
+- [Technical constraints — existing schema, external contracts, shared infrastructure]
+- [Team or timeline constraints]
+- [Business or backward-compatibility constraints]
+```
+
 ## Phase 9 — /review Handoff
 
 Pass this context block to the `review` subagent (or code-review skill) when delegating. This must be **self-contained** — the reviewer has no access to prior conversation history.

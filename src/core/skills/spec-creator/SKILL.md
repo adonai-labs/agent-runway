@@ -52,7 +52,7 @@ Apply shared policy: [../shared/caveman-skill-engineering.md](../shared/caveman-
 3. If not found, run generic mode:
    - `codebase_scanning.enabled: false`
    - `output.default_destination: markdown`
-   - `output.markdown_path: .agent-runway/specs/proposed`
+   - `output.markdown_path: .agent-runway/specs`
    - Continue without blocking questions
 
 ### Phase 1: Input & Classification
@@ -182,7 +182,7 @@ If `yes`:
   - where it appears
   - likely root cause
   - prevention hint
-  - linked spec path (full path including `<implementation-slug>-spec.md`)
+  - linked spec path (e.g. `.agent-runway/specs/<implementation-slug>/spec.md`)
 
 Keep entries concise and non-sensitive.
 
@@ -192,7 +192,7 @@ Naming is mandatory — see [template.md](template.md#output-path-convention). N
 
 Default output (replace `<implementation-slug>` with the agreed slug):
 
-- `.agent-runway/specs/proposed/<implementation-slug>/<implementation-slug>-spec.md`
+- `.agent-runway/specs/<implementation-slug>/spec.md`
 
 Optional output:
 - markdown mirror path requested by user
@@ -217,7 +217,7 @@ This gate requires explicit user confirmation. Do not auto-select an option.
 If no explicit answer is provided, do not create the summary.
 
 If `yes`:
-- create `.agent-runway/specs/proposed/<implementation-slug>/<implementation-slug>-summary.md`
+- create `.agent-runway/specs/<implementation-slug>/summary.md`
 - include: Why now, What changes, Out of scope, Risks, Delivery slices.
 
 ### Phase 7: Summary

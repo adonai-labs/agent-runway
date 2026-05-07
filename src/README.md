@@ -1,133 +1,124 @@
-# Agent Runway - NPM Package Structure
+# Agent Runway — Package Source
 
-This directory contains the source files for the Agent Runway npm package.
+This directory contains the source files for the `@adonai-labs/agent-runway` npm package.
+
+The root `README.md` is the user-facing documentation. This file is for contributors.
+
+---
 
 ## Directory Structure
 
 ```
 src/
-├── core/                    # Universal framework components (always installed)
-│   ├── commands/           # Slash commands (agnostic)
-│   ├── skills/             # Base skills with templates
-│   ├── rules/              # Universal engineering rules
-│   ├── agents/             # Isolated sub-processes
-│   ├── config/             # Framework configuration
-│   └── memory/             # Persistent knowledge templates
+├── core/                        # Universal framework — always installed
+│   ├── commands/               # Cursor slash commands
+│   ├── claude-commands/        # Claude Code slash commands
+│   ├── claude-agents/          # Claude Code subagents (isolated context)
+│   ├── agents/                 # Cursor agents
+│   ├── skills/                 # Skills (Cursor + Claude Code + VS Code)
+│   ├── rules/                  # Universal engineering rules (.mdc)
+│   ├── config/                 # Framework config templates
+│   ├── docs/                   # Scaffold docs and examples
+│   └── memory/                 # Memory file templates
 │
-├── stacks/                 # Stack-specific extensions (selectively installed)
-│   ├── typescript/
-│   │   ├── *.mdc          # TypeScript rules
-│   │   ├── code-review-searches.md
-│   │   └── code-review-commands.md
+├── stacks/                     # Stack-specific extensions (selectively installed)
 │   ├── dotnet/
-│   │   ├── *.mdc          # .NET rules
-│   │   ├── skill-dotnet-core/
-│   │   ├── code-review-searches.md
-│   │   └── code-review-commands.md
+│   ├── typescript/
 │   ├── react/
+│   ├── node/
 │   ├── rust/
 │   └── electron/
 │
-└── cli/                    # CLI implementation
+└── cli/                        # CLI implementation (TypeScript)
     ├── commands/
-    │   ├── init.ts        # Initialize project
-    │   ├── add.ts         # Add a stack
-    │   ├── remove.ts      # Remove a stack
-    │   └── update.ts      # Update framework
-    ├── templates/          # File templates for init
-    └── utils/              # CLI utilities
+    │   ├── init.ts             # npx agent-runway init
+    │   ├── add.ts              # agent-runway add <stack>
+    │   ├── remove.ts           # agent-runway remove <stack>
+    │   ├── update.ts           # agent-runway update
+    │   ├── list.ts             # agent-runway list
+    │   └── status.ts           # agent-runway status
+    ├── presets/                # Preset definitions (web-fullstack-ts, core-only, etc.)
+    └── utils/                  # Copy helpers, config I/O, path resolution
 ```
 
-## How It Works
+---
 
-### 1. User Runs Init
+## How Installation Works
 
-```bash
-npx agent-runway init --stacks node,typescript,react
+`agent-runway init` asks the user for a target environment and a stack preset, then:
+
+1. Copies `src/core/` files to the appropriate target directories
+2. Copies selected stack files from `src/stacks/{stack}/`
+3. Creates the `.agent-runway/` artifact scaffold in the project root
+
+### Target mapping
+
+| Target | Destination |
+|---|---|
+| `cursor` | `.cursor/commands/`, `.cursor/skills/`, `.cursor/rules/`, `.cursor/agents/` |
+| `claude` | `.claude/commands/`, `.claude/agents/`, `.agent-runway/skills/`, `.agent-runway/rules/`, `CLAUDE.md` |
+| `vscode` | `.github/copilot-instructions.md`, `.github/instructions/`, `.github/prompts/`, `.github/agents/`, `.github/skills/` |
+
+### Artifact scaffold (always created)
+
+```
+.agent-runway/
+├── specs/
+├── docs/
+├── memory/
+├── config/
+├── workflows/
+└── logs/
 ```
 
-### 2. CLI Process
+### Config file location
 
-1. Copies `src/core/*` to `.cursor/` in user's project
-2. Copies only selected stack files from `src/stacks/{selected}/` to `.cursor/`
-3. Processes templates to remove references to non-selected stacks
-4. Creates `.cursor/agent-runway.json` runtime config file
-5. Creates `.agent-runway/` product directories (`memory/`, `specs/`, `config/`, `workflows/`)
-6. Creates `.agent-runway/docs/` structure when it does not exist
+- Cursor install: `.cursor/agent-runway.json`
+- Claude-only install: `.agent-runway/agent-runway.json`
 
-### 3. Result in User's Project
-
-```
-user-project/
-├── .cursor/
-│   ├── agent-runway.json      # { "stacks": ["typescript", "react"], "version": "1.0.0" }
-│   ├── commands/              # From src/core/commands
-│   ├── skills/
-│   │   ├── code-review/
-│   │   │   ├── SKILL.md       # Processed template
-│   │   │   ├── systematic-searches-base.md
-│   │   │   ├── searches-typescript.md    # From src/stacks/typescript
-│   │   │   └── commands-typescript.md
-│   │   └── ... (other skills)
-│   └── rules/
-│       ├── engineering-*.mdc  # Universal rules
-│       ├── typescript.mdc     # From src/stacks/typescript
-│       └── react.mdc          # From src/stacks/react
-├── .agent-runway/
-│   ├── memory/
-│   │   ├── errors.md
-│   │   ├── memory.md
-│   │   └── repeated-errors.md
-│   ├── specs/
-│   ├── config/
-│   └── workflows/
-└── .agent-runway/docs/
-    ├── business/
-    ├── architecture/
-    └── testing/
-```
-
-## Template Processing
-
-Skills like `code-review/SKILL.md` contain markers for stack-specific content:
-
-```markdown
-### Phase 2a — Build & Test
-
-<!-- @stack-specific:commands -->
-See the build commands for your selected stack(s):
-{{#if hasTypeScript}}
-- TypeScript: [commands-typescript.md](commands-typescript.md)
-{{/if}}
-{{#if hasDotNet}}
-- .NET: [commands-dotnet.md](commands-dotnet.md)
-{{/if}}
-```
-
-The CLI processes these templates during init to include only the selected stacks.
+---
 
 ## Stack Extension Structure
 
-Each stack extension provides:
+Each stack in `src/stacks/{stack}/` can provide:
 
-1. **Rules** (`*.mdc`) - Cursor rules activated by glob patterns
-2. **Code Review Searches** (`code-review-searches.md`) - Stack-specific security/quality patterns
-3. **Build Commands** (`code-review-commands.md`) - How to build/test this stack
-4. **Skills** (optional) - Complete stack-specific skill workflows (like dotnet-core)
+| File | Purpose |
+|---|---|
+| `*.mdc` | Cursor rules activated by glob patterns |
+| `code-review-searches.md` | Stack-specific search patterns for code review |
+| `code-review-commands.md` | Build and test commands for this stack |
+| `skill-{name}/` | Complete stack-specific skill (copied alongside core skills) |
+| `spec-templates/` | Spec scaffold templates for this stack |
+
+---
 
 ## Adding a New Stack
 
 1. Create `src/stacks/{stack-name}/`
-2. Add rules (`*.mdc` files)
-3. Create `code-review-searches.md` with stack-specific patterns
-4. Create `code-review-commands.md` with build/test commands
-5. Update CLI to recognize the new stack
-6. Update this README
+2. Add at minimum `code-review-searches.md` and `code-review-commands.md`
+3. Add `.mdc` rule files for stack-specific standards
+4. Register the stack in `src/cli/presets/index.ts`
+5. Test with `npx agent-runway init --stacks {stack-name}`
 
-## Philosophy
+See `EXTENDING.md` at the repo root for the full guide.
 
-- **Minimal installation**: Only install what the user needs
-- **No runtime overhead**: All processing happens at init time
-- **File-based**: Generated files are plain markdown/config, no runtime dependencies
-- **Maintainable**: Core and stacks are separated, easy to update individually
+---
 
+## Adding a New Core Skill
+
+1. Create `src/core/skills/{skill-name}/SKILL.md`
+2. For Claude Code, add a matching agent in `src/core/claude-agents/{skill-name}.md` if it needs isolated context
+3. Add a slash command in `src/core/claude-commands/{skill-name}.md` and `src/core/commands/{skill-name}.md`
+4. The skill is automatically copied to all target environments on install
+
+---
+
+## Build and Release
+
+```bash
+npm run build     # Compile TypeScript to dist/
+npm run lint      # Run ESLint
+npm test          # Run tests
+```
+
+The package publishes `dist/` and `src/` (skills, rules, stacks). See `files` in `package.json` for the exact list.

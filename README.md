@@ -5,6 +5,12 @@
 [![stars](https://img.shields.io/github/stars/adonai-labs/agent-runway?style=social)](https://github.com/adonai-labs/agent-runway)
 [![downloads](https://img.shields.io/npm/dm/%40adonai-labs%2Fagent-runway)](https://www.npmjs.com/package/@adonai-labs/agent-runway)
 
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="assets/overview-dark.png">
+  <source media="(prefers-color-scheme: light)" srcset="assets/overview-light.png">
+  <img alt="Agent Runway Overview" src="assets/overview-light.png" width="100%">
+</picture>
+
 **Agent Runway is an operational discipline layer for AI-assisted software delivery.**
 
 It gives coding agents a structured execution environment — with workflows, quality gates, decision governance, and persistent engineering memory — so teams can move fast without losing continuity.
@@ -64,6 +70,14 @@ Memory     →  capture decisions and lessons for future sessions
 ```
 
 Artifacts are active engineering context — not passive docs. Specs, tickets, memory files, and run logs shape how agents reason, plan, and execute across sessions.
+
+---
+
+## See it in action
+
+| `/spec-creator` | `/ticket-creator` | `/lead` |
+|---|---|---|
+| ![spec demo](assets/demo-spec.gif) | ![ticket demo](assets/demo-ticket.gif) | ![lead demo](assets/demo-lead.gif) |
 
 ---
 

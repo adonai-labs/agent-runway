@@ -1,6 +1,6 @@
 {
   "name": "@adonai-labs/agent-runway",
-  "version": "1.3.6",
+  "version": "1.4.0",
   "description": "A structured, AI-assisted development framework for coding agents",
   "main": "dist/index.js",
   "bin": {
@@ -11,9 +11,10 @@
     "build": "tsc && node dist/validate.js",
     "validate": "node dist/validate.js",
     "smoke": "npm run build:novalidate && node dist/smoke.js",
-    "prepublishOnly": "npm run build && npm run smoke",
+    "prepublishOnly": "npm run build",
     "dev": "tsc --watch",
-    "prepare": "npm run build"
+    "prepare": "npm run build",
+    "test": "npm run build && npm run smoke"
   },
   "keywords": [
     "cursor",

@@ -13,11 +13,7 @@ It does not replace your stack, your architecture, or your process. It wraps aro
 
 ---
 
-<picture>
-  <source media="(prefers-color-scheme: dark)" srcset="assets/overview-dark.png">
-  <source media="(prefers-color-scheme: light)" srcset="assets/overview-light.png">
-  <img alt="Agent Runway Overview" src="assets/overview-light.png">
-</picture>
+![Agent Runway Overview](assets/overview-light.png)
 
 ---
 

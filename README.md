@@ -13,10 +13,6 @@ It does not replace your stack, your architecture, or your process. It wraps aro
 
 ---
 
-![Agent Runway Overview](assets/overview-light.png)
-
----
-
 ## The problem
 
 Generating code with AI is no longer the hard part. Maintaining continuity across a real codebase is.
@@ -102,13 +98,6 @@ The artifact layer is repository-local and portable across all three.
 
 ---
 
-## Demo
-
-| Spec creation | Ticket creation | Execution with quality gates |
-|---|---|---|
-| ![Spec Creator Demo](assets/demo-spec.gif) | ![Ticket Creator Demo](assets/demo-ticket.gif) | ![Lead Workflow Demo](assets/demo-lead.gif) |
-
----
 
 ## Artifact model
 

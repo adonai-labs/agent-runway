@@ -19,3 +19,7 @@ Capture repeated delivery patterns:
 - Guardrail for next time: [specific check/rule]
 - Linked artifacts: [spec/ticket/pr/test path]
 ```
+
+## Archive
+
+Superseded or resolved entries move here (see `shared/memory-policy.md` in your agent's skills directory). Keep for history; do not delete.

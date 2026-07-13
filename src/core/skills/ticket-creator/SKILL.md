@@ -1,11 +1,6 @@
 ---
 name: ticket-creator
-description: >-
-  Creates ready-to-dev tickets from brief descriptions, Jira tickets, or
-  markdown files. Combines PO and BA perspectives to generate complete tickets
-  with context, scope, acceptance criteria, dependencies, and QA notes. Use
-  when creating tickets, writing user stories, preparing backlog items, or
-  refining requirements.
+description: Creates ready-to-dev tickets from brief descriptions, Jira tickets, or markdown files. Combines PO and BA perspectives to generate complete tickets with context, scope, acceptance criteria, dependencies, and QA notes. Use when creating tickets, writing user stories, preparing backlog items, or refining requirements.
 ---
 
 # Ticket Creator
@@ -380,7 +375,7 @@ When detected, write concise entries automatically:
 
 Rules:
 - do not block ticket creation for memory writes
-- avoid duplicates; if near-identical entry exists, update it instead of appending
+- apply the memory hygiene policy: [../shared/memory-policy.md](../shared/memory-policy.md) (consolidate duplicates, cap active entries, archive instead of delete)
 - keep entries non-sensitive and implementation-relevant
 - limit writes to max 1 execution-memory entry and max 1 reasoning-memory entry per ticket run
 

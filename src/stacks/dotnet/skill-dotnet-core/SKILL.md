@@ -1,22 +1,22 @@
 ---
 name: dotnet-core
-description: .NET and C# implementation guidance — stack-specific. Covers application patterns, infrastructure, observability, testing, security, and API design for .NET 8/9 applications. Use when the user says "/dotnet", "how do I implement this in .NET", "is this C# idiomatic", "should I use MediatR", "EF Core patterns", "how to test this", ".NET observability", "ASP.NET Core patterns", "Minimal API vs controllers", or needs concrete .NET implementation guidance. Combines with the `architect` skill for design and trade-off reasoning.
+description: .NET and C# implementation guidance — stack-specific. Covers application patterns, infrastructure, observability, testing, security, and API design for .NET 8/9 applications. Use when the user asks how to implement something in .NET, whether C# code is idiomatic, MediatR/EF Core patterns, .NET testing, observability, ASP.NET Core, or Minimal API vs controllers. Invoke via skill discovery or `@dotnet-core` after `agent-runway add dotnet`. Combines with the `architect` skill for design and trade-off reasoning.
 ---
 
 # .NET Core
 
-## Invoke Command
+## How to invoke
 
-```
-/dotnet <question or topic>
-```
+After `agent-runway add dotnet`, the skill is installed at `.cursor/skills/dotnet-core/`. Use:
+
+- **Cursor:** `@dotnet-core` or ask a .NET question while editing `*.cs` (rules auto-attach)
+- **Claude Code:** reference `.agent-runway/skills/dotnet-core/SKILL.md` or ask in context of C# files
 
 Examples:
-- `/dotnet how should I structure this CQRS handler?`
-- `/dotnet is this EF Core query likely to cause N+1?`
-- `/dotnet how do I test this application service?`
-- `/dotnet review this infrastructure registration`
-- `/dotnet how do I add structured logging with correlation here?`
+- How should I structure this CQRS handler?
+- Is this EF Core query likely to cause N+1?
+- How do I test this application service?
+- How do I add structured logging with correlation here?
 
 > Not sure which skill to use? Start with `/start` — it classifies intent and routes to the right skill.
 

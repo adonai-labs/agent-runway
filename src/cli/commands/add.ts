@@ -36,7 +36,7 @@ export async function addCommand(stack: string, options: AddOptions = {}) {
     }
     configDir = globalDir;
     config = await loadConfig(globalDir);
-    console.log(chalk.cyan('📍 Adding to global installation\n'));
+    console.log(chalk.cyan('Adding to global installation\n'));
   } else {
     const result = await findProjectConfig(projectRoot);
     if (!result) {
@@ -45,7 +45,7 @@ export async function addCommand(stack: string, options: AddOptions = {}) {
     }
     configDir = result.configDir;
     config = result.config;
-    console.log(chalk.cyan('📁 Adding to project installation\n'));
+    console.log(chalk.cyan('Adding to project installation\n'));
   }
 
   const availableStacks = getAvailableStacks();
@@ -72,7 +72,7 @@ export async function addCommand(stack: string, options: AddOptions = {}) {
     const updatedStacks = [...config.stacks, stack];
 
     if (installsCursor) {
-      await copyStacks(cursorDir, [stack]);
+      await copyStacks(cursorDir, updatedStacks);
     }
     if (installsClaude) {
       await copyNeutralSkills(projectRoot, updatedStacks);

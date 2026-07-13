@@ -46,6 +46,45 @@ async function walkDir(dir: string, ext: string): Promise<string[]> {
   return results;
 }
 
+
+const TEXT_EXTENSIONS = new Set(['.json', '.md', '.mdc', '.ts', '.js', '.yml', '.yaml']);
+const SCAN_EXCLUDED_DIRS = new Set(['.git', 'assets', 'dist', 'node_modules']);
+const MOJIBAKE_PATTERN = /[\u00c3\u00c2]|\u00e2[\u0080-\uffff]?|\u009d|\ufffd/;
+
+async function walkTextFiles(dir: string): Promise<string[]> {
+  const results: string[] = [];
+  if (!(await fs.pathExists(dir))) return results;
+
+  const entries = await fs.readdir(dir, { withFileTypes: true });
+  for (const entry of entries) {
+    if (SCAN_EXCLUDED_DIRS.has(entry.name)) continue;
+
+    const fullPath = path.join(dir, entry.name);
+    if (entry.isDirectory()) {
+      results.push(...(await walkTextFiles(fullPath)));
+    } else if (TEXT_EXTENSIONS.has(path.extname(entry.name))) {
+      results.push(fullPath);
+    }
+  }
+  return results;
+}
+
+// Catches mojibake sequences caused by UTF-8 text decoded as Windows-1252/Latin-1.
+async function validateNoMojibake(packageRoot: string): Promise<ValidationError[]> {
+  const errors: ValidationError[] = [];
+  for (const file of await walkTextFiles(packageRoot)) {
+    const content = await fs.readFile(file, 'utf-8');
+    const match = content.match(MOJIBAKE_PATTERN);
+    if (!match || match.index === undefined) continue;
+
+    const before = content.slice(0, match.index);
+    const line = before.split(/\r?\n/).length;
+    const rel = path.relative(packageRoot, file);
+    errors.push({ file: rel, issue: 'Possible mojibake near line ' + line + ': ' + JSON.stringify(match[0]) });
+  }
+  return errors;
+}
+
 // Validates all .mdc files: required frontmatter fields description, globs, alwaysApply.
 // Extra fields (id, category) are permitted.
 async function validateMdcFiles(packageRoot: string): Promise<ValidationError[]> {
@@ -109,6 +148,80 @@ async function validateSkillFiles(packageRoot: string): Promise<ValidationError[
     }
     if (typeof fm.description !== 'string' || !fm.description) {
       errors.push({ file: rel, issue: 'Missing required field: description' });
+    }
+  }
+
+  return errors;
+}
+
+// Lists .md file basenames directly inside a dir (non-recursive).
+async function listMdBasenames(dir: string): Promise<Set<string>> {
+  const result = new Set<string>();
+  if (!(await fs.pathExists(dir))) return result;
+  const entries = await fs.readdir(dir, { withFileTypes: true });
+  for (const e of entries) {
+    if (e.isFile() && e.name.endsWith('.md')) result.add(e.name);
+  }
+  return result;
+}
+
+// Validates structural parity:
+// - command set matches between Cursor (commands/) and Claude (claude-commands/)
+// - agent set matches between Cursor (agents/) and Claude (claude-agents/)
+// - every core skill (dir with SKILL.md) is reachable from at least one command or agent
+async function validateParity(packageRoot: string): Promise<ValidationError[]> {
+  const errors: ValidationError[] = [];
+
+  const commandsDir = path.join(packageRoot, 'src/core/commands');
+  const claudeCommandsDir = path.join(packageRoot, 'src/core/claude-commands');
+  const agentsDir = path.join(packageRoot, 'src/core/agents');
+  const claudeAgentsDir = path.join(packageRoot, 'src/core/claude-agents');
+  const coreSkillsDir = path.join(packageRoot, 'src/core/skills');
+
+  const pairs: Array<{ aName: string; aSet: Set<string>; bName: string; bSet: Set<string> }> = [
+    {
+      aName: 'commands',
+      aSet: await listMdBasenames(commandsDir),
+      bName: 'claude-commands',
+      bSet: await listMdBasenames(claudeCommandsDir),
+    },
+    {
+      aName: 'agents',
+      aSet: await listMdBasenames(agentsDir),
+      bName: 'claude-agents',
+      bSet: await listMdBasenames(claudeAgentsDir),
+    },
+  ];
+
+  for (const { aName, aSet, bName, bSet } of pairs) {
+    for (const f of aSet) {
+      if (!bSet.has(f)) errors.push({ file: `src/core/${aName}/${f}`, issue: `Missing parity: no matching file in ${bName}/` });
+    }
+    for (const f of bSet) {
+      if (!aSet.has(f)) errors.push({ file: `src/core/${bName}/${f}`, issue: `Missing parity: no matching file in ${aName}/` });
+    }
+  }
+
+  // Skill reachability — collect skill names referenced by any command or agent.
+  const referencedSkills = new Set<string>();
+  for (const d of [commandsDir, claudeCommandsDir, agentsDir, claudeAgentsDir]) {
+    for (const file of await walkDir(d, '.md')) {
+      const content = await fs.readFile(file, 'utf-8');
+      for (const m of content.matchAll(/\.(?:cursor|agent-runway)\/skills\/([^/`)\s]+)/g)) {
+        referencedSkills.add(m[1]);
+      }
+    }
+  }
+
+  if (await fs.pathExists(coreSkillsDir)) {
+    const skillEntries = await fs.readdir(coreSkillsDir, { withFileTypes: true });
+    for (const e of skillEntries) {
+      if (!e.isDirectory()) continue;
+      // Dirs without a SKILL.md (e.g. shared/) are not invokable skills.
+      if (!(await fs.pathExists(path.join(coreSkillsDir, e.name, 'SKILL.md')))) continue;
+      if (!referencedSkills.has(e.name)) {
+        errors.push({ file: `src/core/skills/${e.name}`, issue: 'Skill is not reachable from any command or agent' });
+      }
     }
   }
 
@@ -198,6 +311,10 @@ async function validateSkillInternalRefs(packageRoot: string): Promise<Validatio
   const mdFiles = [
     ...(await walkDir(coreSkillsDir, '.md')),
     ...(await walkDir(stacksDir, '.md')),
+    ...(await walkDir(path.join(packageRoot, 'src/core/commands'), '.md')),
+    ...(await walkDir(path.join(packageRoot, 'src/core/claude-commands'), '.md')),
+    ...(await walkDir(path.join(packageRoot, 'src/core/agents'), '.md')),
+    ...(await walkDir(path.join(packageRoot, 'src/core/claude-agents'), '.md')),
   ];
 
   for (const file of mdFiles) {
@@ -263,27 +380,29 @@ async function validateStackCompleteness(packageRoot: string): Promise<Validatio
 }
 
 async function main(): Promise<void> {
-  // dist/validate.js → __dirname is dist/, so .. is the package root
+  // dist/validate.js -> __dirname is dist/, so .. is the package root
   const packageRoot = path.join(__dirname, '..');
 
   console.log('Validating Agent Runway content...\n');
 
   const allErrors: ValidationError[] = [
+    ...(await validateNoMojibake(packageRoot)),
     ...(await validateMdcFiles(packageRoot)),
     ...(await validateSkillFiles(packageRoot)),
     ...(await validateCommandFiles(packageRoot)),
+    ...(await validateParity(packageRoot)),
     ...(await validateSkillInternalRefs(packageRoot)),
     ...(await validateStackCompleteness(packageRoot)),
   ];
 
   if (allErrors.length === 0) {
-    console.log('✅ All content valid\n');
+    console.log('OK All content valid\n');
     process.exit(0);
   }
 
-  console.error(`❌ Found ${allErrors.length} validation error(s):\n`);
+  console.error(`Found ${allErrors.length} validation error(s):\n`);
   for (const error of allErrors) {
-    console.error(`  ${error.file}\n    → ${error.issue}\n`);
+    console.error(`  ${error.file}\n    -> ${error.issue}\n`);
   }
   process.exit(1);
 }

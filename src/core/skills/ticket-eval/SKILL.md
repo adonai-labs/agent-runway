@@ -109,6 +109,7 @@ Apply the profile from Phase 2. For each criterion:
 - Each criterion is measurable and testable
 - Covers main flow and edge cases
 - Given/When/Then or checklist format
+- Each criterion declares how it is verified (`Verified by:` test path/id). `pending` is acceptable at ticket creation but must resolve before review can APPROVE
 
 **4. Design/UX Linked** (if applicable)
 - Figma link attached
@@ -223,8 +224,17 @@ Classified as **[Type]** because [brief reason]. Jira issue type: [IssueType].
 - [Question]
 ```
 
----
+## Machine-readable verdict
 
-## Australian English
+Always end the output with this block, filled in (schema: [../shared/verdict-block.md](../shared/verdict-block.md)):
 
-All validation reports, comments, and questions must use Australian English spelling and vocabulary.
+```yaml
+# agent-runway:verdict
+gate: ticket-eval
+status: [yes | conditional | no]
+blocking: [count of failed Required criteria]
+date: [YYYY-MM-DD]
+artifact: [ticket path or key evaluated]
+```
+
+Persist it: append this block to the evaluated ticket file under `.agent-runway/specs/<slug>/tickets/` so `agent-runway metrics` can read it.

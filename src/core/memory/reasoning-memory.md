@@ -21,3 +21,7 @@ Capture high-level judgement history:
 - Rule update for future decisions: [new threshold or trigger]
 - Linked artifacts: [spec/ticket/adr/incidents]
 ```
+
+## Archive
+
+Superseded or resolved entries move here (see `shared/memory-policy.md` in your agent's skills directory). Keep for history; do not delete.

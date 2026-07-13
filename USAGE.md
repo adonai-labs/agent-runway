@@ -25,6 +25,8 @@ npx agent-runway init
   ⚡ .NET Backend API
   🖥️ Electron Desktop App
   🦀 Rust Systems Programming
+  🐍 Python Backend
+  🐹 Go Backend
   🎯 Core Only (universal rules only)
   🔀 Polyglot Backend
   🔧 Custom Selection
@@ -121,6 +123,8 @@ npx agent-runway list
 
   ○ .NET / C# (dotnet)
   ○ Rust (rust)
+  ○ Python (python)
+  ○ Go (go)
   ○ Electron (electron)
 
 Use `agent-runway add <stack>` to install a stack.
@@ -138,6 +142,47 @@ Updating Agent Runway...
 ✓ Agent Runway updated successfully!
 Reload Cursor window to apply updates.
 ```
+
+### Delivery Metrics
+
+```bash
+npx agent-runway metrics
+```
+
+Aggregates the machine-readable verdict blocks (from `ticket-eval`, `po-eval`, `review`, `contrarian`) and autonomous run headers found under `.agent-runway/` into a scorecard: gate pass rates, blocking findings, acceptance criteria still `pending`, run gate pass rates, retries, time-to-green, and how often each memory entry was applied.
+
+### CI governance (optional)
+
+For teams that want **verifiable** governance — not just prose in skills — run artefact checks in CI:
+
+```bash
+# Advisory: warnings only, exit 0 (default)
+npx agent-runway ci-check
+
+# Strict: fail the pipeline when artefacts are missing or incomplete
+npx agent-runway ci-check --profile strict
+
+# Machine-readable output for CI dashboards
+npx agent-runway ci-check --profile strict --json
+```
+
+**Strict profile checks:**
+
+| Code | What it catches |
+| ---- | ---------------- |
+| `GOVERNANCE_GAP` | Specs exist but no verdict blocks anywhere — same blind spot as zero metrics |
+| `SPEC_WITHOUT_VERDICT` | A spec folder has no gate verdict under `.agent-runway/specs/<slug>/` |
+| `AC_PENDING` | Acceptance criteria still have `Verified by: pending` |
+| `RUN_LOG_WITHOUT_HEADER` | Autonomous run logs missing `# agent-runway:run` header |
+
+Example GitHub Actions step (opt-in):
+
+```yaml
+- name: Agent Runway governance
+  run: npx agent-runway ci-check --profile strict
+```
+
+Most teams can skip this entirely; purists and regulated delivery paths should enable it explicitly.
 
 ---
 
@@ -222,7 +267,7 @@ Context for this work:
 
 Task classification: Standard
 Recommended: /lead (full workflow with quality gates)
-Alternatives: /fast-lead (if you already have a plan), /express (if simple single-layer change)
+Alternatives: /lead (Fast-Track Mode if you already have a plan), /express (if simple single-layer change)
 ```
 
 ### `/lead` - Full Implementation Workflow
@@ -281,15 +326,30 @@ Decision: Should we use event-driven architecture for order notifications?
 
 ### Other Commands
 
-- `/validate` - Deprecated wrapper; use `ticket-eval` directly
-- `/po-eval` - Deprecated wrapper; use `po-eval` directly
-
-Note: deprecated wrappers (/spec, /ticket, /validate, /po-eval) will be removed in the next minor release.
+- `/spec-creator` - Create or refine an implementation-ready spec
+- `/ticket-creator` - Create a ready-to-dev ticket
+- `/validate` - Evaluate a ticket for development readiness (ticket-eval)
+- `/po-eval` - Evaluate a spec or ticket from a product perspective
 - `/refactor` - Guided refactoring workflow
 - `/express` - Fast implementation for simple changes
-- `/fast-lead` - Accelerated workflow when you have a plan
-- `/dotnet` - .NET-specific guidance (if stack installed)
+- `/lead` - Full workflow; state you have a plan to activate Fast-Track Mode
 - `/iac` - Infrastructure as Code workflows
+
+### Stack guidance (no slash commands)
+
+Stacks do not have their own commands. After `agent-runway add <stack>`:
+
+| Stack | Rules attach on | Stack skill |
+| ----- | --------------- | ----------- |
+| dotnet | `*.cs`, `*.csproj` | `@dotnet-core` |
+| typescript | `*.ts`, `*.tsx` | `@typescript-core` |
+| node | `*.js`, `package.json` | `@node-core` |
+| react | `*.tsx`, `*.jsx` | `@react-core` |
+| python | `*.py`, `pyproject.toml` | `@python-core` |
+| go | `*.go`, `go.mod` | `@go-core` |
+| rust | `*.rs`, `Cargo.toml` | `@rust-core` |
+
+Edit matching files for automatic rule context, or invoke the stack skill directly when installed (`@skill-name` in Cursor, or reference the skill file in Claude Code).
 
 ---
 

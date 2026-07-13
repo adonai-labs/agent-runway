@@ -1,0 +1,67 @@
+---
+description: Node.js architecture guidelines — project structure, layering, hexagonal adapters, config validation, and process entry point patterns. Applied when working on Node.js service architecture and structure.
+globs: "**/*.js,**/*.cjs,**/*.mjs,**/*.ts,**/package.json"
+alwaysApply: false
+---
+
+# Node.js Architecture Guidelines
+
+Applied when working with Node.js service architecture. Australian English spelling throughout.
+
+---
+
+## Project Structure
+
+- Separate concerns into `domain/`, `application/`, `infrastructure/`, `api/`, and `shared/` — dependency flow is always inward
+- Keep business rules (domain and application) independent of Express, Fastify, or any HTTP framework
+- Centralise all `process.env` access in a typed config module; validate at startup with Zod
+
+---
+
+## Layer Rules
+
+- **Domain:** no external dependencies; entities, value objects, port interfaces
+- **Application:** depends on domain only; defines port interfaces infrastructure must implement
+- **Infrastructure:** implements ports; contains DB adapters, queue clients, HTTP clients
+- **API:** depends on application; maps HTTP to use cases and results to responses
+- **Shared:** cross-cutting utilities; imports nothing from domain, application, or infrastructure
+
+---
+
+## Multiple Entry Points (Hexagonal)
+
+When a service has both HTTP and queue consumers, treat each as an independent adapter calling the same application use cases. The core (domain + application) never knows which adapter triggered it.
+
+---
+
+## Config
+
+- Use Zod to validate and type all environment variables at startup — fail fast on missing config
+- Export a single typed `config` object; never read `process.env` directly outside the config module
+- Do not default-fill secrets; a missing secret at startup is safer than silent misconfiguration
+
+---
+
+## Process Entry Point
+
+- Compose the application from the outside in: validate config → create infrastructure → wire use cases → start server/workers → register shutdown handlers
+- Handle `SIGTERM` and `SIGINT` for graceful shutdown
+- Exit with non-zero code on startup failure via an uncaught rejection handler on `main()`
+
+---
+
+## Module System
+
+- Prefer ESM (`"type": "module"`) for new projects
+- Use `node:` prefix for built-in imports — explicit and avoids naming conflicts
+- Avoid barrel `index.ts` files in large codebases — they slow type-checking and break tree-shaking
+
+---
+
+## Checklist
+
+- [ ] Entry point composes app from outside in; no logic in `index.ts` other than wiring
+- [ ] Config validated with Zod at startup; single typed export
+- [ ] SIGTERM / SIGINT handlers registered; graceful shutdown closes all infrastructure
+- [ ] Layer boundaries respected; domain and application import nothing from infrastructure
+- [ ] Built-in imports use `node:` prefix

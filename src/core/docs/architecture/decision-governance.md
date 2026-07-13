@@ -14,7 +14,7 @@ Classify each request with four signals:
 - cost of error: low/medium/high
 
 Then route:
-- `express` or `fast-lead`: low risk and reversible
+- `express` or `lead` (Fast-Track Mode): low risk and reversible
 - `lead`: medium risk or multi-layer implementation
 - `lead + contrarian gate`: high impact, hard-to-reverse, or high uncertainty
 

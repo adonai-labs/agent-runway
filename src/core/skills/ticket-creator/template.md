@@ -51,9 +51,10 @@ Concrete folder and file layout for this ticket (new files, touched files, modul
 - Alternatives checked: [1-2 options or "captured in parent spec"]
 
 ## Acceptance Criteria
-- [ ] **[Scenario name]** — Given [precondition] → [expected outcome]
-- [ ] **[Scenario name]** — Given [precondition] → [expected outcome]
-- [ ] **[Error/edge case]** — Given [precondition] → [expected outcome]
+Each criterion is testable and maps to a test. Append `Verified by: <test path or id>`, or `pending` until the test exists.
+- [ ] **[Scenario name]** — Given [precondition] → [expected outcome] — Verified by: [test path/id | pending]
+- [ ] **[Scenario name]** — Given [precondition] → [expected outcome] — Verified by: [test path/id | pending]
+- [ ] **[Error/edge case]** — Given [precondition] → [expected outcome] — Verified by: [test path/id | pending]
 
 ## Agent Notes
 - **Relevant area**: [module, service, DB collection, API endpoint]
@@ -115,12 +116,12 @@ So that I stay informed about my purchase without having to check the website re
 - Multi-language email support (decision pending — Product Lead)
 
 ## Acceptance Criteria
-- [ ] **Order confirmed** — Given order status changes to `confirmed` → email sent with order summary and estimated delivery date
-- [ ] **Order shipped** — Given order status changes to `shipped` → email sent with tracking number and carrier link
-- [ ] **Order delivered** — Given order status changes to `delivered` → email sent with delivery confirmation and feedback request link
-- [ ] **Email content** — Given any status change email → contains order number, current status, timestamp, items list, and relevant action link
-- [ ] **No duplicates** — Given order status updated multiple times to same status → only one email sent per unique status change
-- [ ] **Failed email logged** — Given email service fails → error logged with order ID, customer email, status, and error message; order processing continues
+- [ ] **Order confirmed** — Given order status changes to `confirmed` → email sent with order summary and estimated delivery date — Verified by: pending
+- [ ] **Order shipped** — Given order status changes to `shipped` → email sent with tracking number and carrier link — Verified by: pending
+- [ ] **Order delivered** — Given order status changes to `delivered` → email sent with delivery confirmation and feedback request link — Verified by: pending
+- [ ] **Email content** — Given any status change email → contains order number, current status, timestamp, items list, and relevant action link — Verified by: pending
+- [ ] **No duplicates** — Given order status updated multiple times to same status → only one email sent per unique status change — Verified by: pending
+- [ ] **Failed email logged** — Given email service fails → error logged with order ID, customer email, status, and error message; order processing continues — Verified by: pending
 
 ## Agent Notes
 - **Relevant area**: Order Service (backend); Email Service (external); background job queue; PostgreSQL `orders` and `notifications` tables

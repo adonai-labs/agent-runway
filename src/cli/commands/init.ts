@@ -14,7 +14,7 @@ import {
   copyClaude,
   copyVscode,
   copyStackSpecTemplates,
-  copyDocsScaffold,
+  ensureProjectScaffold,
   createConfig,
   getCursorDir,
   getGlobalCursorDir,
@@ -33,52 +33,7 @@ interface InitOptions {
 }
 
 async function ensureProjectStructure(projectRoot: string): Promise<void> {
-  const agentRunwayDir = path.join(projectRoot, '.agent-runway');
-
-  await fs.ensureDir(path.join(agentRunwayDir, 'memory'));
-  await fs.ensureDir(path.join(agentRunwayDir, 'specs'));
-  await fs.ensureDir(path.join(agentRunwayDir, 'config'));
-  await fs.ensureDir(path.join(agentRunwayDir, 'workflows'));
-
-  const errorsPath = path.join(agentRunwayDir, 'memory', 'errors.md');
-  const memoryPath = path.join(agentRunwayDir, 'memory', 'memory.md');
-  const repeatedErrorsPath = path.join(agentRunwayDir, 'memory', 'repeated-errors.md');
-  const projectDecisionsPath = path.join(agentRunwayDir, 'memory', 'project-decisions.md');
-  const recurringPatternsPath = path.join(agentRunwayDir, 'memory', 'recurring-patterns.md');
-  const commonFailuresPath = path.join(agentRunwayDir, 'memory', 'common-failures.md');
-  const reviewFindingsPath = path.join(agentRunwayDir, 'memory', 'review-findings.md');
-  const ticketQualityNotesPath = path.join(agentRunwayDir, 'memory', 'ticket-quality-notes.md');
-  const testingNotesPath = path.join(agentRunwayDir, 'memory', 'testing-notes.md');
-
-  if (!(await fs.pathExists(errorsPath))) {
-    await fs.writeFile(errorsPath, '# Repeated Errors\n\nDocument recurring errors, root causes, fixes, and prevention guidance.\n');
-  }
-  if (!(await fs.pathExists(memoryPath))) {
-    await fs.writeFile(memoryPath, '# Project Memory\n\nCapture reusable project learnings and notable decisions.\n');
-  }
-  if (!(await fs.pathExists(repeatedErrorsPath))) {
-    await fs.writeFile(repeatedErrorsPath, '# Repeated Error Patterns\n\nTrack repeated failure patterns to reduce recurrence.\n');
-  }
-  if (!(await fs.pathExists(projectDecisionsPath))) {
-    await fs.writeFile(projectDecisionsPath, '# Project Decisions\n\nCapture architecture and product decisions that should be reused consistently.\n');
-  }
-  if (!(await fs.pathExists(recurringPatternsPath))) {
-    await fs.writeFile(recurringPatternsPath, '# Recurring Patterns\n\nRecord patterns that repeatedly work well across tasks and code areas.\n');
-  }
-  if (!(await fs.pathExists(commonFailuresPath))) {
-    await fs.writeFile(commonFailuresPath, '# Common Failures\n\nTrack failure modes and anti-patterns to prevent repeated regressions.\n');
-  }
-  if (!(await fs.pathExists(reviewFindingsPath))) {
-    await fs.writeFile(reviewFindingsPath, '# Review Findings\n\nSummarize recurring review findings that should shape future implementation.\n');
-  }
-  if (!(await fs.pathExists(ticketQualityNotesPath))) {
-    await fs.writeFile(ticketQualityNotesPath, '# Ticket Quality Notes\n\nCapture ticket quality issues and improvements for clearer implementation handoff.\n');
-  }
-  if (!(await fs.pathExists(testingNotesPath))) {
-    await fs.writeFile(testingNotesPath, '# Testing Notes\n\nDocument reusable testing insights, gaps, and stability lessons.\n');
-  }
-
-  await copyDocsScaffold(projectRoot);
+  await ensureProjectScaffold(projectRoot);
 }
 
 export async function initCommand(options: InitOptions) {

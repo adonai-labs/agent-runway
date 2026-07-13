@@ -175,7 +175,7 @@ Detection signals:
 Write rules:
 - append max 1 entry to `.agent-runway/memory/execution-memory.md`
 - append max 1 entry to `.agent-runway/memory/reasoning-memory.md`
-- deduplicate near-identical entries (update existing instead of append)
+- apply the memory hygiene policy: [../shared/memory-policy.md](../shared/memory-policy.md) (consolidate duplicates, cap active entries, archive instead of delete)
 - keep entries concise, non-sensitive, and linked to affected IaC artifact paths
 
 ---

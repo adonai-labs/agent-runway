@@ -1,0 +1,63 @@
+---
+description: Python development guidelines — PEP 8, type hints, error handling, async patterns, packaging, and testing. Applied when working with Python code.
+globs: "**/*.py,**/pyproject.toml,**/requirements*.txt"
+alwaysApply: false
+---
+
+# Python Development Guidelines
+
+Directives for Python development. Apply when working with `.py` files, `pyproject.toml`, or requirements files.
+
+---
+
+## Code Style
+
+- Follow PEP 8; let `black` and `ruff` enforce formatting rather than hand-tuning.
+- Use `snake_case` for functions and variables, `PascalCase` for classes, `UPPER_SNAKE` for constants.
+- Keep functions small and single-purpose; prefer early returns over deep nesting.
+- Prefer comprehensions over manual loops for simple transformations, but not at the cost of readability.
+
+## Type Hints
+
+- Annotate public function signatures (parameters and return types).
+- Use `from __future__ import annotations` to simplify forward references.
+- Prefer `X | None` over `Optional[X]` on modern versions; use `Protocol` for structural typing.
+- Run a type checker (`mypy` or `pyright`) in CI; treat new type errors as failures.
+
+## Error Handling
+
+- Catch specific exceptions — never a bare `except:`.
+- Define custom exception types for domain errors; do not raise bare `Exception`.
+- Use context managers (`with`) for resources (files, sockets, locks, sessions).
+- Add context when re-raising: `raise DomainError(...) from err`.
+- Do not silently swallow exceptions; log with context or propagate.
+
+## Async Patterns
+
+- Use `async`/`await` for I/O-bound work; never call blocking I/O inside an async function.
+- Use `asyncio.gather` for concurrent awaits; `asyncio.create_task` to schedule.
+- Do not mix blocking libraries into the event loop — use async clients or run them in an executor.
+
+## Packaging and Imports
+
+- Prefer absolute imports; avoid wildcard `from x import *`.
+- Pin dependencies in `pyproject.toml`/lock files; keep runtime and dev dependencies separate.
+- Avoid mutable default arguments — use `None` and create the value inside the function.
+
+## Testing
+
+- Use `pytest`; name tests `test_*.py`.
+- Use fixtures for setup/teardown; mock external dependencies at the boundary.
+- Cover happy path, edge cases (empty, null, boundary), and failure paths.
+- Assert behaviour, not implementation detail.
+
+## Common Anti-patterns
+
+| Anti-pattern | Do instead |
+|--------------|------------|
+| Bare `except:` | Catch specific exception types |
+| Mutable default arguments (`def f(x=[])`) | Default to `None`, create inside |
+| `from module import *` | Import specific names |
+| String-building SQL with `%`/f-strings | Use parameterised queries |
+| `print()` for diagnostics | Use the `logging` module |
+| Broad `# type: ignore` | Narrow the ignore or fix the type |

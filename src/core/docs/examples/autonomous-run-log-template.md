@@ -6,6 +6,27 @@ Use this template for:
 
 ---
 
+## 0) Run Header (machine-readable)
+
+Fill in and keep at the top — `agent-runway metrics` reads this block. Schema: `shared/run-log-schema.md` in your agent's skills directory (`.cursor/skills`, `.agent-runway/skills`, or `.github/skills`).
+
+```yaml
+# agent-runway:run
+run_id: <run-id>
+date: <YYYY-MM-DD>
+task: <one-line task>
+classification: trivial | standard | complex
+build: pass | fail | skipped
+test: pass | fail | skipped
+lint: pass | fail | skipped
+retries: 0
+time_to_green_min: 0
+deviations: 0
+memory_refs:
+```
+
+---
+
 ## 1) Objective and Boundaries
 
 - Objective:

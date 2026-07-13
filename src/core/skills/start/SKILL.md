@@ -107,7 +107,7 @@ Execution routing class:
 - **Execution+contrarian**: contrarian trigger active
 
 Short-path rule:
-- If routing class is `Execution-only`, prefer minimal process path (`/express` or `/fast-lead` when plan is already clear).
+- If routing class is `Execution-only`, prefer minimal process path (`/express` or `/lead` Fast-Track Mode when plan is already clear).
 - Do not force extended discovery gates for execution-only tasks.
 
 **Then load project context** (only what exists — skip gracefully if files are absent):
@@ -127,7 +127,7 @@ Project context loaded:
 
 If no project docs exist yet, note it plainly:
 ```
-No project docs found. Proceeding with standard .NET patterns.
+No project docs found. Proceeding with standard patterns for the detected stack.
 The tech lead can add project context to .agent-runway/docs/ to improve future routing.
 ```
 
@@ -184,8 +184,8 @@ Present the routing decision clearly.
 For **Implementation and Bug fix** tasks, use the following routing rules in order:
 
 1. If routing class is **Execution+contrarian**: recommend `/lead` with mandatory contrarian gate before implementation.
-2. If **Complex** → recommend `/lead`. Always. A Complex task routed to `/express` or `/fast-lead` should only happen if the developer explicitly overrides after seeing an escalation signal.
-3. If **Standard** and the developer mentions they already have a plan or approach → recommend `/fast-lead`.
+2. If **Complex** → recommend `/lead`. Always. A Complex task routed to `/express` should only happen if the developer explicitly overrides after seeing an escalation signal.
+3. If **Standard** and the developer mentions they already have a plan or approach → recommend `/lead` (Fast-Track Mode).
 4. If **Standard** and no plan mentioned:
    - Small, well-scoped, single-layer → suggest `/express` as an option alongside `/lead`
    - Anything else → recommend `/lead`
@@ -208,7 +208,6 @@ The recommendation is always a suggestion, not a command. Present it as:
 - [Layer(s) in scope]
 - [Anything the developer should know before starting]
 
-Task classification: [Trivial / Standard / Complex]
 Recommended: /[command] ([brief reason])
 Alternatives: [other applicable commands]
 ```
@@ -243,7 +242,7 @@ If no project docs exist for a Complex task, surface it explicitly:
 
 ## Portability note
 
-This skill works on any .NET project. Project-specific context (bounded contexts, ADRs, domain model) lives in `.agent-runway/docs/` at the repo root. When docs exist, routing is richer. When they don't, the skill routes correctly using the codebase and standard .NET patterns — and flags that docs would improve future routing.
+This skill works on any project, regardless of stack. Project-specific context (bounded contexts, ADRs, domain model) lives in `.agent-runway/docs/` at the repo root. When docs exist, routing is richer. When they don't, the skill routes correctly using the codebase and detected stack patterns — and flags that docs would improve future routing.
 
 The tech lead or architect owns keeping `.agent-runway/docs/` current. This skill reads it; it does not write it.
 

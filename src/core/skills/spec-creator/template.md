@@ -142,9 +142,10 @@ Concrete folder and file layout for this implementation (new files, touched file
 - Compatibility note: [how existing behavior is preserved or intentionally changed]
 
 ## Acceptance Criteria
-- [ ] [Verifiable criterion 1]
-- [ ] [Verifiable criterion 2]
-- [ ] [Error/edge criterion]
+Each criterion is testable and maps to a test. Append `Verified by: <test path or id>`, or `pending` until the test exists.
+- [ ] [Verifiable criterion 1] — Verified by: [test path/id | pending]
+- [ ] [Verifiable criterion 2] — Verified by: [test path/id | pending]
+- [ ] [Error/edge criterion] — Verified by: [test path/id | pending]
 
 ## Agent Guidance
 When implementing:

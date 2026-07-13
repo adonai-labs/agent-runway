@@ -16,3 +16,7 @@ High-impact decisions that define the product or architecture direction.
 - Related spec/ticket: [path or key]
 - Follow-up signal: [metric or event that can invalidate this]
 ```
+
+## Archive
+
+Superseded or invalidated decisions move here (see `shared/memory-policy.md` in your agent's skills directory). Keep for history; do not delete.

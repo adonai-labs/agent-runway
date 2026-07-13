@@ -1,0 +1,71 @@
+---
+description: Node.js security guidelines — child process safety, SSRF prevention, HTTP security headers, body limits, secrets hygiene, and dependency auditing. Applied when working on Node.js services and backend code.
+globs: "**/*.js,**/*.cjs,**/*.mjs,**/*.ts"
+alwaysApply: false
+---
+
+# Node.js Security Guidelines
+
+Applied when working with Node.js service code. Australian English spelling throughout.
+
+---
+
+## Child Process Safety
+
+- Use `execFile` (not `exec`) — it does not invoke a shell, eliminating shell injection
+- Never interpolate user-controlled data into command strings
+- Validate file paths before passing to child processes; reject paths containing `..` or null bytes
+- Set an execution timeout on all child processes; terminate on timeout
+
+---
+
+## SSRF Prevention
+
+- Validate all user-supplied URLs against an explicit allowlist of permitted hostnames before making outbound HTTP requests
+- Block requests to loopback (`127.x.x.x`, `::1`, `localhost`) and RFC 1918 private ranges
+- Use a dedicated HTTP client with configurable redirect limits; disable open redirects for internal clients
+
+---
+
+## HTTP Security Headers
+
+- Apply `helmet()` middleware to every Express/Fastify app; configure CSP explicitly
+- Set a strict body size limit (`express.json({ limit: '100kb' })`) to prevent memory exhaustion
+- Enable `HSTS` in production; enforce HTTPS at the load balancer and in the app
+
+---
+
+## Rate Limiting and Abuse Prevention
+
+- Apply rate limiting to all public-facing endpoints; use stricter limits on auth endpoints
+- Use `express-rate-limit` or Fastify equivalents; back with Redis for distributed deployments
+- Return `429 Too Many Requests` with a `Retry-After` header
+
+---
+
+## Secrets and Environment
+
+- Validate all required environment variables at startup with Zod; fail fast on missing secrets
+- Never log secrets, tokens, or password fields; configure Pino `redact` for sensitive paths
+- Use a secrets manager (AWS Secrets Manager, Vault, Doppler) in production — not `.env` files
+
+---
+
+## Dependency Security
+
+- Run `npm audit --audit-level=high` in CI as a blocking step
+- Use `npm ci` in CI for reproducible installs
+- Review and pin critical dependency versions; use Dependabot or Renovate for automated updates
+- Regularly remove unused packages (`npx depcheck`)
+
+---
+
+## Checklist
+
+- [ ] `execFile` used for all child processes; no user input in command strings
+- [ ] Outbound HTTP requests to user-supplied URLs validated against an allowlist
+- [ ] `helmet()` applied; CSP configured; body size limited
+- [ ] Rate limiting on public and auth endpoints
+- [ ] `npm audit --audit-level=high` passes in CI
+- [ ] Secrets validated at startup; never logged or committed
+- [ ] Stack traces not returned in API responses (`NODE_ENV=production`)

@@ -1,0 +1,72 @@
+---
+description: TypeScript testing guidelines — Vitest/Jest setup, unit testing patterns, mocking strategy, integration testing with Testcontainers, and coverage standards. Applied when working with TypeScript test files.
+globs: "**/*.test.ts,**/*.spec.ts,**/*.test.tsx,**/*.spec.tsx,**/vitest.config.*,**/jest.config.*"
+alwaysApply: false
+---
+
+# TypeScript Testing Guidelines
+
+Applied when working with TypeScript test files and testing configuration. Australian English spelling throughout.
+
+---
+
+## Test Framework
+
+- Prefer **Vitest** for new projects — native ESM, fast watch mode, compatible Jest API, first-class TypeScript
+- Use **Jest** only if the project already has it configured; do not migrate mid-project for its own sake
+- Enable `globals: true` to avoid importing `describe`, `it`, `expect` in every file
+
+---
+
+## What to Test
+
+- Test **behaviour and outcomes**, not implementation details or internal method calls
+- Business rules and domain logic deserve the most thorough test coverage
+- Test every error path explicitly: invalid input, missing resources, downstream failures
+- Do not chase a coverage percentage — coverage is a signal, not a target
+
+---
+
+## Test Structure
+
+- One `describe` per unit under test; group related scenarios within it
+- Name tests as plain English sentences describing the expected outcome
+- Keep tests small and focused — one assertion concept per test (multiple `expect` on the same scenario is fine)
+- Use `beforeEach(() => vi.clearAllMocks())` to prevent cross-test contamination
+
+---
+
+## Mocking
+
+- Inject dependencies via constructor or function parameter — do not patch modules directly
+- Use `vi.fn()` / `jest.fn()` for simple function mocks; `vi.spyOn()` for partial mocking
+- Use `vi.mock('module')` only for third-party modules you cannot inject (e.g. `node:crypto`, cloud SDKs)
+- Always clear or reset mocks in `beforeEach` — shared mock state between tests causes flaky failures
+
+---
+
+## Integration Testing
+
+- Use **Testcontainers** for real database and infrastructure tests — avoid SQLite as a Postgres proxy
+- Start containers in `beforeAll`, truncate state in `beforeEach`, stop in `afterAll`
+- Run integration tests in CI only (not in watch mode) — tag with `@integration` or separate config file
+- Run migrations before the suite, not before each test
+
+---
+
+## Coverage
+
+- Run coverage in CI; report on lines, branches, and functions
+- Focus coverage on domain logic and use cases; do not aim to cover generated code or `index.ts` barrel files
+- Exclude `*.d.ts`, `dist/`, and test helpers from coverage reports
+
+---
+
+## Checklist
+
+- [ ] Use cases tested without infrastructure dependencies (inject mocks)
+- [ ] All error paths tested explicitly (invalid input, missing entity, downstream failure)
+- [ ] Mocks cleared in `beforeEach`
+- [ ] Integration tests use Testcontainers (real DB, not SQLite)
+- [ ] Tests clean up after themselves — no shared mutable state
+- [ ] CI runs unit + integration; coverage reported

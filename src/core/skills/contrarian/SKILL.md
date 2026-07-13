@@ -57,9 +57,9 @@ Requirements:
 - Must describe the key trade-off vs. the chosen approach in one sentence
 - Do not simply repeat alternatives already rejected in the handoff — offer a fresh angle if possible
 
-### Step 5 — Failure Signals
+### Step 5 — Invalidation Signals
 
-List 2–4 specific conditions under which the chosen approach would fail or require significant rework.
+List 2–4 specific conditions under which the chosen approach would fail or require significant rework. (Maps to the "Invalidation signals" field in the Phase 0 contrarian gate.)
 
 Format each as: "This approach fails when [specific condition]."
 
@@ -94,7 +94,7 @@ Default toward **Go** or **Go with conditions** unless the blocker is specific a
 **[Name]**
 [One paragraph — what it is, how it differs, key trade-off]
 
-### Failure Signals
+### Invalidation Signals
 - This approach fails when [condition].
 - This approach fails when [condition].
 - This approach fails when [condition].
@@ -111,3 +111,18 @@ Default toward **Go** or **Go with conditions** unless the blocker is specific a
 #### Blocker *(only if "Stop")*
 [Specific reason — what must be resolved before implementation proceeds]
 ```
+
+## Machine-readable verdict
+
+Always end the output with this block, filled in (schema: [../shared/verdict-block.md](../shared/verdict-block.md)):
+
+```yaml
+# agent-runway:verdict
+gate: contrarian
+status: [go | go-conditional | stop]
+blocking: [1 when status is stop, else 0]
+date: [YYYY-MM-DD]
+artifact: [decision/spec/approach evaluated]
+```
+
+Persist it: append this block to the spec's Contrarian Review section under `.agent-runway/specs/` (or the run log) so `agent-runway metrics` can read it.

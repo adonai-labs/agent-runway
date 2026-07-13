@@ -1,0 +1,62 @@
+---
+description: Node.js testing guidelines — API testing with Supertest, process lifecycle testing, queue consumer testing, stream testing, and Testcontainers for real infrastructure. Applied when working with Node.js test files.
+globs: "**/*.test.ts,**/*.spec.ts,**/*.test.js,**/*.spec.js,**/vitest.config.*,**/jest.config.*"
+alwaysApply: false
+---
+
+# Node.js Testing Guidelines
+
+Applied when working with Node.js test files and configuration. Australian English spelling throughout.
+
+---
+
+## API Testing
+
+- Use **Supertest** to test HTTP routes without starting a real server; bind directly to the app instance
+- Build the app with injected test dependencies — do not start with `app.listen()` in tests
+- Test every HTTP status code path: success, validation failure (400), auth failure (401/403), not found (404), server error (500)
+- Assert `Content-Type` and response shape for all API endpoints
+
+---
+
+## Process Lifecycle Testing
+
+- Test `SIGTERM` and `SIGINT` handling via `child_process.fork()` — verify clean exit with code `0`
+- Verify the process exits with a non-zero code on startup failure (missing env, failed DB connection)
+- Test that the server stops accepting new requests before shutdown dependencies are closed
+
+---
+
+## Queue Consumer Testing
+
+- Test consumer message handlers as plain functions — inject a fake queue client
+- Always test idempotency: processing the same message twice must not cause duplicate side effects
+- Test error handling: what happens when the handler throws, the DB is unavailable, or a downstream call fails
+
+---
+
+## Stream Testing
+
+- Test `Transform` streams independently using `Readable.from()` as input and a collecting `Writable` as output
+- Use `pipeline` from `node:stream/promises` in tests — it propagates errors correctly
+- Test back-pressure: verify the stream does not consume unbounded memory on slow consumers
+
+---
+
+## Integration Testing
+
+- Use **Testcontainers** for real PostgreSQL, Redis, Kafka, or other infrastructure dependencies
+- Start containers in `beforeAll`, truncate state in `beforeEach`, stop in `afterAll`
+- Set a generous timeout on `beforeAll` (≥60s) — container startup in CI can be slow
+- Do not use in-memory SQLite as a Postgres proxy — behaviour differs
+
+---
+
+## Checklist
+
+- [ ] HTTP routes tested with Supertest; all status codes covered
+- [ ] Process shutdown tested via `child_process.fork()`
+- [ ] Queue consumer idempotency tested explicitly
+- [ ] Stream transformers tested independently
+- [ ] Integration tests use Testcontainers; CI runs them separately from unit tests
+- [ ] No shared mutable state between tests; state reset in `beforeEach`

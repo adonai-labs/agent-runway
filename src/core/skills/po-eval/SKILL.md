@@ -106,9 +106,17 @@ Return a concise report in this structure:
 1. [Questions that remove ambiguity]
 ```
 
----
+## Machine-readable verdict
 
-## Language
+Always end the output with this block, filled in (schema: [../shared/verdict-block.md](../shared/verdict-block.md)):
 
-Use Australian English spelling in output.
+```yaml
+# agent-runway:verdict
+gate: po-eval
+status: [yes | conditional | no]
+blocking: [count of "Must Fix Before Build" items]
+date: [YYYY-MM-DD]
+artifact: [spec or ticket path evaluated]
+```
 
+Persist it: append this block to the evaluated spec/ticket under `.agent-runway/specs/` so `agent-runway metrics` can read it.

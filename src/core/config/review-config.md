@@ -8,7 +8,7 @@ Maintained by the tech lead or architect. If this file does not exist, all 21 ca
 ## How to use
 
 Set each category to `enabled` or `disabled`. Disabled categories must include a reason.
-The `/review` and `/security-scan` skills read this file at the start of Phase 2a.
+The `/review` skill reads this file at the start of Phase 2a.
 
 ---
 

@@ -1,0 +1,66 @@
+---
+description: TypeScript security guidelines — input validation with Zod, JWT handling, SQL injection prevention, secrets hygiene, and dependency scanning. Applied when working with TypeScript files.
+globs: "**/*.ts,**/*.tsx"
+alwaysApply: false
+---
+
+# TypeScript Security Guidelines
+
+Applied when working with TypeScript source files. Use Australian English spelling throughout.
+
+---
+
+## Input Validation
+
+- Validate all external input at boundaries using Zod (or equivalent): HTTP bodies, query params, message queue payloads, config, environment variables
+- Infer TypeScript types from Zod schemas — do not duplicate type definitions manually
+- Use `parse()` for hard failures at the boundary; `safeParse()` when you need to handle errors and continue
+- Apply length limits, format constraints, and range checks to all string and numeric inputs
+- Do not trust data arriving from a queue, file system, or webhook any less than HTTP input
+
+---
+
+## Type Safety as Security
+
+- Avoid `as` type assertions on untrusted data — they bypass the type checker without runtime checks
+- Use `unknown` instead of `any` for untyped input; narrow explicitly with type guards or Zod
+- Use branded types for domain primitives (IDs, emails, currencies) to prevent accidental mixing
+- Enable `noUncheckedIndexedAccess` — prevents silent `undefined` from array/object access
+
+---
+
+## Authentication and Authorisation
+
+- Validate JWT claims: `iss`, `aud`, `exp`, `nbf` — reject tokens missing any claim
+- Use short-lived access tokens (≤15 min) with refresh token rotation
+- Never compare tokens or hashes with `===` — use `crypto.timingSafeEqual()` to prevent timing attacks
+- Implement authorisation checks after authentication; check at the use-case boundary, not only at the route level
+
+---
+
+## Secrets Hygiene
+
+- Never hardcode secrets in source — use environment variables; validate with Zod at startup
+- Never log secrets, tokens, or full request bodies containing credentials
+- Rotate secrets on suspected exposure; treat rotation as a normal operational procedure
+- Use `.env.example` to document required variables; add `.env` to `.gitignore`
+
+---
+
+## Dependency Security
+
+- Run `npm audit --audit-level=high` in CI as a blocking step
+- Review transitive dependency updates; use `npm ci` (not `npm install`) in CI for reproducible installs
+- Scan for supply-chain risks with `socket` or `snyk` for high-value projects
+- Remove unused packages (`npx depcheck`); smaller surface area means fewer vulnerabilities
+
+---
+
+## Checklist
+
+- [ ] All external input validated with Zod at every boundary
+- [ ] No `as` assertions on untrusted data; `unknown` used and narrowed
+- [ ] JWT claims (`iss`, `aud`, `exp`) validated on every token
+- [ ] Secrets validated at startup; never logged
+- [ ] `npm audit --audit-level=high` passes in CI
+- [ ] Stack traces never returned in API error responses

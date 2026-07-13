@@ -1,6 +1,6 @@
 {
   "name": "@adonai-labs/agent-runway",
-  "version": "1.4.1",
+  "version": "1.5.0",
   "description": "A structured, AI-assisted development framework for coding agents",
   "main": "dist/index.js",
   "bin": {
@@ -11,10 +11,12 @@
     "build": "tsc && node dist/validate.js",
     "validate": "node dist/validate.js",
     "smoke": "npm run build:novalidate && node dist/smoke.js",
+    "content-test": "npm run build:novalidate && node dist/content-tests.js",
     "prepublishOnly": "npm run build",
     "dev": "tsc --watch",
     "prepare": "npm run build",
-    "test": "npm run build && npm run smoke"
+    "test": "npm run build && node dist/smoke.js && node dist/content-tests.js",
+    "release:check": "npm test && npm pack --dry-run"
   },
   "keywords": [
     "cursor",
@@ -27,8 +29,12 @@
     "code-review",
     "architecture",
     "typescript",
-    "dotnet",
-    "react"
+    "nodejs",
+    "react",
+    "python",
+    "go",
+    "rust",
+    "dotnet"
   ],
   "author": {
     "name": "Cristian Cardenas",
@@ -44,17 +50,19 @@
     "EXTENDING.md"
   ],
   "devDependencies": {
-    "@types/node": "^20.0.0",
     "@types/fs-extra": "^11.0.0",
     "@types/inquirer": "^9.0.0",
+    "@types/node": "^20.0.0",
+    "@types/update-notifier": "^6.0.8",
     "typescript": "^5.0.0"
   },
   "dependencies": {
-    "commander": "^11.0.0",
-    "inquirer": "^9.0.0",
     "chalk": "^5.0.0",
+    "commander": "^11.0.0",
+    "fs-extra": "^11.0.0",
+    "inquirer": "^9.0.0",
     "ora": "^7.0.0",
-    "fs-extra": "^11.0.0"
+    "update-notifier": "^5.1.0"
   },
   "engines": {
     "node": ">=18.0.0"

@@ -27,6 +27,8 @@ src/
 │   ├── react/
 │   ├── node/
 │   ├── rust/
+│   ├── python/
+│   ├── go/
 │   └── electron/
 │
 └── cli/                        # CLI implementation (TypeScript)
@@ -36,7 +38,8 @@ src/
     │   ├── remove.ts           # agent-runway remove <stack>
     │   ├── update.ts           # agent-runway update
     │   ├── list.ts             # agent-runway list
-    │   └── status.ts           # agent-runway status
+    │   ├── status.ts           # agent-runway status
+    │   └── metrics.ts          # agent-runway metrics
     ├── presets/                # Preset definitions (web-fullstack-ts, core-only, etc.)
     └── utils/                  # Copy helpers, config I/O, path resolution
 ```
@@ -107,18 +110,24 @@ See `EXTENDING.md` at the repo root for the full guide.
 ## Adding a New Core Skill
 
 1. Create `src/core/skills/{skill-name}/SKILL.md`
-2. For Claude Code, add a matching agent in `src/core/claude-agents/{skill-name}.md` if it needs isolated context
-3. Add a slash command in `src/core/claude-commands/{skill-name}.md` and `src/core/commands/{skill-name}.md`
-4. The skill is automatically copied to all target environments on install
+2. Add a slash command in **both** `src/core/commands/{name}.md` and `src/core/claude-commands/{name}.md` (the command file references the skill, so its name may differ from the skill — e.g. `validate` → `ticket-eval`)
+3. If the skill needs an isolated context (review / critique / adversarial roles), add an agent in **both** `src/core/agents/{name}.md` and `src/core/claude-agents/{name}.md`
+4. Run `npm run build` — the validator enforces command/agent parity across Cursor and Claude, and that every **core** skill is reachable from at least one command or agent
+5. The skill is automatically copied to all target environments on install
+
+Stack skills (`src/stacks/*/skill-*`) are installed via `agent-runway add` — they do **not** have slash commands; use rules (globs) and `@skill-name` invocation.
 
 ---
 
 ## Build and Release
 
 ```bash
-npm run build     # Compile TypeScript to dist/
-npm run lint      # Run ESLint
-npm test          # Run tests
+npm run build          # Compile TypeScript to dist/ and validate all skill frontmatter
+npm run lint           # Run ESLint
+npm test               # Build + smoke tests + content tests
+npm run content-test   # Content and integration tests only (faster iteration)
 ```
+
+CI runs on push and PR via `.github/workflows/ci.yml` across Node.js 18 and 20.
 
 The package publishes `dist/` and `src/` (skills, rules, stacks). See `files` in `package.json` for the exact list.

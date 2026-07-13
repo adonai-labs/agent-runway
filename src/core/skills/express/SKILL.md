@@ -26,7 +26,7 @@ Five phases. No approval gates except one: escalation signal confirmation if sig
 
 The developer owns all design decisions. This skill enforces critical safety checks and a lightweight self-review — nothing more.
 
-`/express` is not `/fast-lead` with fewer phases. It is a different skill designed from the ground up for minimal friction. It assumes the developer has full context, knows the codebase, and does not need a planning step.
+`/express` is not `/lead` Fast-Track Mode with fewer phases. It is a different skill designed from the ground up for minimal friction. It assumes the developer has full context, knows the codebase, and does not need a planning step.
 
 ---
 
@@ -61,7 +61,7 @@ When one or more signals are detected, present them before proceeding:
    - [signal name]: [one-line explanation specific to this task]
 
    These suggest this task may be more complex than /express assumes.
-   Recommended path: /lead (or /fast-lead if you already have a plan)
+   Recommended path: /lead (Fast-Track Mode if you already have a plan)
 
    Continue with /express anyway? [y/N]
 ```
@@ -113,7 +113,7 @@ Report findings inline. If a DRY hit is found, flag it and ask the developer how
 
 Implement the change. No planning phase. No approval gate on the implementation approach. The developer owns the design decisions.
 
-Apply all relevant rules (`engineering-principles`, `engineering-security`, `dotnet-*`) as they are applied in any other skill — injected automatically and non-negotiable.
+Apply all relevant rules for the detected stack (engineering principles, security, and any stack-specific rules) as they are applied in any other skill — injected automatically and non-negotiable.
 
 If during implementation a significant unexpected complexity emerges (e.g. the change touches more boundaries than initially described), surface an escalation signal inline using the format above and continue. Do not stop. The developer can decide to finish with `/express` or switch to `/lead` for the remaining work.
 

@@ -1,6 +1,6 @@
 ---
 name: refactor
-description: Guides structured refactoring of .NET/C# code to improve readability, maintainability, and SOLID/Clean Architecture alignment — without changing observable behaviour. Use when the user says "/refactor", "clean up", "improve this", "simplify", "restructure", "reduce complexity", "extract this", "decouple", "too complex", or wants to improve existing code quality.
+description: Guides structured refactoring to improve readability, maintainability, and SOLID/Clean Architecture alignment — without changing observable behaviour. Deepest examples are in .NET/C#, but the workflow applies to any stack. Use when the user says "/refactor", "clean up", "improve this", "simplify", "restructure", "reduce complexity", "extract this", "decouple", "too complex", or wants to improve existing code quality.
 ---
 
 # Refactor

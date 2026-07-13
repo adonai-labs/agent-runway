@@ -13,9 +13,12 @@ type SmokeCase = {
 
 const BASE_EXPECTED = [
   '.agent-runway/memory',
+  '.agent-runway/memory/execution-memory.md',
+  '.agent-runway/memory/reasoning-memory.md',
   '.agent-runway/specs',
   '.agent-runway/config',
   '.agent-runway/workflows',
+  '.agent-runway/logs',
   '.agent-runway/docs',
 ];
 

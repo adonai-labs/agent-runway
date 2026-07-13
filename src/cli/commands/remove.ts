@@ -5,9 +5,13 @@ import {
   findProjectConfig,
   loadConfig,
   saveConfig,
+  copyCore,
+  cleanupLegacyCursorMemory,
+  copyStacks,
   copyNeutralSkills,
   copyClaude,
   copyVscode,
+  removeStackSpecTemplate,
   getGlobalCursorDir,
   resolveConfigPath,
 } from '../utils';
@@ -32,7 +36,7 @@ export async function removeCommand(stack: string, options: RemoveOptions = {}) 
     }
     configDir = globalDir;
     config = await loadConfig(globalDir);
-    console.log(chalk.cyan('ðŸ“ Removing from global installation\n'));
+    console.log(chalk.cyan('Removing from global installation\n'));
   } else {
     const result = await findProjectConfig(projectRoot);
     if (!result) {
@@ -41,7 +45,7 @@ export async function removeCommand(stack: string, options: RemoveOptions = {}) 
     }
     configDir = result.configDir;
     config = result.config;
-    console.log(chalk.cyan('ðŸ“ Removing from project installation\n'));
+    console.log(chalk.cyan('Removing from project installation\n'));
   }
 
   if (!config.stacks.includes(stack)) {
@@ -52,23 +56,31 @@ export async function removeCommand(stack: string, options: RemoveOptions = {}) 
   const spinner = ora(`Removing ${stack} stack...`).start();
 
   try {
-    // Intentionally non-destructive: we only update runtime config.
-    // Stack files may still exist under `.cursor/` and can be cleaned up manually if needed.
-
-    config.stacks = config.stacks.filter((s) => s !== stack);
-    await saveConfig(configDir, config);
-
+    const updatedStacks = config.stacks.filter((s) => s !== stack);
     const targets = config.targets ?? ['cursor'];
+
+    if (isGlobal || targets.includes('cursor')) {
+      await copyCore(configDir);
+      await cleanupLegacyCursorMemory(configDir);
+      if (updatedStacks.length > 0) {
+        await copyStacks(configDir, updatedStacks);
+      }
+    }
     if (!isGlobal && targets.includes('claude')) {
-      await copyNeutralSkills(projectRoot, config.stacks);
-      await copyClaude(projectRoot, config.stacks);
+      await copyNeutralSkills(projectRoot, updatedStacks);
+      await copyClaude(projectRoot, updatedStacks);
     }
     if (!isGlobal && targets.includes('vscode')) {
-      await copyVscode(projectRoot, config.stacks);
+      await copyVscode(projectRoot, updatedStacks);
+    }
+    if (!isGlobal) {
+      await removeStackSpecTemplate(projectRoot, stack);
     }
 
+    config.stacks = updatedStacks;
+    await saveConfig(configDir, config);
+
     spinner.succeed(chalk.green(`Stack "${stack}" removed successfully!`));
-    console.log(chalk.gray('Note: Stack files are left in place where removal would risk deleting local changes.'));
   } catch (error) {
     spinner.fail(chalk.red('Failed to remove stack'));
     console.error(error);

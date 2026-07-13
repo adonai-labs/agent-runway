@@ -30,7 +30,7 @@ Autonomy is allowed for execution decisions, but every material decision must be
 
 ## Quality Parity Contract (with `lead`)
 
-`autonomous-lead` must enforce the same technical rigor as `.agent-runway/skills/lead/SKILL.md`:
+`autonomous-lead` must enforce the same technical rigor as the `lead` skill:
 
 - same task classification discipline (trivial/standard/complex)
 - same DRY analysis expectations before creating new components
@@ -99,7 +99,7 @@ If this structure is missing, the run is incomplete.
 
 1. Restate objective and boundaries.
 2. Mark assumptions explicitly.
-3. Create run log file and write initial contract.
+3. Create run log file and write initial contract, including the machine-readable run header (schema: [../shared/run-log-schema.md](../shared/run-log-schema.md)).
 
 Do not stop for approval unless a hard blocker exists.
 
@@ -158,8 +158,8 @@ Use `lead` planning standards:
    - otherwise stop and report blocker
 
 Implementation must follow `lead` standards and incremental checks from:
-- `.agent-runway/skills/lead/standards.md`
-- `.agent-runway/skills/lead/incremental-checks.md`
+- [../lead/standards.md](../lead/standards.md)
+- [../lead/incremental-checks.md](../lead/incremental-checks.md)
 
 ### Phase 3 - Autonomous Quality Gates
 
@@ -172,8 +172,10 @@ Run and log:
 
 Also execute and log:
 - explicit security/observability checks relevant to touched layers
-- anti-pattern checks from `.agent-runway/skills/lead/antipatterns.md`
+- anti-pattern checks from [../lead/antipatterns.md](../lead/antipatterns.md)
 - evidence equivalent to `lead` Phase 6 self-review
+
+Update the run header with the outcome of each gate (`build`, `test`, `lint`), the number of `retries` to reach green, and `time_to_green_min`.
 
 ### Phase 4 - ADR Gate
 
@@ -200,6 +202,10 @@ Update run log with:
 Append stable lessons to `.agent-runway/memory/project-decisions.md`.
 Append recurring operational patterns to `.agent-runway/memory/execution-memory.md` when observed.
 Append recurring reasoning lessons to `.agent-runway/memory/reasoning-memory.md` when observed.
+
+Apply the memory hygiene policy when writing: [../shared/memory-policy.md](../shared/memory-policy.md) (consolidate duplicates, cap active entries, archive instead of delete).
+
+Finalise the run header: set `deviations` (count of departures from the planned implementation) and `memory_refs` (titles of memory entries that were applied during this run). This is what lets `agent-runway metrics` measure whether memory is actually used.
 
 ## Mandatory Evidence Sections (Run Log)
 

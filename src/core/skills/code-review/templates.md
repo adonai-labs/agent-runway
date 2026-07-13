@@ -22,6 +22,9 @@ var result = GetOrderAsync(id).Result; // line 42 — BLOCKS thread
 **Impact**: [Technical reason] → [Practical consequence]
 Example: Synchronous blocking on an async method in ASP.NET Core causes thread pool starvation → application becomes unresponsive under load.
 
+**Confidence**: [High | Medium | Low] — how certain this is a real issue vs. a possible false positive
+**Lens**: [Engineering | Security | Performance] *(only when a multi-pass review was run)*
+
 **Fix**:
 ```csharp
 var result = await GetOrderAsync(id);
@@ -43,6 +46,7 @@ var result = await GetOrderAsync(id);
 **Date**: [date]
 **Reviewer**: AI Code Review (lead skill Phase 9 handoff / manual invocation)
 **Files Reviewed**: [count]
+**Lenses applied**: [Engineering, Security, Performance] / [single lens name]
 **Build**: ✅ Pass / ❌ Fail
 **Tests**: ✅ Pass / ❌ Fail / ⚠️ Not run
 
@@ -105,6 +109,23 @@ var result = await GetOrderAsync(id);
 
 [One paragraph summary — key concerns and what must be addressed before merge]
 ```
+
+---
+
+## Machine-readable verdict
+
+Always end the review output with this block, filled in (schema: [../shared/verdict-block.md](../shared/verdict-block.md)):
+
+```yaml
+# agent-runway:verdict
+gate: review
+status: [approve | changes | discuss]
+blocking: [count of Blocker findings]
+date: [YYYY-MM-DD]
+artifact: [feature / branch / files reviewed]
+```
+
+Persist it: save the review (including this block) to `.agent-runway/logs/reviews/<date>.md` so `agent-runway metrics` can read it.
 
 ---
 

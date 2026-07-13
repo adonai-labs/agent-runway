@@ -1,19 +1,33 @@
 #!/usr/bin/env node
 
 import { Command } from 'commander';
+import fs from 'fs-extra';
+import path from 'path';
+import updateNotifier from 'update-notifier';
 import { initCommand } from './commands/init';
 import { addCommand } from './commands/add';
 import { removeCommand } from './commands/remove';
 import { updateCommand } from './commands/update';
 import { listCommand } from './commands/list';
 import { statusCommand } from './commands/status';
+import { metricsCommand } from './commands/metrics';
+import { ciCheckCommand } from './commands/ci-check';
+import { getPackageVersion } from './utils';
+
+// Notify (once per day, never in CI) when a newer version is published to npm.
+try {
+  const pkg = fs.readJsonSync(path.join(__dirname, '..', 'package.json'));
+  updateNotifier({ pkg }).notify();
+} catch {
+  // Update check is best-effort; never block the CLI on it.
+}
 
 const program = new Command();
 
 program
   .name('agent-runway')
   .description('AI-assisted development framework for coding agents')
-  .version('1.0.0');
+  .version(getPackageVersion());
 
 program
   .command('init')
@@ -53,5 +67,17 @@ program
   .command('status')
   .description('Show global and project installation status')
   .action(statusCommand);
+
+program
+  .command('metrics')
+  .description('Aggregate gate verdicts and run logs into a delivery scorecard')
+  .action(metricsCommand);
+
+program
+  .command('ci-check')
+  .description('Validate governance artefacts under .agent-runway/ (optional CI enforcement)')
+  .option('--profile <profile>', 'light (advisory, default) or strict (fail on violations)', 'light')
+  .option('--json', 'Emit machine-readable JSON result')
+  .action(ciCheckCommand);
 
 program.parse(process.argv);

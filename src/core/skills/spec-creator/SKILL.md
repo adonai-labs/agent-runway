@@ -1,10 +1,6 @@
 ---
 name: spec-creator
-description: >-
-  Creates implementation-ready specs from brief descriptions, existing markdown
-  requirements, or prior specs. Adapts the ticket-creator workflow to
-  spec-engineering with structured lifecycle states, execution planning, and
-  quality gates. Use when creating or refining specs under .agent-runway/specs.
+description: Creates implementation-ready specs from brief descriptions, existing markdown requirements, or prior specs. Adapts the ticket-creator workflow to spec-engineering with structured lifecycle states, execution planning, and quality gates. Use when creating or refining specs under .agent-runway/specs.
 ---
 
 # Spec Creator
@@ -184,7 +180,7 @@ If `yes`:
   - prevention hint
   - linked spec path (e.g. `.agent-runway/specs/<implementation-slug>/spec.md`)
 
-Keep entries concise and non-sensitive.
+Keep entries concise and non-sensitive. Apply the memory hygiene policy: [../shared/memory-policy.md](../shared/memory-policy.md) (consolidate duplicates, cap active entries, archive instead of delete).
 
 ### Phase 6: Output
 

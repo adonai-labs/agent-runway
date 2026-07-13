@@ -25,6 +25,32 @@ export interface Config {
 const NEW_CONFIG_FILENAME = 'agent-runway.json';
 const LEGACY_CONFIG_FILENAME = 'cursor-runway.json';
 
+// Single source of truth for the version: the package.json shipped with this CLI.
+// __dirname at runtime is dist/utils, so ../.. resolves to the package root.
+let cachedVersion: string | undefined;
+export function getPackageVersion(): string {
+  if (cachedVersion) return cachedVersion;
+  const pkg = fs.readJsonSync(path.join(__dirname, '../..', 'package.json'));
+  cachedVersion = String(pkg.version ?? '0.0.0');
+  return cachedVersion;
+}
+
+// Compares dotted numeric versions (e.g. "1.4.1"). Returns -1 if a < b, 0 if equal, 1 if a > b.
+// Inputs are the plain release versions stored in config and package.json.
+export function compareVersions(a: string, b: string): number {
+  const parse = (v: string) => v.split('.').map((n) => Number.parseInt(n, 10) || 0);
+  const pa = parse(a);
+  const pb = parse(b);
+  const len = Math.max(pa.length, pb.length);
+  for (let i = 0; i < len; i++) {
+    const da = pa[i] ?? 0;
+    const db = pb[i] ?? 0;
+    if (da < db) return -1;
+    if (da > db) return 1;
+  }
+  return 0;
+}
+
 export function getGlobalCursorDir(): string {
   return path.join(os.homedir(), '.cursor');
 }
@@ -146,17 +172,49 @@ export function getAvailableStacks(): Stack[] {
   return getStacksFromPresets();
 }
 
-// ─── Cursor install ───────────────────────────────────────────────────────────
+// Cursor install
 
 export async function copyCore(cursorDir: string): Promise<void> {
   const packageRoot = path.join(__dirname, '../..');
   const coreSource = path.join(packageRoot, 'src/core');
 
-  await fs.copy(path.join(coreSource, 'commands'), path.join(cursorDir, 'commands'), { overwrite: true });
-  await fs.copy(path.join(coreSource, 'skills'), path.join(cursorDir, 'skills'), { overwrite: true });
-  await fs.copy(path.join(coreSource, 'rules'), path.join(cursorDir, 'rules'), { overwrite: true });
-  await fs.copy(path.join(coreSource, 'agents'), path.join(cursorDir, 'agents'), { overwrite: true });
+  // commands/skills/rules/agents are fully framework-owned: empty them first so
+  // files removed in a newer release don't linger on update. config is NOT emptied
+  // because it holds user-owned files (e.g. review-config.md).
+  for (const dir of ['commands', 'skills', 'rules', 'agents']) {
+    await fs.emptyDir(path.join(cursorDir, dir));
+    await fs.copy(path.join(coreSource, dir), path.join(cursorDir, dir), { overwrite: true });
+  }
   await fs.copy(path.join(coreSource, 'config'), path.join(cursorDir, 'config'), { overwrite: true });
+}
+
+// Copies the canonical memory templates from src/core/memory into the project's
+// neutral memory directory. overwrite:false preserves any captured learnings.
+export async function copyMemoryScaffold(projectRoot: string): Promise<void> {
+  const packageRoot = path.join(__dirname, '../..');
+  const memorySource = path.join(packageRoot, 'src/core/memory');
+  const memoryDest = path.join(projectRoot, '.agent-runway', 'memory');
+
+  if (!(await fs.pathExists(memorySource))) return;
+
+  await fs.ensureDir(memoryDest);
+  await fs.copy(memorySource, memoryDest, { overwrite: false, errorOnExist: false });
+}
+
+// Ensures the project scaffold (.agent-runway dirs + memory templates + docs) is
+// present and complete. Safe to call on both init and update: overwrite:false on
+// all user-owned files means existing content (specs, memory, logs) is never lost.
+export async function ensureProjectScaffold(projectRoot: string): Promise<void> {
+  const agentRunwayDir = path.join(projectRoot, '.agent-runway');
+
+  await fs.ensureDir(path.join(agentRunwayDir, 'memory'));
+  await fs.ensureDir(path.join(agentRunwayDir, 'specs'));
+  await fs.ensureDir(path.join(agentRunwayDir, 'config'));
+  await fs.ensureDir(path.join(agentRunwayDir, 'workflows'));
+  await fs.ensureDir(path.join(agentRunwayDir, 'logs'));
+
+  await copyMemoryScaffold(projectRoot);
+  await copyDocsScaffold(projectRoot);
 }
 
 // Memory is now neutral and project-scoped at .agent-runway/memory.
@@ -235,6 +293,13 @@ export async function copyStackSpecTemplates(projectRoot: string, stacks: string
   }
 }
 
+export async function removeStackSpecTemplate(projectRoot: string, stack: string): Promise<void> {
+  const templateDir = path.join(projectRoot, '.agent-runway', 'config', 'spec-templates', stack);
+  if (await fs.pathExists(templateDir)) {
+    await fs.remove(templateDir);
+  }
+}
+
 export async function copyDocsScaffold(projectRoot: string): Promise<void> {
   const packageRoot = path.join(__dirname, '../..');
   const docsSource = path.join(packageRoot, 'src/core/docs');
@@ -246,48 +311,48 @@ export async function copyDocsScaffold(projectRoot: string): Promise<void> {
   await fs.copy(docsSource, docsDestination, { overwrite: false, errorOnExist: false });
 }
 
-// Rewrites code-review SKILL.md to inject stack-specific search/command references.
-// skillsDir is either .cursor/skills or .agent-runway/skills.
+// Replaces the content between an `<!-- ar:<marker>:start -->` / `:end -->` pair,
+// keeping the markers intact so repeated updates remain idempotent.
+// Throws loudly if the marker block is missing, so injection never fails silently.
+function replaceMarkerBlock(content: string, marker: string, replacement: string): string {
+  const start = `<!-- ar:${marker}:start -->`;
+  const end = `<!-- ar:${marker}:end -->`;
+  const startIdx = content.indexOf(start);
+  const endIdx = content.indexOf(end);
+
+  if (startIdx === -1 || endIdx === -1 || endIdx < startIdx) {
+    throw new Error(
+      `code-review SKILL.md is missing the "${marker}" marker block ` +
+        `(${start} ... ${end}). Stack injection cannot proceed.`
+    );
+  }
+
+  return content.slice(0, startIdx + start.length) + '\n' + replacement + '\n' + content.slice(endIdx);
+}
+
+// Rewrites code-review SKILL.md to inject stack-specific search/command references
+// between explicit marker blocks. skillsDir is either .cursor/skills or .agent-runway/skills.
 async function updateCodeReviewSkillAt(skillsDir: string, stacks: string[]): Promise<void> {
   const skillPath = path.join(skillsDir, 'code-review/SKILL.md');
   let content = await fs.readFile(skillPath, 'utf-8');
 
-  const searchReferences = stacks
-    .map((s) => `   - ${s}: [searches-${s}.md](searches-${s}.md)`)
-    .join('\n');
+  const searchReferences =
+    stacks.length > 0
+      ? stacks.map((s) => `- ${s}: [searches-${s}.md](searches-${s}.md)`).join('\n')
+      : '- (no stack selected - universal searches only)';
 
-  const commandReferences = stacks
-    .map((s) => `   - ${s}: [commands-${s}.md](commands-${s}.md)`)
-    .join('\n');
+  const commandReferences =
+    stacks.length > 0
+      ? stacks.map((s) => `- ${s}: [commands-${s}.md](commands-${s}.md)`).join('\n')
+      : "- (no stack selected - run your project's build and test commands)";
 
-  content = content.replace(
-    /#### 2a — Run All Mandatory Searches[\s\S]*?Execute every enabled search/,
-    `#### 2a — Run All Mandatory Searches
-
-Execute universal searches from [systematic-searches-base.md](systematic-searches-base.md).
-
-Then execute stack-specific searches:
-${searchReferences}
-
-Execute every enabled search`
-  );
-
-  content = content.replace(
-    /### Phase 1 — Initial Assessment[\s\S]*?Determine if.*can be executed/,
-    `### Phase 1 — Initial Assessment
-
-Classify each file in scope by layer and risk level.
-
-Run build and test commands for your stack:
-${commandReferences}
-
-Determine if build and test can be executed`
-  );
+  content = replaceMarkerBlock(content, 'searches', searchReferences);
+  content = replaceMarkerBlock(content, 'commands', commandReferences);
 
   await fs.writeFile(skillPath, content, 'utf-8');
 }
 
-// ─── Claude Code install ──────────────────────────────────────────────────────
+// Claude Code install
 
 // Copies core skills and stack-specific skills to .agent-runway/skills/,
 // which is the neutral location referenced by Claude Code commands.
@@ -300,7 +365,8 @@ async function copySkillsToDir(skillsDest: string, stacks: string[]): Promise<vo
   const coreSkillsSource = path.join(packageRoot, 'src/core/skills');
   const stacksSource = path.join(packageRoot, 'src/stacks');
 
-  await fs.ensureDir(skillsDest);
+  // Fully framework-owned: empty first to prune skills removed in newer releases.
+  await fs.emptyDir(skillsDest);
   await fs.copy(coreSkillsSource, skillsDest, { overwrite: true });
 
   for (const stack of stacks) {
@@ -342,8 +408,9 @@ export async function copyClaude(projectRoot: string, stacks: string[]): Promise
   const packageRoot = path.join(__dirname, '../..');
   const claudeDir = getClaudeDir(projectRoot);
 
-  await fs.ensureDir(path.join(claudeDir, 'commands'));
-  await fs.ensureDir(path.join(claudeDir, 'agents'));
+  // Fully framework-owned: empty first to prune commands/agents removed in newer releases.
+  await fs.emptyDir(path.join(claudeDir, 'commands'));
+  await fs.emptyDir(path.join(claudeDir, 'agents'));
 
   await fs.copy(path.join(packageRoot, 'src/core/claude-commands'), path.join(claudeDir, 'commands'), { overwrite: true });
   await fs.copy(path.join(packageRoot, 'src/core/claude-agents'), path.join(claudeDir, 'agents'), { overwrite: true });
@@ -356,7 +423,8 @@ export async function copyClaude(projectRoot: string, stacks: string[]): Promise
 async function copyRulesToAgentRunway(projectRoot: string, stacks: string[]): Promise<void> {
   const packageRoot = path.join(__dirname, '../..');
   const rulesDir = path.join(projectRoot, '.agent-runway', 'rules');
-  await fs.ensureDir(rulesDir);
+  // Fully framework-owned: empty first to prune rules removed in newer releases.
+  await fs.emptyDir(rulesDir);
 
   await fs.copy(path.join(packageRoot, 'src/core/rules'), rulesDir, { overwrite: true });
 
@@ -373,7 +441,7 @@ async function copyRulesToAgentRunway(projectRoot: string, stacks: string[]): Pr
   }
 }
 
-// Parses .mdc frontmatter (same subset as validate.ts — no external dependency).
+// Parses .mdc frontmatter (same subset as validate.ts - no external dependency).
 // Normalizes CRLF so it works on Windows-authored files.
 function parseMdcFrontmatter(content: string): Record<string, unknown> {
   const normalized = content.replace(/\r\n/g, '\n');
@@ -407,7 +475,7 @@ export async function generateClaudeMd(projectRoot: string, stacks: string[]): P
   const stacksSource = path.join(packageRoot, 'src/stacks');
 
   const sections: string[] = [
-    '# Agent Runway — Project Rules\n',
+    '# Agent Runway - Project Rules\n',
     '<!-- Generated by Agent Runway. Re-run `agent-runway update` to refresh. -->',
     '<!-- Full rule content is in `.agent-runway/rules/` for rules not inlined here. -->\n',
   ];
@@ -432,7 +500,7 @@ export async function generateClaudeMd(projectRoot: string, stacks: string[]): P
     }
   }
 
-  // Stack rules (always summarized — all have alwaysApply: false)
+  // Stack rules (always summarized - all have alwaysApply: false)
   for (const stack of stacks) {
     const stackPath = path.join(stacksSource, stack);
     if (!(await fs.pathExists(stackPath))) continue;
@@ -567,7 +635,8 @@ export async function generateVscodePrompts(projectRoot: string): Promise<void> 
   const sourceDir = path.join(packageRoot, 'src/core/claude-commands');
   const promptsDir = path.join(getVscodeDir(projectRoot), 'prompts');
 
-  await fs.ensureDir(promptsDir);
+  // Fully framework-owned: empty first to prune prompts removed in newer releases.
+  await fs.emptyDir(promptsDir);
 
   const commandFiles = (await fs.readdir(sourceDir))
     .filter((file) => file.endsWith('.md'))
@@ -597,7 +666,8 @@ export async function generateVscodeAgents(projectRoot: string): Promise<void> {
   const sourceDir = path.join(packageRoot, 'src/core/claude-agents');
   const agentsDir = path.join(getVscodeDir(projectRoot), 'agents');
 
-  await fs.ensureDir(agentsDir);
+  // Fully framework-owned: empty first to prune agents removed in newer releases.
+  await fs.emptyDir(agentsDir);
 
   const agentFiles = (await fs.readdir(sourceDir))
     .filter((file) => file.endsWith('.md'))
@@ -624,7 +694,7 @@ export async function generateVscodeAgents(projectRoot: string): Promise<void> {
   }
 }
 
-// ─── Config ───────────────────────────────────────────────────────────────────
+// Config
 
 export async function createConfig(
   configDir: string,
@@ -633,7 +703,7 @@ export async function createConfig(
   targets: InstallTarget[] = ['cursor']
 ): Promise<void> {
   const config: Config = {
-    version: '1.0.0',
+    version: getPackageVersion(),
     stacks,
     targets: normalizeTargets(targets),
     installedAt: new Date().toISOString(),

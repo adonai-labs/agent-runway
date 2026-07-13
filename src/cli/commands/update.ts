@@ -10,6 +10,7 @@ import {
   copyNeutralSkills,
   copyClaude,
   copyVscode,
+  ensureProjectScaffold,
   getGlobalCursorDir,
   resolveConfigPath,
 } from '../utils';
@@ -74,6 +75,11 @@ export async function updateCommand(options: UpdateOptions = {}) {
     if (installsVscode) {
       spinner.text = 'Updating VS Code support...';
       await copyVscode(projectRoot, config.stacks);
+    }
+
+    if (!isGlobal) {
+      spinner.text = 'Refreshing project scaffold...';
+      await ensureProjectScaffold(projectRoot);
     }
 
     spinner.succeed(chalk.green('Agent Runway updated successfully!'));

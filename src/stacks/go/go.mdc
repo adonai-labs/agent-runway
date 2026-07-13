@@ -1,0 +1,57 @@
+---
+description: Go development guidelines — error handling, concurrency, interfaces, context propagation, and testing. Applied when working with Go code.
+globs: "**/*.go,**/go.mod"
+alwaysApply: false
+---
+
+# Go Development Guidelines
+
+Directives for Go development. Apply when working with `.go` files or `go.mod`.
+
+---
+
+## Error Handling
+
+- Return errors as the last return value; check every error — do not discard with `_` unless justified.
+- Wrap errors with context using `fmt.Errorf("...: %w", err)` so callers can `errors.Is`/`errors.As`.
+- Do not `panic` for expected failures; reserve `panic` for truly unrecoverable states.
+- Define sentinel errors (`var ErrNotFound = errors.New(...)`) or typed errors for conditions callers branch on.
+
+## Concurrency
+
+- Pass `context.Context` as the first parameter to functions that do I/O or can block; honour cancellation.
+- Never start a goroutine without a clear stop/lifecycle; avoid goroutine leaks.
+- Protect shared state with a mutex or a channel — not both for the same data.
+- Run tests with `-race`; data races are bugs even if they don't fail today.
+- Do not capture loop variables by reference in goroutines without copying (pre-1.22 semantics).
+
+## Interfaces and API Design
+
+- Accept interfaces, return concrete types.
+- Keep interfaces small — define them at the consumer, not the producer.
+- Avoid empty `interface{}`/`any` where a concrete type or generic would be clearer.
+
+## Idioms
+
+- Prefer early returns over deep nesting; keep the happy path left-aligned.
+- Use `defer` for cleanup (close files, unlock mutexes) right after acquisition.
+- Do not ignore the result of `Close()` on writers where it can surface data loss.
+- Keep package names short, lower-case, and meaningful; avoid stutter (`http.HTTPServer`).
+
+## Testing
+
+- Use table-driven tests with subtests (`t.Run`).
+- Use the standard `testing` package; reserve external assertion libraries for genuine value.
+- Cover happy path, edge cases, and error paths.
+- Use `t.Cleanup` for teardown; avoid global test state.
+
+## Common Anti-patterns
+
+| Anti-pattern | Do instead |
+|--------------|------------|
+| Ignoring returned errors (`val, _ :=`) | Check and handle or wrap the error |
+| `panic` for expected failures | Return an error |
+| Goroutine with no cancellation/stop | Pass `context.Context` and select on `ctx.Done()` |
+| Naked returns in long functions | Return values explicitly |
+| Logging and returning the same error | Do one or the other, not both |
+| `interface{}`/`any` everywhere | Use concrete types or generics |

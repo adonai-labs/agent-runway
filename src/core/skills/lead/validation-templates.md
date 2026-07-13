@@ -276,9 +276,10 @@ Pass this context block to the `review` subagent (or code-review skill) when del
 - [What was deliberately excluded — from Phase 1]
 
 ### Acceptance Criteria
-- [Criterion 1 — from ticket or Phase 1]
-- [Criterion 2]
-- [Criterion 3]
+Each criterion lists its verifying test (`Verified by:`). A criterion still marked `pending` (no verifying test) is a Blocker — the review cannot APPROVE until it resolves.
+- [Criterion 1 — from ticket or Phase 1] — Verified by: [test path/id]
+- [Criterion 2] — Verified by: [test path/id]
+- [Criterion 3] — Verified by: [test path/id]
 
 ### Architectural Decision (if Complex task)
 - **Approach chosen**: [Option name from Phase 0]

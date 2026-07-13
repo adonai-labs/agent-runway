@@ -78,7 +78,7 @@ Default to the simplest implementation that satisfies requirements.
 
 An accelerated path for **Standard** tasks when the developer already has a clear plan.
 
-**Activation:** the developer invokes `/fast-lead <description>` or explicitly states they want fast-track.
+**Activation:** the developer invokes `/lead <description>` and states they want fast-track, or explicitly says they already have a plan.
 
 **Not available for:**
 - **Complex** tasks — always require the full workflow with Phase 0 architect delegation
@@ -124,7 +124,7 @@ The profile modifies gate behaviour across the workflow:
 | Phase 0 — Approach selection | `AskQuestion` — blocks | `AskQuestion` — blocks | Silent validation — only interrupts if risk signal detected |
 | Phase 1 — Scope confirmation | `AskQuestion` — blocks | Present output, proceed automatically unless ambiguity detected | Silent — proceed unless ambiguity detected |
 | Phase 2 — Plan approval | `AskQuestion` — blocks | `AskQuestion` — blocks | Silent validation — only interrupts if antipattern or risk signal detected |
-| Fast-Track (Standard tasks) | Requires explicit `/fast-lead` | Default for Standard tasks | Default for Standard tasks |
+| Fast-Track (Standard tasks) | Developer must state they want fast-track | Default for Standard tasks | Default for Standard tasks |
 | Phase 10 — Commit prefix | `AskQuestion` — always | `AskQuestion` — always | `AskQuestion` — always (commit message always requires confirmation) |
 
 In **Autonomous** mode, "silent validation" means the system runs the same checks but does not present them interactively. If all checks pass, it proceeds. If any check fails (risk signal, antipattern, ambiguity), it interrupts with a specific explanation of what was found and requires developer input before continuing.
@@ -429,16 +429,18 @@ If any step fails, fix and re-run before continuing.
 If any **Delegate** condition is met, skip applies to nothing — delegate regardless.
 If task was classified as **Trivial** at the start, skip is the default unless a Delegate condition applies.
 
-**When delegating**, complete the `/review Handoff` template from [validation-templates.md](validation-templates.md), then pass it to the `code-review` skill:
+**When delegating**, complete the `/review Handoff` template from [validation-templates.md](validation-templates.md), then delegate to the `review` agent:
 
 ```
 /review
 [paste completed /review Handoff template]
 ```
 
+The `review` agent runs with an isolated context window — its judgement is not biased by this session's implementation reasoning, which is what makes the validation independent. (If the agent is unavailable in the current environment, fall back to running the `code-review` skill directly and note that the review shared this session's context.)
+
 **When skipping**, note the reason inline (e.g. "Skipping /review — single config file change, no logic modified") and proceed to Phase 10.
 
-The code-review skill performs the independent final validation. Address all blockers before proceeding to Phase 10.
+The independent review performs the final validation. Address all blockers before proceeding to Phase 10.
 
 ---
 

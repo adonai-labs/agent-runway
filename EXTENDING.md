@@ -29,6 +29,8 @@ A "stack" in Agent Runway consists of:
 
 ### Step-by-Step: Adding Python Support
 
+> **Note**: Python and Go now ship as built-in stacks (`src/stacks/python/`, `src/stacks/go/`). This walkthrough is kept as a worked template — follow the same steps for a new stack, and read the shipped Python/Go stacks as reference implementations.
+
 #### 1. Create Stack Directory
 
 ```bash
@@ -237,12 +239,10 @@ ls .github/instructions/agent-runway/
 
 #### 7. Update Documentation
 
-Add Python to the stacks table in `README.md`:
+Add the stack to `USAGE.md` — both the preset selection list and the "Available Stacks" list:
 
-```markdown
-| Stack | Includes |
-|-------|----------|
-| **Python** | PEP 8, type hints, pytest, async patterns |
+```text
+  ○ Python (python)
 ```
 
 ---
@@ -431,8 +431,7 @@ When adding a new stack, ensure you have:
 - [ ] Added `spec-templates/spec-template.md` with stack-specific clean architecture guidance (optional)
 - [ ] Registered stack in `src/cli/presets/index.ts` (add entry to the `STACKS` array)
 - [ ] Ran `npm run build` — this compiles TypeScript **and** validates all content (frontmatter, internal references, stack completeness)
-- [ ] Added stack to `README.md` stacks table
-- [ ] Added stack to `USAGE.md` examples
+- [ ] Added stack to `USAGE.md` (preset selection list and "Available Stacks" list)
 - [ ] Tested `npx agent-runway init --stacks {stack}` (Cursor)
 - [ ] Tested `npx agent-runway init --target all --stacks {stack}` (all targets)
 - [ ] Verified rules activate with correct glob patterns

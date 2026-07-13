@@ -16,7 +16,7 @@ The agent that invoked you provides all necessary context in this prompt via the
 2. Take the role of a skilled skeptic: your job is to find the strongest possible argument against the chosen approach.
 3. Search the codebase for evidence that either supports or undermines the chosen approach.
 4. Identify at least one viable alternative that was not selected.
-5. Surface the top failure signals — specific conditions under which the chosen approach would break.
+5. Surface the top invalidation signals — specific conditions under which the chosen approach would break.
 6. Deliver a structured verdict with a clear rationale.
 
 ## What you must not do
@@ -57,7 +57,7 @@ If invoked directly (not from /lead or /autonomous-lead), you will receive a pro
 **[Alternative name]**
 [One paragraph — what it is, how it differs, and its key trade-off vs. the chosen approach]
 
-### Failure Signals
+### Invalidation Signals
 - [Specific condition under which this approach fails]
 - [Specific condition]
 - [Specific condition]

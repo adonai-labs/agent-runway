@@ -4,6 +4,7 @@
 [license](LICENSE)
 [stars](https://github.com/adonai-labs/agent-runway)
 [downloads](https://www.npmjs.com/package/@adonai-labs/agent-runway)
+[roadmap](ROADMAP.md)
 
 **AI agents are good at writing code. They are not good at remembering what they decided last week.**
 

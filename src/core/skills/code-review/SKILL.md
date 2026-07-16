@@ -25,7 +25,7 @@ A complete review examines code through three lenses. Each has a distinct focus 
 
 | Lens | Focus | Where its checklist lives |
 |------|-------|---------------------------|
-| **Engineering** (default) | Clean code, SOLID, architecture, readability, maintainability, error handling | Phase 3 checklists + [../lead/standards.md](../lead/standards.md) |
+| **Engineering** (default) | Clean code, SOLID, architecture, readability, maintainability, error handling | Phase 3 checklists in this skill |
 | **Security** | OWASP Top 10, threat model for sensitive flows, input/auth/crypto/data handling | Security Checklist (OWASP) in [reference.md](reference.md) |
 | **Performance** | Algorithmic complexity, N+1 access, resource usage, scalability under load | Phase 3 "Performance & complexity" criterion |
 
@@ -138,8 +138,8 @@ For each finding, record:
 Review each file against the relevant checklist from [reference.md](reference.md):
 
 **All files:**
-- Naming & readability (standards in [../lead/standards.md](../lead/standards.md))
-- Anti-patterns (canonical list in [../lead/antipatterns.md](../lead/antipatterns.md))
+- Naming & readability
+- Anti-patterns and unnecessary complexity
 - SOLID principles
 - Error handling
 - Structured logging
@@ -228,8 +228,6 @@ Deliver final verdict:
 - [systematic-searches.md](systematic-searches.md) — 21 mandatory search patterns
 - [templates.md](templates.md) — report output templates
 - [reference.md](reference.md) — review checklists per concern
-- [../lead/antipatterns.md](../lead/antipatterns.md) — canonical anti-pattern list (shared)
-- [../lead/standards.md](../lead/standards.md) — DO/DON'T code examples
 
 ---
 
@@ -239,10 +237,7 @@ Use the following skills for deeper reasoning when needed:
 
 | Need | Skill |
 |------|-------|
-| Apply architectural review lenses (boundaries, complexity, contracts) | `architect` — see [review-lenses.md](../architect/review-lenses.md) |
-| Identify architectural antipatterns beyond .NET-specific ones | `architect` — see [antipatterns.md](../architect/antipatterns.md) |
-| Evaluate whether a design trade-off is well-reasoned | `architect` — see [tradeoffs.md](../architect/tradeoffs.md) |
-| Deep review of .NET application patterns (CQRS, handlers) | `dotnet-core` — see [application-patterns.md](../dotnet-core/application-patterns.md) |
-| Deep review of EF Core or infrastructure patterns | `dotnet-core` — see [infrastructure.md](../dotnet-core/infrastructure.md) |
-| Deep review of observability wiring | `dotnet-core` — see [observability.md](../dotnet-core/observability.md) |
-| Deep review of API design and contracts | `dotnet-core` — see [api-design.md](../dotnet-core/api-design.md) |
+| Apply architectural review lenses (boundaries, complexity, contracts) | Use `architect` if installed |
+| Identify architectural antipatterns beyond the local checklist | Use `architect` if installed |
+| Evaluate whether a design trade-off is well-reasoned | Use `architect` if installed |
+| Deep stack-specific review | Use the installed stack skill, such as `dotnet-core`, `typescript-core`, `node-core`, or `react-core` |

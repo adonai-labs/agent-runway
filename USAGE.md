@@ -54,9 +54,9 @@ Use Lite when you want fast, skill-first workflows without slash command aliases
 npx agent-runway init --preset vibe-lite --target all
 ```
 
-Lite installs `@start`, `@express`, `@checkpoint`, `@safety-check`, and a small rule set for engineering principles, security, and testing.
+Lite installs `@start`, `@express`, `@code-review`, `@checkpoint`, `@safety-check`, and a small rule set for engineering principles, security, and testing.
 
-Upgrade to Structured when the work needs specs, tickets, agents, slash commands, or governed delivery:
+Upgrade to Structured when the work needs specs, tickets, agents, slash commands, lead/autonomous workflows, architecture/contrarian gates, full rules, or governed delivery:
 
 ```bash
 npx agent-runway upgrade --to structured

@@ -21,7 +21,7 @@ This roadmap is directional, not a date-based commitment. Items may move as real
 - CI governance checks through `agent-runway ci-check`.
 - Delivery scorecards through `agent-runway metrics`.
 - `@checkpoint` skill for saving current state during rapid prototyping, pauses, and handoffs.
-- Vibe/Lite preset for fast, skill-first usage with minimal installed context.
+- Vibe/Lite preset for fast, skill-first usage with minimal installed context, including `@code-review`.
 - `@safety-check` skill for quick Go / Go with caution / Stop risk review.
 - Upgrade path from Lite to Structured through `agent-runway upgrade --to structured`.
 - Release validation with build, content validation, smoke tests, content tests, and package dry-run.

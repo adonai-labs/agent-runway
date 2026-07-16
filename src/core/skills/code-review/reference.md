@@ -1,9 +1,6 @@
 # Reference — Review Checklists
 
-> **Source of truth for quality criteria**: [`../lead/standards.md`](../lead/standards.md)
 > The checklists below are reviewer-specific — they cover what a reviewer verifies layer by layer.
-> For the canonical DO/DON'T examples and developer self-review checklist, see `standards.md`.
-> If a criterion appears in both files and they conflict, `standards.md` takes precedence.
 >
 > **Stack note**: the per-layer checklists use .NET/C# examples (EF Core, MediatR, ASP.NET Core). The principles are general — apply the equivalent for your stack. The OWASP, Testing, and IaC checklists are stack-neutral.
 

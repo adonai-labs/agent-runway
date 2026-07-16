@@ -31,7 +31,7 @@ For fast, skill-first usage with minimal context load:
 npx @adonai-labs/agent-runway init --preset vibe-lite --target all
 ```
 
-Lite installs only the essential skills and rules: `@start`, `@express`, `@checkpoint`, `@safety-check`, engineering principles, security, and testing. It does not install slash command aliases, agents, or heavy structured delivery workflows.
+Lite installs only the essential skills and rules: `@start`, `@express`, `@code-review`, `@checkpoint`, `@safety-check`, engineering principles, security, and testing. It does not install slash command aliases, agents, or heavy structured delivery workflows.
 
 When the work outgrows Lite, upgrade in place:
 
@@ -39,7 +39,7 @@ When the work outgrows Lite, upgrade in place:
 npx agent-runway upgrade --to structured
 ```
 
-This preserves memory, logs, checkpoints, and docs while adding the full Structured workflow set.
+This preserves memory, logs, checkpoints, and docs while adding the full Structured workflow set: slash commands, agents, specs, tickets, lead/autonomous workflows, architecture/contrarian gates, full rules, and governance checks.
 Or install first:
 
 ```bash
@@ -102,6 +102,8 @@ For small, low-risk, well-scoped work:
 
 ### Structured delivery
 
+Structured means the full delivery framework: commands, agents, specs, tickets, lead/autonomous workflows, architecture/contrarian gates, full rules, and optional governance checks.
+
 For normal feature work:
 
 - `/spec-creator` — define intent and behavior before implementation
@@ -119,6 +121,7 @@ For unattended runs where you need full traceability:
 For pausing, handing off, or marking a useful point in fast iteration:
 
 - `@checkpoint` — save the current work state under `.agent-runway/logs/checkpoints/`
+- `@code-review` — skill-first code review without requiring slash commands
 - `@safety-check` — quick Go / Go with caution / Stop risk check before continuing
 
 ## Commands

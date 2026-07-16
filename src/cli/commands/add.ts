@@ -14,6 +14,7 @@ import {
   copyStackSpecTemplates,
   getGlobalCursorDir,
   resolveConfigPath,
+  normalizeWorkflowMode,
 } from '../utils';
 
 interface AddOptions {
@@ -65,6 +66,7 @@ export async function addCommand(stack: string, options: AddOptions = {}) {
 
   try {
     const targets = config.targets ?? ['cursor'];
+    const mode = normalizeWorkflowMode(config.mode);
     const installsCursor = isGlobal || targets.includes('cursor');
     const installsClaude = !isGlobal && targets.includes('claude');
     const installsVscode = !isGlobal && targets.includes('vscode');
@@ -75,11 +77,11 @@ export async function addCommand(stack: string, options: AddOptions = {}) {
       await copyStacks(cursorDir, updatedStacks);
     }
     if (installsClaude) {
-      await copyNeutralSkills(projectRoot, updatedStacks);
-      await copyClaude(projectRoot, updatedStacks);
+      await copyNeutralSkills(projectRoot, updatedStacks, mode);
+      await copyClaude(projectRoot, updatedStacks, mode);
     }
     if (installsVscode) {
-      await copyVscode(projectRoot, updatedStacks);
+      await copyVscode(projectRoot, updatedStacks, mode);
     }
     if (!isGlobal) {
       await copyStackSpecTemplates(projectRoot, [stack]);

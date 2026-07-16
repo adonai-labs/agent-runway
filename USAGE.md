@@ -45,6 +45,22 @@ npx agent-runway init
 Installed stacks: node, typescript
 ```
 
+
+### Vibe/Lite Preset
+
+Use Lite when you want fast, skill-first workflows without slash command aliases or full governance assets:
+
+```bash
+npx agent-runway init --preset vibe-lite --target all
+```
+
+Lite installs `@start`, `@express`, `@checkpoint`, `@safety-check`, and a small rule set for engineering principles, security, and testing.
+
+Upgrade to Structured when the work needs specs, tickets, agents, slash commands, or governed delivery:
+
+```bash
+npx agent-runway upgrade --to structured
+```
 ### Non-Interactive Setup
 
 ```bash
@@ -337,6 +353,17 @@ When filesystem writes are available, the checkpoint is saved under:
 
 `.agent-runway/logs/checkpoints/`
 
+
+### `@safety-check` - Quick Risk Check
+
+Runs a short Go / Go with caution / Stop check before continuing with fast work.
+
+```text
+@safety-check before publishing
+@safety-check auth changes
+```
+
+Use it when a Lite workflow starts touching contracts, data, auth, secrets, deployment, or many files.
 ### Other Commands
 
 - `/spec-creator` - Create or refine an implementation-ready spec

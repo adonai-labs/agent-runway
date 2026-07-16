@@ -7,6 +7,7 @@ import { initCommand } from './commands/init';
 import { addCommand } from './commands/add';
 import { removeCommand } from './commands/remove';
 import { updateCommand } from './commands/update';
+import { upgradeCommand } from './commands/upgrade';
 import { collectMetrics } from './commands/metrics';
 import { normalizeTargets, getPackageVersion, compareVersions } from './utils';
 
@@ -75,6 +76,36 @@ async function testConfigVersion(): Promise<void> {
     assert.strictEqual(config.version, getPackageVersion(), 'config version matches package version');
   });
   console.log('ok content:configVersion');
+}
+
+async function testLitePresetUpgradesToStructured(): Promise<void> {
+  const originalCwd = process.cwd();
+  const tempRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'agent-runway-lite-'));
+  try {
+    process.chdir(tempRoot);
+    await initCommand({ yes: true, scope: 'project', target: 'all', preset: 'vibe-lite' });
+
+    const cursorConfigPath = path.join(tempRoot, '.cursor', 'agent-runway.json');
+    const liteConfig = await fs.readJson(cursorConfigPath);
+    assert.strictEqual(liteConfig.mode, 'lite', 'vibe-lite stores lite mode');
+    assert.ok(await fs.pathExists(path.join(tempRoot, '.cursor', 'skills', 'safety-check', 'SKILL.md')), 'lite installs safety-check');
+    assert.ok(!(await fs.pathExists(path.join(tempRoot, '.cursor', 'commands', 'start.md'))), 'lite does not install Cursor commands');
+    assert.ok(!(await fs.pathExists(path.join(tempRoot, '.claude', 'commands', 'start.md'))), 'lite does not install Claude commands');
+    assert.ok(!(await fs.pathExists(path.join(tempRoot, '.github', 'prompts', 'start.prompt.md'))), 'lite does not install VS Code prompts');
+
+    await upgradeCommand({ to: 'structured' });
+
+    const structuredConfig = await fs.readJson(cursorConfigPath);
+    assert.strictEqual(structuredConfig.mode, 'structured', 'upgrade stores structured mode');
+    assert.ok(await fs.pathExists(path.join(tempRoot, '.cursor', 'commands', 'start.md')), 'structured restores Cursor commands');
+    assert.ok(await fs.pathExists(path.join(tempRoot, '.claude', 'commands', 'start.md')), 'structured restores Claude commands');
+    assert.ok(await fs.pathExists(path.join(tempRoot, '.github', 'prompts', 'start.prompt.md')), 'structured restores VS Code prompts');
+    assert.ok(await fs.pathExists(path.join(tempRoot, '.cursor', 'skills', 'lead', 'SKILL.md')), 'structured restores lead skill');
+  } finally {
+    process.chdir(originalCwd);
+    await fs.remove(tempRoot);
+  }
+  console.log('ok content:liteUpgrade');
 }
 
 async function testClaudeMdContainsMaintainabilityRule(): Promise<void> {
@@ -325,6 +356,7 @@ async function main(): Promise<void> {
   testPackageVersion();
   await testSkillInjection();
   await testConfigVersion();
+  await testLitePresetUpgradesToStructured();
   await testClaudeMdContainsMaintainabilityRule();
   await testAddPreservesExistingStackInjection();
   await testRemoveRefreshesCursorArtifacts();

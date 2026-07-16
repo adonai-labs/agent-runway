@@ -8,6 +8,7 @@ import {
   compareVersions,
   hasGlobalInstallation,
   hasProjectInstallation,
+  normalizeWorkflowMode,
 } from '../utils';
 
 // Warns when installed framework files are older than the running CLI.
@@ -40,6 +41,7 @@ export async function statusCommand() {
     if (globalConfig.updatedAt) {
       console.log(chalk.gray(`   Updated: ${new Date(globalConfig.updatedAt).toLocaleDateString()}`));
     }
+    console.log(chalk.gray(`   Mode: ${normalizeWorkflowMode(globalConfig.mode)}`));
     console.log(chalk.gray(`   Stacks: ${globalConfig.stacks.length > 0 ? globalConfig.stacks.join(', ') : 'core only'}`));
     warnIfBehind('Global install', globalConfig.version, cliVersion);
     console.log(chalk.yellow('   Applies to ALL Cursor projects\n'));
@@ -61,6 +63,7 @@ export async function statusCommand() {
       if (config.updatedAt) {
         console.log(chalk.gray(`   Updated: ${new Date(config.updatedAt).toLocaleDateString()}`));
       }
+      console.log(chalk.gray(`   Mode: ${normalizeWorkflowMode(config.mode)}`));
       console.log(chalk.gray(`   Stacks: ${config.stacks.length > 0 ? config.stacks.join(', ') : 'core only'}`));
       warnIfBehind('Project install', config.version, cliVersion);
 

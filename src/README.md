@@ -110,9 +110,9 @@ See `EXTENDING.md` at the repo root for the full guide.
 ## Adding a New Core Skill
 
 1. Create `src/core/skills/{skill-name}/SKILL.md`
-2. Add a slash command in **both** `src/core/commands/{name}.md` and `src/core/claude-commands/{name}.md` (the command file references the skill, so its name may differ from the skill — e.g. `validate` → `ticket-eval`)
+2. For command-backed skills, add a slash command in **both** `src/core/commands/{name}.md` and `src/core/claude-commands/{name}.md` (the command file references the skill, so its name may differ from the skill — e.g. `validate` → `ticket-eval`). For skill-only workflows, add `standalone: true` to the skill frontmatter instead.
 3. If the skill needs an isolated context (review / critique / adversarial roles), add an agent in **both** `src/core/agents/{name}.md` and `src/core/claude-agents/{name}.md`
-4. Run `npm run build` — the validator enforces command/agent parity across Cursor and Claude, and that every **core** skill is reachable from at least one command or agent
+4. Run `npm run build` — the validator enforces command/agent parity across Cursor and Claude, and that every **core** skill is reachable from at least one command/agent or marked `standalone: true`
 5. The skill is automatically copied to all target environments on install
 
 Stack skills (`src/stacks/*/skill-*`) are installed via `agent-runway add` — they do **not** have slash commands; use rules (globs) and `@skill-name` invocation.

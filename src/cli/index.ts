@@ -12,6 +12,7 @@ import { listCommand } from './commands/list';
 import { statusCommand } from './commands/status';
 import { metricsCommand } from './commands/metrics';
 import { ciCheckCommand } from './commands/ci-check';
+import { upgradeCommand } from './commands/upgrade';
 import { getPackageVersion } from './utils';
 
 // Notify (once per day, never in CI) when a newer version is published to npm.
@@ -33,7 +34,7 @@ program
   .command('init')
   .description('Initialize Agent Runway in your project')
   .option('-s, --stacks <stacks>', 'Comma-separated list of stacks (node,typescript,react,dotnet,rust,electron)')
-  .option('-p, --preset <preset>', 'Use a preset configuration (node-typescript,web-fullstack-ts,dotnet-backend,electron-desktop,etc)')
+  .option('-p, --preset <preset>', 'Use a preset configuration (vibe-lite,node-typescript,web-fullstack-ts,dotnet-backend,electron-desktop,etc)')
   .option('-t, --target <target>', 'Agent environment: cursor, claude, vscode, both, all, or comma-separated targets')
   .option('--scope <scope>', 'Installation scope: project or global')
   .option('-g, --global', 'Install globally in ~/.cursor/ (same as --scope global)')
@@ -57,6 +58,12 @@ program
   .description('Update Agent Runway while preserving your configuration')
   .option('-g, --global', 'Update global installation')
   .action(updateCommand);
+
+program
+  .command('upgrade')
+  .description('Upgrade a Lite installation to Structured mode')
+  .option('--to <mode>', 'Target mode (structured)', 'structured')
+  .action(upgradeCommand);
 
 program
   .command('list')

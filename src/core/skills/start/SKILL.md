@@ -48,6 +48,7 @@ Read the developer's description carefully. Identify the primary intent:
 | "fix", "broken", "not working", "bug", "error", "wrong behaviour" | Bug fix |
 | "review", "check this", "audit", "PR review" | Code review |
 | "checkpoint", "save state", "handoff", "pause here", "resume later" | Checkpoint |
+| "safety check", "risk check", "is this safe", "before I continue" | Safety check |
 | "clean up", "refactor", "simplify", "too complex", "hard to read" | Refactor |
 | "infrastructure", "provision", "Bicep", "Terraform", "Azure resource" | IaC |
 | "design", "should I use", "trade-off", "architecture decision", "ADR" | Architecture |
@@ -64,6 +65,7 @@ What best describes what you want to do?
 - Clean up or restructure existing code (refactor)
 - Review completed work (code review)
 - Save current work state (checkpoint)
+- Run a quick risk check before continuing (safety-check)
 - Provision or change infrastructure (IaC)
 - Think through a design decision (architecture)
 - Check if a ticket is ready for development (validate)
@@ -218,7 +220,7 @@ Recommended: /[command] ([brief reason])
 Alternatives: [other applicable commands]
 ```
 
-For non-implementation intents (Refactor, IaC, Architecture, Review, Ticket validation, PO evaluation, Checkpoint), route directly to the relevant skill without the classification/alternatives block.
+For non-implementation intents (Refactor, IaC, Architecture, Review, Ticket validation, PO evaluation, Checkpoint, Safety check), route directly to the relevant skill without the classification/alternatives block.
 
 For Autonomous implementation intents, route directly to `/autonomous-lead` and include artifact logging obligations in the handoff summary.
 

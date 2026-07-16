@@ -22,6 +22,24 @@ npx @adonai-labs/agent-runway init
 
 Then open the project in Cursor, Claude Code, or VS Code and run `/start`.
 
+
+### Vibe/Lite
+
+For fast, skill-first usage with minimal context load:
+
+```bash
+npx @adonai-labs/agent-runway init --preset vibe-lite --target all
+```
+
+Lite installs only the essential skills and rules: `@start`, `@express`, `@checkpoint`, `@safety-check`, engineering principles, security, and testing. It does not install slash command aliases, agents, or heavy structured delivery workflows.
+
+When the work outgrows Lite, upgrade in place:
+
+```bash
+npx agent-runway upgrade --to structured
+```
+
+This preserves memory, logs, checkpoints, and docs while adding the full Structured workflow set.
 Or install first:
 
 ```bash
@@ -101,6 +119,7 @@ For unattended runs where you need full traceability:
 For pausing, handing off, or marking a useful point in fast iteration:
 
 - `@checkpoint` — save the current work state under `.agent-runway/logs/checkpoints/`
+- `@safety-check` — quick Go / Go with caution / Stop risk check before continuing
 
 ## Commands
 
@@ -138,6 +157,7 @@ Stack-specific guidance has **no slash commands** — use installed rules (auto 
 | `/architect`      | Design decisions, trade-off analysis, and ADRs                         |
 | `/contrarian`     | Adversarial review of a chosen approach — isolated context, clean bias |
 | `@checkpoint`     | Save current work state for resume or handoff                            |
+| `@safety-check`   | Quick risk check before continuing fast work                             |
 
 ### Execution
 
@@ -165,6 +185,7 @@ agent-runway list          # List installed stacks
 agent-runway status        # Show current installation state
 agent-runway metrics       # Delivery scorecard from gate verdicts + run logs
 agent-runway ci-check      # Optional governance validation for CI (see --profile strict)
+agent-runway upgrade       # Upgrade Lite projects to Structured mode
 ```
 
 ## Artifact model

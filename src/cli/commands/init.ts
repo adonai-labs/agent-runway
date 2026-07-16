@@ -20,6 +20,8 @@ import {
   getGlobalCursorDir,
   hasGlobalInstallation,
   resolveConfigPath,
+  normalizeWorkflowMode,
+  type WorkflowMode,
 } from '../utils';
 import { PRESETS, getPreset } from '../presets';
 
@@ -106,9 +108,11 @@ export async function initCommand(options: InitOptions) {
 
   // ── Stack selection ───────────────────────────────────────────────────────
   let selectedStacks: string[];
+  let selectedMode: WorkflowMode = 'structured';
 
   if (options.stacks) {
     selectedStacks = options.stacks.split(',').map((s) => s.trim());
+    selectedMode = 'structured';
   } else if (options.preset) {
     const preset = getPreset(options.preset);
     if (!preset) {
@@ -121,15 +125,19 @@ export async function initCommand(options: InitOptions) {
       return;
     }
     selectedStacks = preset.stacks;
+    selectedMode = normalizeWorkflowMode(preset.mode);
     console.log(chalk.blue(`Using preset: ${preset.emoji} ${preset.name}`));
   } else if (options.yes) {
     const recommended = PRESETS.find((p) => p.recommended);
     selectedStacks = recommended?.stacks || [];
+    selectedMode = normalizeWorkflowMode(recommended?.mode);
     if (recommended) {
       console.log(chalk.blue(`Using recommended preset: ${recommended.emoji} ${recommended.name}`));
     }
   } else {
-    selectedStacks = await promptPresetSelection();
+    const selected = await promptPresetSelection();
+    selectedStacks = selected.stacks;
+    selectedMode = selected.mode;
   }
 
   // ── Installation ─────────────────────────────────────────────────────────
@@ -142,7 +150,7 @@ export async function initCommand(options: InitOptions) {
     if (installsCursor) {
       await fs.ensureDir(cursorDir);
       spinner.text = 'Copying core framework files...';
-      await copyCore(cursorDir);
+      await copyCore(cursorDir, selectedMode);
       await cleanupLegacyCursorMemory(cursorDir);
 
       if (selectedStacks.length > 0) {
@@ -153,19 +161,19 @@ export async function initCommand(options: InitOptions) {
 
     if (installsClaude) {
       spinner.text = 'Installing Claude Code support...';
-      await copyNeutralSkills(projectRoot, selectedStacks);
-      await copyClaude(projectRoot, selectedStacks);
+      await copyNeutralSkills(projectRoot, selectedStacks, selectedMode);
+      await copyClaude(projectRoot, selectedStacks, selectedMode);
     }
 
     if (installsVscode) {
       spinner.text = 'Installing VS Code support...';
-      await copyVscode(projectRoot, selectedStacks);
+      await copyVscode(projectRoot, selectedStacks, selectedMode);
     }
 
     // Config lives in .cursor/ for cursor installs, .agent-runway/ for claude-only
     const configDir = installsCursor ? cursorDir : path.join(projectRoot, '.agent-runway');
     spinner.text = 'Creating configuration...';
-    await createConfig(configDir, selectedStacks, isGlobal, targets);
+    await createConfig(configDir, selectedStacks, isGlobal, targets, selectedMode);
 
     spinner.text = 'Creating project structure...';
     await ensureProjectStructure(projectRoot);
@@ -185,17 +193,18 @@ export async function initCommand(options: InitOptions) {
 
       if (installsCursor) {
         console.log(chalk.gray('Cursor: open the project and run Developer: Reload Window'));
-        console.log(chalk.gray('Then run /start and describe what you want to do'));
+        console.log(chalk.gray(selectedMode === 'lite' ? 'Then invoke @start or @express from the installed skills' : 'Then run /start and describe what you want to do'));
       }
       if (installsClaude) {
-        console.log(chalk.gray('Claude Code: run /start or any /command in your project'));
+        console.log(chalk.gray(selectedMode === 'lite' ? 'Claude Code: reference .agent-runway/skills/<skill>/SKILL.md directly' : 'Claude Code: run /start or any /command in your project'));
       }
       if (installsVscode) {
-        console.log(chalk.gray('VS Code: reload the window, then use Agent Runway prompt files such as /start'));
+        console.log(chalk.gray(selectedMode === 'lite' ? 'VS Code: reload the window, then reference .github/skills/<skill>/SKILL.md' : 'VS Code: reload the window, then use Agent Runway prompt files such as /start'));
       }
       console.log();
     }
 
+    console.log(chalk.gray(`Mode: ${selectedMode}`));
     if (selectedStacks.length > 0) {
       console.log(chalk.gray(`Installed stacks: ${selectedStacks.join(', ')}`));
     }
@@ -272,7 +281,7 @@ async function promptTargetSelection(): Promise<InstallTarget[]> {
   return normalizeTargets(targets);
 }
 
-async function promptPresetSelection(): Promise<string[]> {
+async function promptPresetSelection(): Promise<{ stacks: string[]; mode: WorkflowMode }> {
   const { preset } = await inquirer.prompt([
     {
       type: 'list',
@@ -305,9 +314,9 @@ async function promptPresetSelection(): Promise<string[]> {
         })),
       },
     ]);
-    return stacks;
+    return { stacks, mode: 'structured' };
   }
 
   const selectedPreset = PRESETS.find((p) => p.id === preset);
-  return selectedPreset?.stacks || [];
+  return { stacks: selectedPreset?.stacks || [], mode: normalizeWorkflowMode(selectedPreset?.mode) };
 }

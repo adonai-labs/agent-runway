@@ -18,6 +18,7 @@ export interface Preset {
   emoji: string;
   stacks: string[];
   recommended?: boolean;
+  mode?: 'structured' | 'lite';
 }
 
 /**
@@ -75,6 +76,14 @@ export const STACKS: Stack[] = [
  * Combines stacks for common project types
  */
 export const PRESETS: Preset[] = [
+  {
+    id: 'vibe-lite',
+    name: 'Vibe/Lite',
+    description: 'Fast skill-first setup with checkpoint, safety-check, express, and minimal guardrails',
+    emoji: '[LITE]',
+    stacks: [],
+    mode: 'lite',
+  },
   {
     id: 'node-typescript',
     name: 'Node.js + TypeScript',

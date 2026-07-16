@@ -13,6 +13,7 @@ import {
   ensureProjectScaffold,
   getGlobalCursorDir,
   resolveConfigPath,
+  normalizeWorkflowMode,
 } from '../utils';
 
 interface UpdateOptions {
@@ -51,13 +52,14 @@ export async function updateCommand(options: UpdateOptions = {}) {
 
   try {
     const targets = config.targets ?? ['cursor'];
+    const mode = normalizeWorkflowMode(config.mode);
     const installsCursor = isGlobal || targets.includes('cursor');
     const installsClaude = !isGlobal && targets.includes('claude');
     const installsVscode = !isGlobal && targets.includes('vscode');
 
     if (installsCursor) {
       spinner.text = 'Updating core files...';
-      await copyCore(configDir);
+      await copyCore(configDir, mode);
       await cleanupLegacyCursorMemory(configDir);
 
       if (config.stacks.length > 0) {
@@ -68,13 +70,13 @@ export async function updateCommand(options: UpdateOptions = {}) {
 
     if (installsClaude) {
       spinner.text = 'Updating Claude Code support...';
-      await copyNeutralSkills(projectRoot, config.stacks);
-      await copyClaude(projectRoot, config.stacks);
+      await copyNeutralSkills(projectRoot, config.stacks, mode);
+      await copyClaude(projectRoot, config.stacks, mode);
     }
 
     if (installsVscode) {
       spinner.text = 'Updating VS Code support...';
-      await copyVscode(projectRoot, config.stacks);
+      await copyVscode(projectRoot, config.stacks, mode);
     }
 
     if (!isGlobal) {

@@ -7,6 +7,7 @@ import { initCommand } from './commands/init';
 type SmokeCase = {
   name: string;
   target: 'cursor' | 'claude' | 'vscode';
+  preset?: string;
   expectedPaths: string[];
   forbiddenPaths?: string[];
 };
@@ -23,6 +24,29 @@ const BASE_EXPECTED = [
 ];
 
 const CASES: SmokeCase[] = [
+  {
+    name: 'vibe-lite-cursor',
+    target: 'cursor',
+    preset: 'vibe-lite',
+    expectedPaths: [
+      ...BASE_EXPECTED,
+      '.cursor/commands',
+      '.cursor/skills/start/SKILL.md',
+      '.cursor/skills/express/SKILL.md',
+      '.cursor/skills/checkpoint/SKILL.md',
+      '.cursor/skills/safety-check/SKILL.md',
+      '.cursor/rules/engineering-principles.mdc',
+      '.cursor/rules/engineering-security.mdc',
+      '.cursor/rules/testing.mdc',
+      '.cursor/agent-runway.json',
+    ],
+    forbiddenPaths: [
+      '.cursor/commands/start.md',
+      '.cursor/agents/review.md',
+      '.cursor/skills/lead/SKILL.md',
+      '.cursor/rules/api-design.mdc',
+    ],
+  },
   {
     name: 'cursor',
     target: 'cursor',
@@ -100,7 +124,7 @@ async function runCase(testCase: SmokeCase): Promise<void> {
       yes: true,
       scope: 'project',
       target: testCase.target,
-      preset: 'node-typescript',
+      preset: testCase.preset ?? 'node-typescript',
     });
 
     await ensurePathsExist(tempRoot, testCase.expectedPaths);

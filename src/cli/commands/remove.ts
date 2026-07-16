@@ -14,6 +14,7 @@ import {
   removeStackSpecTemplate,
   getGlobalCursorDir,
   resolveConfigPath,
+  normalizeWorkflowMode,
 } from '../utils';
 
 interface RemoveOptions {
@@ -58,20 +59,21 @@ export async function removeCommand(stack: string, options: RemoveOptions = {}) 
   try {
     const updatedStacks = config.stacks.filter((s) => s !== stack);
     const targets = config.targets ?? ['cursor'];
+    const mode = normalizeWorkflowMode(config.mode);
 
     if (isGlobal || targets.includes('cursor')) {
-      await copyCore(configDir);
+      await copyCore(configDir, mode);
       await cleanupLegacyCursorMemory(configDir);
       if (updatedStacks.length > 0) {
         await copyStacks(configDir, updatedStacks);
       }
     }
     if (!isGlobal && targets.includes('claude')) {
-      await copyNeutralSkills(projectRoot, updatedStacks);
-      await copyClaude(projectRoot, updatedStacks);
+      await copyNeutralSkills(projectRoot, updatedStacks, mode);
+      await copyClaude(projectRoot, updatedStacks, mode);
     }
     if (!isGlobal && targets.includes('vscode')) {
-      await copyVscode(projectRoot, updatedStacks);
+      await copyVscode(projectRoot, updatedStacks, mode);
     }
     if (!isGlobal) {
       await removeStackSpecTemplate(projectRoot, stack);

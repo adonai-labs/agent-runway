@@ -5,6 +5,7 @@ import { getAvailableStacks as getStacksFromPresets } from '../presets';
 
 export type InstallTarget = 'cursor' | 'claude' | 'vscode';
 export type InstallTargetInput = InstallTarget | 'both' | 'all';
+export type WorkflowMode = 'structured' | 'lite';
 
 export interface Stack {
   id: string;
@@ -20,10 +21,41 @@ export interface Config {
   installedAt: string;
   updatedAt?: string;
   isGlobal?: boolean;
+  mode?: WorkflowMode;
 }
 
 const NEW_CONFIG_FILENAME = 'agent-runway.json';
 const LEGACY_CONFIG_FILENAME = 'cursor-runway.json';
+
+const LITE_CORE_SKILLS = new Set(['start', 'express', 'checkpoint', 'safety-check']);
+const LITE_CORE_RULES = new Set(['engineering-principles.mdc', 'engineering-security.mdc', 'testing.mdc']);
+
+export function normalizeWorkflowMode(value: unknown): WorkflowMode {
+  return value === 'lite' ? 'lite' : 'structured';
+}
+
+function includeCoreSkill(name: string, mode: WorkflowMode): boolean {
+  return mode === 'structured' || LITE_CORE_SKILLS.has(name);
+}
+
+function includeCoreRule(fileName: string, mode: WorkflowMode): boolean {
+  return mode === 'structured' || LITE_CORE_RULES.has(fileName);
+}
+
+async function copyMatchingEntries(
+  sourceDir: string,
+  destDir: string,
+  include: (entryName: string) => boolean
+): Promise<void> {
+  await fs.emptyDir(destDir);
+  if (!(await fs.pathExists(sourceDir))) return;
+
+  const entries = await fs.readdir(sourceDir, { withFileTypes: true });
+  for (const entry of entries) {
+    if (!include(entry.name)) continue;
+    await fs.copy(path.join(sourceDir, entry.name), path.join(destDir, entry.name), { overwrite: true });
+  }
+}
 
 // Single source of truth for the version: the package.json shipped with this CLI.
 // __dirname at runtime is dist/utils, so ../.. resolves to the package root.
@@ -152,7 +184,7 @@ export async function findProjectConfig(
   const cursorConfigPath = await resolveConfigPath(cursorDir);
   if (await fs.pathExists(cursorConfigPath)) {
     const raw = await fs.readJson(cursorConfigPath);
-    const config: Config = { ...raw, targets: normalizeTargets(raw.targets, ['cursor']) };
+    const config: Config = { ...raw, targets: normalizeTargets(raw.targets, ['cursor']), mode: normalizeWorkflowMode(raw.mode) };
     return { configDir: cursorDir, config };
   }
 
@@ -161,7 +193,7 @@ export async function findProjectConfig(
   const agentConfigPath = path.join(agentRunwayDir, NEW_CONFIG_FILENAME);
   if (await fs.pathExists(agentConfigPath)) {
     const raw = await fs.readJson(agentConfigPath);
-    const config: Config = { ...raw, targets: normalizeTargets(raw.targets, ['claude']) };
+    const config: Config = { ...raw, targets: normalizeTargets(raw.targets, ['claude']), mode: normalizeWorkflowMode(raw.mode) };
     return { configDir: agentRunwayDir, config };
   }
 
@@ -174,17 +206,18 @@ export function getAvailableStacks(): Stack[] {
 
 // Cursor install
 
-export async function copyCore(cursorDir: string): Promise<void> {
+export async function copyCore(cursorDir: string, mode: WorkflowMode = 'structured'): Promise<void> {
   const packageRoot = path.join(__dirname, '../..');
   const coreSource = path.join(packageRoot, 'src/core');
+  const workflowMode = normalizeWorkflowMode(mode);
 
-  // commands/skills/rules/agents are fully framework-owned: empty them first so
-  // files removed in a newer release don't linger on update. config is NOT emptied
-  // because it holds user-owned files (e.g. review-config.md).
-  for (const dir of ['commands', 'skills', 'rules', 'agents']) {
-    await fs.emptyDir(path.join(cursorDir, dir));
-    await fs.copy(path.join(coreSource, dir), path.join(cursorDir, dir), { overwrite: true });
-  }
+  // Framework-owned dirs are emptied first so removed files don't linger on update.
+  // Lite intentionally installs no command/agent aliases; skills are invoked directly.
+  await copyMatchingEntries(path.join(coreSource, 'commands'), path.join(cursorDir, 'commands'), () => workflowMode === 'structured');
+  await copyMatchingEntries(path.join(coreSource, 'agents'), path.join(cursorDir, 'agents'), () => workflowMode === 'structured');
+  await copyMatchingEntries(path.join(coreSource, 'skills'), path.join(cursorDir, 'skills'), (name) => includeCoreSkill(name, workflowMode));
+  await copyMatchingEntries(path.join(coreSource, 'rules'), path.join(cursorDir, 'rules'), (name) => includeCoreRule(name, workflowMode));
+
   await fs.copy(path.join(coreSource, 'config'), path.join(cursorDir, 'config'), { overwrite: true });
 }
 
@@ -334,6 +367,7 @@ function replaceMarkerBlock(content: string, marker: string, replacement: string
 // between explicit marker blocks. skillsDir is either .cursor/skills or .agent-runway/skills.
 async function updateCodeReviewSkillAt(skillsDir: string, stacks: string[]): Promise<void> {
   const skillPath = path.join(skillsDir, 'code-review/SKILL.md');
+  if (!(await fs.pathExists(skillPath))) return;
   let content = await fs.readFile(skillPath, 'utf-8');
 
   const searchReferences =
@@ -356,18 +390,19 @@ async function updateCodeReviewSkillAt(skillsDir: string, stacks: string[]): Pro
 
 // Copies core skills and stack-specific skills to .agent-runway/skills/,
 // which is the neutral location referenced by Claude Code commands.
-export async function copyNeutralSkills(projectRoot: string, stacks: string[]): Promise<void> {
-  await copySkillsToDir(path.join(projectRoot, '.agent-runway', 'skills'), stacks);
+export async function copyNeutralSkills(projectRoot: string, stacks: string[], mode: WorkflowMode = 'structured'): Promise<void> {
+  await copySkillsToDir(path.join(projectRoot, '.agent-runway', 'skills'), stacks, mode);
 }
 
-async function copySkillsToDir(skillsDest: string, stacks: string[]): Promise<void> {
+async function copySkillsToDir(skillsDest: string, stacks: string[], mode: WorkflowMode = 'structured'): Promise<void> {
   const packageRoot = path.join(__dirname, '../..');
   const coreSkillsSource = path.join(packageRoot, 'src/core/skills');
   const stacksSource = path.join(packageRoot, 'src/stacks');
 
+  const workflowMode = normalizeWorkflowMode(mode);
+
   // Fully framework-owned: empty first to prune skills removed in newer releases.
-  await fs.emptyDir(skillsDest);
-  await fs.copy(coreSkillsSource, skillsDest, { overwrite: true });
+  await copyMatchingEntries(coreSkillsSource, skillsDest, (name) => includeCoreSkill(name, workflowMode));
 
   for (const stack of stacks) {
     const stackPath = path.join(stacksSource, stack);
@@ -404,29 +439,27 @@ async function copySkillsToDir(skillsDest: string, stacks: string[]): Promise<vo
 }
 
 // Installs Claude Code commands, agents, rules, and generates CLAUDE.md.
-export async function copyClaude(projectRoot: string, stacks: string[]): Promise<void> {
+export async function copyClaude(projectRoot: string, stacks: string[], mode: WorkflowMode = 'structured'): Promise<void> {
   const packageRoot = path.join(__dirname, '../..');
   const claudeDir = getClaudeDir(projectRoot);
 
+  const workflowMode = normalizeWorkflowMode(mode);
+
   // Fully framework-owned: empty first to prune commands/agents removed in newer releases.
-  await fs.emptyDir(path.join(claudeDir, 'commands'));
-  await fs.emptyDir(path.join(claudeDir, 'agents'));
+  await copyMatchingEntries(path.join(packageRoot, 'src/core/claude-commands'), path.join(claudeDir, 'commands'), () => workflowMode === 'structured');
+  await copyMatchingEntries(path.join(packageRoot, 'src/core/claude-agents'), path.join(claudeDir, 'agents'), () => workflowMode === 'structured');
 
-  await fs.copy(path.join(packageRoot, 'src/core/claude-commands'), path.join(claudeDir, 'commands'), { overwrite: true });
-  await fs.copy(path.join(packageRoot, 'src/core/claude-agents'), path.join(claudeDir, 'agents'), { overwrite: true });
-
-  await copyRulesToAgentRunway(projectRoot, stacks);
-  await generateClaudeMd(projectRoot, stacks);
+  await copyRulesToAgentRunway(projectRoot, stacks, workflowMode);
+  await generateClaudeMd(projectRoot, stacks, workflowMode);
 }
 
 // Copies all rule .mdc files to .agent-runway/rules/ so they can be referenced from CLAUDE.md.
-async function copyRulesToAgentRunway(projectRoot: string, stacks: string[]): Promise<void> {
+async function copyRulesToAgentRunway(projectRoot: string, stacks: string[], mode: WorkflowMode = 'structured'): Promise<void> {
   const packageRoot = path.join(__dirname, '../..');
   const rulesDir = path.join(projectRoot, '.agent-runway', 'rules');
+  const workflowMode = normalizeWorkflowMode(mode);
   // Fully framework-owned: empty first to prune rules removed in newer releases.
-  await fs.emptyDir(rulesDir);
-
-  await fs.copy(path.join(packageRoot, 'src/core/rules'), rulesDir, { overwrite: true });
+  await copyMatchingEntries(path.join(packageRoot, 'src/core/rules'), rulesDir, (name) => includeCoreRule(name, workflowMode));
 
   const stacksSource = path.join(packageRoot, 'src/stacks');
   for (const stack of stacks) {
@@ -469,10 +502,12 @@ function stripMdcFrontmatter(content: string): string {
 // Generates CLAUDE.md at the project root.
 // Strategy: alwaysApply:true rules are inlined in full; alwaysApply:false rules get a
 // one-line summary pointing to .agent-runway/rules/ for the full content.
-export async function generateClaudeMd(projectRoot: string, stacks: string[]): Promise<void> {
+export async function generateClaudeMd(projectRoot: string, stacks: string[], mode: WorkflowMode = 'structured'): Promise<void> {
   const packageRoot = path.join(__dirname, '../..');
   const coreRulesDir = path.join(packageRoot, 'src/core/rules');
   const stacksSource = path.join(packageRoot, 'src/stacks');
+
+  const workflowMode = normalizeWorkflowMode(mode);
 
   const sections: string[] = [
     '# Agent Runway - Project Rules\n',
@@ -482,7 +517,7 @@ export async function generateClaudeMd(projectRoot: string, stacks: string[]): P
 
   // Core rules
   const coreRuleFiles = (await fs.readdir(coreRulesDir))
-    .filter((f) => f.endsWith('.mdc'))
+    .filter((f) => f.endsWith('.mdc') && includeCoreRule(f, workflowMode))
     .sort();
 
   for (const file of coreRuleFiles) {
@@ -524,7 +559,7 @@ export async function generateClaudeMd(projectRoot: string, stacks: string[]): P
 
 // --- VS Code install -------------------------------------------------------
 
-export async function copyVscode(projectRoot: string, stacks: string[]): Promise<void> {
+export async function copyVscode(projectRoot: string, stacks: string[], mode: WorkflowMode = 'structured'): Promise<void> {
   const githubDir = getVscodeDir(projectRoot);
 
   await fs.ensureDir(path.join(githubDir, 'instructions'));
@@ -532,20 +567,22 @@ export async function copyVscode(projectRoot: string, stacks: string[]): Promise
   await fs.ensureDir(path.join(githubDir, 'agents'));
   await fs.ensureDir(path.join(githubDir, 'skills'));
 
-  await copySkillsToDir(path.join(githubDir, 'skills'), stacks);
-  await copyRulesToAgentRunway(projectRoot, stacks);
-  await generateVscodeInstructions(projectRoot, stacks);
-  await generateVscodePrompts(projectRoot);
-  await generateVscodeAgents(projectRoot);
+  const workflowMode = normalizeWorkflowMode(mode);
+
+  await copySkillsToDir(path.join(githubDir, 'skills'), stacks, workflowMode);
+  await copyRulesToAgentRunway(projectRoot, stacks, workflowMode);
+  await generateVscodeInstructions(projectRoot, stacks, workflowMode);
+  await generateVscodePrompts(projectRoot, workflowMode);
+  await generateVscodeAgents(projectRoot, workflowMode);
 }
 
-async function getRuleFiles(packageRoot: string, stacks: string[]): Promise<string[]> {
+async function getRuleFiles(packageRoot: string, stacks: string[], mode: WorkflowMode = 'structured'): Promise<string[]> {
   const files: string[] = [];
   const coreRulesDir = path.join(packageRoot, 'src/core/rules');
 
   if (await fs.pathExists(coreRulesDir)) {
     const coreFiles = (await fs.readdir(coreRulesDir))
-      .filter((file) => file.endsWith('.mdc'))
+      .filter((file) => file.endsWith('.mdc') && includeCoreRule(file, normalizeWorkflowMode(mode)))
       .sort()
       .map((file) => path.join(coreRulesDir, file));
     files.push(...coreFiles);
@@ -570,7 +607,7 @@ function toYamlString(value: unknown): string {
   return JSON.stringify(String(value ?? ''));
 }
 
-export async function generateVscodeInstructions(projectRoot: string, stacks: string[]): Promise<void> {
+export async function generateVscodeInstructions(projectRoot: string, stacks: string[], mode: WorkflowMode = 'structured'): Promise<void> {
   const packageRoot = path.join(__dirname, '../..');
   const githubDir = getVscodeDir(projectRoot);
   const instructionsDir = path.join(githubDir, 'instructions', 'agent-runway');
@@ -594,7 +631,7 @@ export async function generateVscodeInstructions(projectRoot: string, stacks: st
     'When a task matches an Agent Runway workflow, read the corresponding skill before planning or editing.',
   ];
 
-  for (const file of await getRuleFiles(packageRoot, stacks)) {
+  for (const file of await getRuleFiles(packageRoot, stacks, mode)) {
     const content = await fs.readFile(file, 'utf-8');
     const fm = parseMdcFrontmatter(content);
     const body = stripMdcFrontmatter(content);
@@ -630,7 +667,7 @@ export async function generateVscodeInstructions(projectRoot: string, stacks: st
   );
 }
 
-export async function generateVscodePrompts(projectRoot: string): Promise<void> {
+export async function generateVscodePrompts(projectRoot: string, mode: WorkflowMode = 'structured'): Promise<void> {
   const packageRoot = path.join(__dirname, '../..');
   const sourceDir = path.join(packageRoot, 'src/core/claude-commands');
   const promptsDir = path.join(getVscodeDir(projectRoot), 'prompts');
@@ -638,9 +675,10 @@ export async function generateVscodePrompts(projectRoot: string): Promise<void> 
   // Fully framework-owned: empty first to prune prompts removed in newer releases.
   await fs.emptyDir(promptsDir);
 
-  const commandFiles = (await fs.readdir(sourceDir))
-    .filter((file) => file.endsWith('.md'))
-    .sort();
+  const workflowMode = normalizeWorkflowMode(mode);
+  const commandFiles = workflowMode === 'structured'
+    ? (await fs.readdir(sourceDir)).filter((file) => file.endsWith('.md')).sort()
+    : [];
 
   for (const file of commandFiles) {
     const commandName = path.basename(file, '.md');
@@ -661,7 +699,7 @@ export async function generateVscodePrompts(projectRoot: string): Promise<void> 
   }
 }
 
-export async function generateVscodeAgents(projectRoot: string): Promise<void> {
+export async function generateVscodeAgents(projectRoot: string, mode: WorkflowMode = 'structured'): Promise<void> {
   const packageRoot = path.join(__dirname, '../..');
   const sourceDir = path.join(packageRoot, 'src/core/claude-agents');
   const agentsDir = path.join(getVscodeDir(projectRoot), 'agents');
@@ -669,9 +707,10 @@ export async function generateVscodeAgents(projectRoot: string): Promise<void> {
   // Fully framework-owned: empty first to prune agents removed in newer releases.
   await fs.emptyDir(agentsDir);
 
-  const agentFiles = (await fs.readdir(sourceDir))
-    .filter((file) => file.endsWith('.md'))
-    .sort();
+  const workflowMode = normalizeWorkflowMode(mode);
+  const agentFiles = workflowMode === 'structured'
+    ? (await fs.readdir(sourceDir)).filter((file) => file.endsWith('.md')).sort()
+    : [];
 
   for (const file of agentFiles) {
     const source = await fs.readFile(path.join(sourceDir, file), 'utf-8');
@@ -700,7 +739,8 @@ export async function createConfig(
   configDir: string,
   stacks: string[],
   isGlobal: boolean = false,
-  targets: InstallTarget[] = ['cursor']
+  targets: InstallTarget[] = ['cursor'],
+  mode: WorkflowMode = 'structured'
 ): Promise<void> {
   const config: Config = {
     version: getPackageVersion(),
@@ -708,6 +748,7 @@ export async function createConfig(
     targets: normalizeTargets(targets),
     installedAt: new Date().toISOString(),
     isGlobal,
+    mode: normalizeWorkflowMode(mode),
   };
   await fs.ensureDir(configDir);
   await fs.writeJson(path.join(configDir, NEW_CONFIG_FILENAME), config, { spaces: 2 });
@@ -716,11 +757,12 @@ export async function createConfig(
 export async function loadConfig(configDir: string): Promise<Config> {
   const configPath = await resolveConfigPath(configDir);
   const raw = await fs.readJson(configPath);
-  return { ...raw, targets: normalizeTargets(raw.targets, ['cursor']) };
+  return { ...raw, targets: normalizeTargets(raw.targets, ['cursor']), mode: normalizeWorkflowMode(raw.mode) };
 }
 
 export async function saveConfig(configDir: string, config: Config): Promise<void> {
   config.updatedAt = new Date().toISOString();
   config.targets = normalizeTargets(config.targets);
+  config.mode = normalizeWorkflowMode(config.mode);
   await fs.writeJson(path.join(configDir, NEW_CONFIG_FILENAME), config, { spaces: 2 });
 }

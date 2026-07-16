@@ -1,20 +1,21 @@
 ---
 name: checkpoint
-description: Capture the current work state so a developer, another agent, or a future session can resume without losing context. Use when the developer says "/checkpoint", "save state", "checkpoint this", "handoff", "pause here", or "resume later".
+description: Capture the current work state so a developer, another agent, or a future session can resume without losing context. Use when the developer says "checkpoint", "save state", "checkpoint this", "handoff", "pause here", or "resume later".
+standalone: true
 ---
 
 # Checkpoint
 
-## Invoke Command
+## Invoke Skill
 
 ```
-/checkpoint [optional title or mode]
+@checkpoint [optional title or mode]
 ```
 
 Examples:
-- `/checkpoint`
-- `/checkpoint before refactor`
-- `/checkpoint handoff`
+- `@checkpoint`
+- `@checkpoint before refactor`
+- `@checkpoint handoff`
 
 ---
 

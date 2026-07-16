@@ -20,7 +20,7 @@ This roadmap is directional, not a date-based commitment. Items may move as real
 - Project-scoped `.agent-runway/` memory, docs, specs, workflows, and logs.
 - CI governance checks through `agent-runway ci-check`.
 - Delivery scorecards through `agent-runway metrics`.
-- `/checkpoint` for saving current state during rapid prototyping, pauses, and handoffs.
+- `@checkpoint` skill for saving current state during rapid prototyping, pauses, and handoffs.
 - Release validation with build, content validation, smoke tests, content tests, and package dry-run.
 - Content guardrails for broken links, command/agent parity, stack completeness, and mojibake detection.
 

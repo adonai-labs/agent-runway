@@ -100,11 +100,11 @@ For unattended runs where you need full traceability:
 
 For pausing, handing off, or marking a useful point in fast iteration:
 
-- `/checkpoint` — save the current work state under `.agent-runway/logs/checkpoints/`
+- `@checkpoint` — save the current work state under `.agent-runway/logs/checkpoints/`
 
 ## Commands
 
-Each command points to a full skill workflow. Names may differ from the skill folder — see mapping below.
+Most commands point to a full skill workflow. A few lightweight skills are invoked directly, without adding a slash command.
 
 ### Command → skill mapping
 
@@ -114,7 +114,6 @@ Each command points to a full skill workflow. Names may differ from the skill fo
 | `/spec-creator` | `spec-creator` | |
 | `/ticket-creator` | `ticket-creator` | |
 | `/validate` | `ticket-eval` | Command name kept for readability |
-| `/checkpoint` | `checkpoint` | Resume/handoff snapshot |
 | `/po-eval` | `po-eval` | |
 | `/architect` | `architect` | |
 | `/contrarian` | `contrarian` | |
@@ -138,7 +137,7 @@ Stack-specific guidance has **no slash commands** — use installed rules (auto 
 | `/po-eval`        | Evaluate a spec or ticket from a product perspective                   |
 | `/architect`      | Design decisions, trade-off analysis, and ADRs                         |
 | `/contrarian`     | Adversarial review of a chosen approach — isolated context, clean bias |
-| `/checkpoint`     | Save current work state for resume or handoff                            |
+| `@checkpoint`     | Save current work state for resume or handoff                            |
 
 ### Execution
 

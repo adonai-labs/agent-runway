@@ -179,7 +179,7 @@ Ask for the list of files or the branch/PR reference, then proceed to `/review`.
 
 #### If intent is Checkpoint
 
-Route directly to `/checkpoint`.
+Route directly to the checkpoint skill.
 
 ---
 

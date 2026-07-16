@@ -168,7 +168,7 @@ async function listMdBasenames(dir: string): Promise<Set<string>> {
 // Validates structural parity:
 // - command set matches between Cursor (commands/) and Claude (claude-commands/)
 // - agent set matches between Cursor (agents/) and Claude (claude-agents/)
-// - every core skill (dir with SKILL.md) is reachable from at least one command or agent
+// - every core skill (dir with SKILL.md) is reachable from at least one command/agent or marked standalone
 async function validateParity(packageRoot: string): Promise<ValidationError[]> {
   const errors: ValidationError[] = [];
 
@@ -220,7 +220,12 @@ async function validateParity(packageRoot: string): Promise<ValidationError[]> {
       // Dirs without a SKILL.md (e.g. shared/) are not invokable skills.
       if (!(await fs.pathExists(path.join(coreSkillsDir, e.name, 'SKILL.md')))) continue;
       if (!referencedSkills.has(e.name)) {
-        errors.push({ file: `src/core/skills/${e.name}`, issue: 'Skill is not reachable from any command or agent' });
+        const skillFile = path.join(coreSkillsDir, e.name, 'SKILL.md');
+        const skillContent = await fs.readFile(skillFile, 'utf-8');
+        const fm = parseFrontmatter(skillContent);
+        if (fm?.standalone !== true) {
+          errors.push({ file: `src/core/skills/${e.name}`, issue: 'Skill is not reachable from any command or agent and is not marked standalone' });
+        }
       }
     }
   }

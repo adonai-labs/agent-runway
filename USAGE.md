@@ -324,13 +324,13 @@ Decision: Should we use event-driven architecture for order notifications?
 [AI analyzes trade-offs, provides recommendations with pros/cons]
 ```
 
-### `/checkpoint` - Save Current State
+### `@checkpoint` - Save Current State
 
 Creates a compact snapshot of the current work state for pause, handoff, or resume.
 
 ```text
-/checkpoint before refactor
-/checkpoint handoff
+@checkpoint before refactor
+@checkpoint handoff
 ```
 
 When filesystem writes are available, the checkpoint is saved under:
@@ -343,7 +343,6 @@ When filesystem writes are available, the checkpoint is saved under:
 - `/ticket-creator` - Create a ready-to-dev ticket
 - `/validate` - Evaluate a ticket for development readiness (ticket-eval)
 - `/po-eval` - Evaluate a spec or ticket from a product perspective
-- `/checkpoint` - Save current work state for resume or handoff
 - `/refactor` - Guided refactoring workflow
 - `/express` - Fast implementation for simple changes
 - `/lead` - Full workflow; state you have a plan to activate Fast-Track Mode

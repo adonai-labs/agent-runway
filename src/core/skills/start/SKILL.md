@@ -117,7 +117,7 @@ Short-path rule:
 **Then load project context** (only what exists — skip gracefully if files are absent):
 
 - If docs exist at `.agent-runway/docs/architecture/architecture.md` or similar: read and summarise the relevant bounded context
-- If docs exist at `.agent-runway/docs/architecture/decisions.md` or `.agent-runway/docs/adr/`: identify ADRs relevant to this work
+- If docs exist at `.agent-runway/docs/architecture/decisions.md` or `.agent-runway/docs/architecture/decisions/`: identify ADRs relevant to this work
 - If the codebase is available: note the layers and patterns already in use
 
 Present a brief context summary:

@@ -67,6 +67,13 @@ The goal is not to produce elegant diagrams. The goal is to help make **better d
 4. Identify what is good and what carries risk
 5. Produce a structured review
 
+### For ADRs
+1. Use the ADR template from [templates.md](templates.md).
+2. Save accepted or proposed ADRs to `.agent-runway/docs/architecture/decisions/ADR-YYYYMMDD-<decision-slug>.md` when filesystem writes are available.
+3. If filesystem writes are not available, return the ADR content inline and state that it was not written to disk.
+4. Keep `.agent-runway/docs/architecture/decisions.md` as an index or summary of notable decisions when the project uses one.
+5. Use the artifact writing contract from [../shared/artifact-writing-contract.md](../shared/artifact-writing-contract.md) to avoid mixing stable docs, memory, and run logs.
+
 ### For refactor decisions
 1. Enter refactor mode from [foundations.md](foundations.md) (Part 3 — Execution Modes)
 2. Apply the blast radius and change safety heuristics

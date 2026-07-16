@@ -125,7 +125,7 @@ date: [YYYY-MM-DD]
 artifact: [feature / branch / files reviewed]
 ```
 
-Persist it: save the review (including this block) to `.agent-runway/logs/reviews/<date>.md` so `agent-runway metrics` can read it.
+Persist it: save the review (including this block) to `.agent-runway/logs/reviews/YYYY-MM-DD-<branch-or-scope>.md` so `agent-runway metrics` can read it.
 
 ---
 

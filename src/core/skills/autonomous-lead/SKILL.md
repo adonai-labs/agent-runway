@@ -72,7 +72,7 @@ Where `<run-id>` is UTC-based:
 
 When architectural impact is detected, also create:
 
-- `.agent-runway/docs/decisions/ADR-<YYYYMMDD>-<decision-slug>.md`
+- `.agent-runway/docs/architecture/decisions/ADR-<YYYYMMDD>-<decision-slug>.md`
 
 Always append key final decisions to:
 
@@ -203,7 +203,9 @@ Append stable lessons to `.agent-runway/memory/project-decisions.md`.
 Append recurring operational patterns to `.agent-runway/memory/execution-memory.md` when observed.
 Append recurring reasoning lessons to `.agent-runway/memory/reasoning-memory.md` when observed.
 
-Apply the memory hygiene policy when writing: [../shared/memory-policy.md](../shared/memory-policy.md) (consolidate duplicates, cap active entries, archive instead of delete).
+Apply the artifact writing contract and memory hygiene policy when writing:
+- [../shared/artifact-writing-contract.md](../shared/artifact-writing-contract.md)
+- [../shared/memory-policy.md](../shared/memory-policy.md) (consolidate duplicates, cap active entries, archive instead of delete)
 
 Finalise the run header: set `deviations` (count of departures from the planned implementation) and `memory_refs` (titles of memory entries that were applied during this run). This is what lets `agent-runway metrics` measure whether memory is actually used.
 

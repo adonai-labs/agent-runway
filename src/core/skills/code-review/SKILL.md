@@ -201,7 +201,9 @@ When triaging what must be addressed first, order by: `security > correctness/fu
 
 Output the review report using the template from [templates.md](templates.md).
 
-Save to: `review/<branch-name>-findings.md` (or present inline if branch is unknown).
+Save to: `.agent-runway/logs/reviews/YYYY-MM-DD-<branch-or-scope>.md` (or present inline if filesystem writes are not available).
+
+The saved report must include the machine-readable verdict block from [templates.md](templates.md) so `agent-runway metrics` can read it.
 
 ---
 
@@ -228,6 +230,7 @@ Deliver final verdict:
 - [systematic-searches.md](systematic-searches.md) — 21 mandatory search patterns
 - [templates.md](templates.md) — report output templates
 - [reference.md](reference.md) — review checklists per concern
+- [../shared/artifact-writing-contract.md](../shared/artifact-writing-contract.md) - artifact write locations
 
 ---
 

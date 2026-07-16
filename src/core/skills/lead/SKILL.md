@@ -479,7 +479,7 @@ Use the `AskQuestion` tool with a single multi-select question:
 Did this cycle reveal anything that should be captured for system improvement?
 - A new pattern worth documenting in standards.md
 - An antipattern not yet in antipatterns.md
-- An architectural decision that merits an ADR in .agent-runway/docs/
+- An architectural decision that merits an ADR in `.agent-runway/docs/architecture/decisions/`
 - A recurring friction point in the workflow
 - None — nothing to capture
 ```
@@ -493,7 +493,7 @@ Did this cycle reveal anything that should be captured for system improvement?
 
 - **Type**: Pattern / Antipattern / ADR / Workflow friction
 - **Detail**: [One-paragraph description of what was found]
-- **Suggested target file**: [e.g. `antipatterns.md`, `standards.md`, `.agent-runway/docs/decisions/`]
+- **Suggested target file**: [e.g. `antipatterns.md`, `standards.md`, `.agent-runway/docs/architecture/decisions/`]
 - **Source**: [Feature or ticket that surfaced this]
 ```
 
@@ -508,6 +508,7 @@ Do not modify any `.cursor` file directly — only log the improvement for the t
 - [standards.md](standards.md) — DO/DON'T examples, self-review checklist
 - [validation-templates.md](validation-templates.md) — phase checkpoint output templates
 - [reference.md](reference.md) — search commands and key file paths
+- [../shared/artifact-writing-contract.md](../shared/artifact-writing-contract.md) - artifact write locations
 
 ---
 

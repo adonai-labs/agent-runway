@@ -18,6 +18,7 @@ This roadmap is directional, not a date-based commitment. Items may move as real
 - Multi-environment support for Cursor, Claude Code, and VS Code.
 - Stack skills for .NET, TypeScript, Node.js, React, Python, Go, and Rust.
 - Project-scoped `.agent-runway/` memory, docs, specs, workflows, and logs.
+- Artifact writing contract with canonical paths for checkpoints, reviews, autonomous run logs, ADRs, specs, and tickets.
 - CI governance checks through `agent-runway ci-check`.
 - Delivery scorecards through `agent-runway metrics`.
 - `@checkpoint` skill for saving current state during rapid prototyping, pauses, and handoffs.
@@ -30,7 +31,7 @@ This roadmap is directional, not a date-based commitment. Items may move as real
 ## Next: v1.6
 
 - Modularize the CLI internals into smaller focused modules.
-- Improve release and package validation around installed artifacts.
+- Add more artifact-level regression tests for generated logs, reviews, ADRs, and memory updates.
 - Add more targeted install/update regression tests.
 - Reduce large utility surfaces and make path/config/copy/generation behavior easier to review.
 - Improve documentation around local package testing and release operations.

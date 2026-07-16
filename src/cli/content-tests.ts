@@ -38,13 +38,14 @@ function testPackageVersion(): void {
 // Install-time checks
 async function withTempInstall(
   run: (root: string) => Promise<void>,
-  stacks = 'node,typescript'
+  stacks = 'node,typescript',
+  target: 'cursor' | 'claude' | 'vscode' = 'cursor'
 ): Promise<void> {
   const originalCwd = process.cwd();
   const tempRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'agent-runway-content-'));
   try {
     process.chdir(tempRoot);
-    await initCommand({ yes: true, scope: 'project', target: 'cursor', stacks });
+    await initCommand({ yes: true, scope: 'project', target, stacks });
     await run(tempRoot);
   } finally {
     process.chdir(originalCwd);
@@ -74,6 +75,17 @@ async function testConfigVersion(): Promise<void> {
     assert.strictEqual(config.version, getPackageVersion(), 'config version matches package version');
   });
   console.log('ok content:configVersion');
+}
+
+async function testClaudeMdContainsMaintainabilityRule(): Promise<void> {
+  await withTempInstall(async (root) => {
+    const content = await fs.readFile(path.join(root, 'CLAUDE.md'), 'utf-8');
+    assert.ok(
+      content.includes('Prefer files and classes under 600 lines'),
+      'CLAUDE.md includes maintainability rule'
+    );
+  }, 'node,typescript', 'claude');
+  console.log('ok content:claudeMaintainabilityRule');
 }
 
 async function testAddPreservesExistingStackInjection(): Promise<void> {
@@ -313,6 +325,7 @@ async function main(): Promise<void> {
   testPackageVersion();
   await testSkillInjection();
   await testConfigVersion();
+  await testClaudeMdContainsMaintainabilityRule();
   await testAddPreservesExistingStackInjection();
   await testRemoveRefreshesCursorArtifacts();
   await testRemoveDeletesProjectSpecTemplates();

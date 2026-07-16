@@ -42,6 +42,18 @@ Names are the primary documentation.
 
 ---
 
+## Keep files and classes maintainable
+
+Large files are a design smell even when the code still works.
+
+- Prefer files and classes under 600 lines
+- Treat 600-800 lines as a warning zone that requires an explicit reason
+- Do not create or grow files/classes beyond 800 lines without a strong architectural justification
+- Split by responsibility, not by arbitrary line count
+- Generated files, migrations, snapshots, lockfiles, and vendor files are exempt
+
+---
+
 ## Functions do one thing
 
 - Functions should be short, focused, and at a single level of abstraction

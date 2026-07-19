@@ -54,7 +54,7 @@ Use Lite when you want fast, skill-first workflows without slash command aliases
 npx agent-runway init --preset vibe-lite --target all
 ```
 
-Lite installs `@start`, `@express`, `@code-review`, `@checkpoint`, `@safety-check`, and a small rule set for engineering principles, security, and testing.
+Lite installs `@start`, `@express`, `@code-review`, `@checkpoint`, `@learning`, `@safety-check`, and a small rule set for engineering principles, security, and testing.
 
 Upgrade to Structured when the work needs specs, tickets, agents, slash commands, lead/autonomous workflows, architecture/contrarian gates, full rules, or governed delivery:
 
@@ -97,7 +97,7 @@ Each target installs different files:
 | Target | Files created |
 |--------|--------------|
 | `cursor` | `.cursor/` runtime (commands, skills, rules, agents) |
-| `claude` | `.claude/` commands and agents, `CLAUDE.md`, `.agent-runway/skills/` and `rules/` |
+| `claude` | `.claude/` commands and agents, `CLAUDE.md`, `.agent-runway/skills/` and `rules/`. Existing `CLAUDE.md` content is preserved; Agent Runway updates only its marked block. |
 | `vscode` | `.github/copilot-instructions.md`, `.github/instructions/`, `prompts/`, `agents/`, `skills/` |
 
 ---
@@ -352,6 +352,16 @@ Creates a compact snapshot of the current work state for pause, handoff, or resu
 When filesystem writes are available, the checkpoint is saved under:
 
 `.agent-runway/logs/checkpoints/`
+
+
+### `@learning` - Save Project Learning
+
+Captures durable lessons in `.agent-runway/memory/` so future agent sessions can reuse them.
+
+```text
+@learning we do not use generic repositories in this service
+@learning auth changes need a permission matrix check before release
+```
 
 
 ### `@safety-check` - Quick Risk Check
@@ -646,6 +656,33 @@ ls .cursor/rules/
 
 # 3. Check glob patterns in .mdc files match your file structure
 ```
+
+### Testing Claude Code Locally
+
+```bash
+# From the package checkout
+npm run build
+npm pack --dry-run
+
+# In a separate test project
+npm install -D /absolute/path/to/adonai-labs-agent-runway-1.5.0.tgz
+npx agent-runway init --yes --target claude --preset node-typescript
+```
+
+Then open the test project in Claude Code and verify:
+
+```bash
+ls .claude/commands/
+ls .agent-runway/skills/
+cat CLAUDE.md | head -20
+```
+
+Expected behavior:
+
+- Structured installs slash commands under `.claude/commands/`.
+- Skills are available under `.agent-runway/skills/`.
+- `CLAUDE.md` contains an Agent Runway block marked with `<!-- agent-runway:claude:start -->` and `<!-- agent-runway:claude:end -->`.
+- If the project already had a `CLAUDE.md`, existing content stays outside that block.
 
 ### Commands Not Available (Claude Code)
 

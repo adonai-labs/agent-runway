@@ -18,15 +18,16 @@ This roadmap is directional, not a date-based commitment. Items may move as real
 - Multi-environment support for Cursor, Claude Code, and VS Code.
 - Stack skills for .NET, TypeScript, Node.js, React, Python, Go, and Rust.
 - Project-scoped `.agent-runway/` memory, docs, specs, workflows, and logs.
-- Artifact writing contract with canonical paths for checkpoints, reviews, autonomous run logs, ADRs, specs, and tickets.
+- Artifact writing contract with canonical paths for checkpoints, reviews, autonomous run logs, ADRs, specs, tickets, and learning entries.
 - CI governance checks through `agent-runway ci-check`.
 - Delivery scorecards through `agent-runway metrics`.
 - `@checkpoint` skill for saving current state during rapid prototyping, pauses, and handoffs.
+- `@learning` skill for capturing durable project lessons into memory artifacts.
 - Vibe/Lite preset for fast, skill-first usage with minimal installed context, including `@code-review`.
 - `@safety-check` skill for quick Go / Go with caution / Stop risk review.
 - Upgrade path from Lite to Structured through `agent-runway upgrade --to structured`.
 - Release validation with build, content validation, smoke tests, content tests, and package dry-run.
-- Content guardrails for broken links, command/agent parity, stack completeness, and mojibake detection.
+- Content guardrails for broken links, command/agent parity, stack completeness, CLAUDE.md preservation, and mojibake detection.
 
 ## Next: v1.6
 

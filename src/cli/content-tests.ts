@@ -89,6 +89,7 @@ async function testLitePresetUpgradesToStructured(): Promise<void> {
     const liteConfig = await fs.readJson(cursorConfigPath);
     assert.strictEqual(liteConfig.mode, 'lite', 'vibe-lite stores lite mode');
     assert.ok(await fs.pathExists(path.join(tempRoot, '.cursor', 'skills', 'safety-check', 'SKILL.md')), 'lite installs safety-check');
+    assert.ok(await fs.pathExists(path.join(tempRoot, '.cursor', 'skills', 'learning', 'SKILL.md')), 'lite installs learning');
     assert.ok(await fs.pathExists(path.join(tempRoot, '.cursor', 'skills', 'code-review', 'SKILL.md')), 'lite installs code-review');
     assert.ok(!(await fs.pathExists(path.join(tempRoot, '.cursor', 'commands', 'start.md'))), 'lite does not install Cursor commands');
     assert.ok(!(await fs.pathExists(path.join(tempRoot, '.claude', 'commands', 'start.md'))), 'lite does not install Claude commands');
@@ -118,6 +119,28 @@ async function testClaudeMdContainsMaintainabilityRule(): Promise<void> {
     );
   }, 'node,typescript', 'claude');
   console.log('ok content:claudeMaintainabilityRule');
+}
+async function testClaudeMdPreservesExistingContent(): Promise<void> {
+  const originalCwd = process.cwd();
+  const tempRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'agent-runway-claude-merge-'));
+  try {
+    process.chdir(tempRoot);
+    await fs.writeFile(path.join(tempRoot, 'CLAUDE.md'), ['# Existing Claude Rules', '', '- Keep my local instruction.', ''].join('\n'));
+
+    await initCommand({ yes: true, scope: 'project', target: 'claude', stacks: 'node,typescript' });
+    await updateCommand();
+
+    const content = await fs.readFile(path.join(tempRoot, 'CLAUDE.md'), 'utf-8');
+    assert.ok(content.includes('# Existing Claude Rules'), 'existing CLAUDE.md heading preserved');
+    assert.ok(content.includes('- Keep my local instruction.'), 'existing CLAUDE.md instruction preserved');
+    assert.ok(content.includes('<!-- agent-runway:claude:start -->'), 'Agent Runway block marker written');
+    assert.ok(content.includes('Prefer files and classes under 600 lines'), 'generated Agent Runway rules included');
+    assert.strictEqual((content.match(/agent-runway:claude:start/g) ?? []).length, 1, 'Agent Runway block is not duplicated');
+  } finally {
+    process.chdir(originalCwd);
+    await fs.remove(tempRoot);
+  }
+  console.log('ok content:claudeMdPreservesExistingContent');
 }
 
 async function testAddPreservesExistingStackInjection(): Promise<void> {
@@ -359,6 +382,7 @@ async function main(): Promise<void> {
   await testConfigVersion();
   await testLitePresetUpgradesToStructured();
   await testClaudeMdContainsMaintainabilityRule();
+  await testClaudeMdPreservesExistingContent();
   await testAddPreservesExistingStackInjection();
   await testRemoveRefreshesCursorArtifacts();
   await testRemoveDeletesProjectSpecTemplates();

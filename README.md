@@ -14,6 +14,10 @@ It does not replace your stack, architecture, or process. It wraps around them.
 
 As of v1.5, Agent Runway supports Cursor, Claude Code, and VS Code Copilot, and ships implementation skills for .NET, TypeScript, Node.js, React, Python, Go, and Rust.
 
+## Requirements
+
+- Node.js 22 or newer
+
 ## Quick Start
 
 Choose the amount of structure you want.

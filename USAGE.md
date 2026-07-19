@@ -4,6 +4,10 @@ Detailed examples and workflows for using Agent Runway.
 
 ---
 
+## Requirements
+
+- Node.js 22 or newer
+
 ## Installation & Setup
 
 ### First Time Setup

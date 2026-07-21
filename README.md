@@ -30,7 +30,7 @@ Fast, skill-first setup for prototypes, solo work, and low-ceremony coding.
 npx @adonai-labs/agent-runway init --preset vibe-lite --target all
 ```
 
-Lite installs `@start`, `@express`, `@code-review`, `@checkpoint`, `@learning`, `@safety-check`, and a small rule set for engineering principles, security, and testing. It does not install slash command aliases, agents, or heavy structured delivery workflows.
+Lite installs `@start`, `@express`, `@code-review`, `@checkpoint`, `@learning`, `@safety-check`, `@council` preview, and a small rule set for engineering principles, security, and testing. It does not install slash command aliases, agents, or heavy structured delivery workflows.
 
 When the work outgrows Lite, upgrade in place:
 
@@ -109,6 +109,7 @@ Use Lite when you want speed without losing basic safety.
 | `@checkpoint` | Save current state for pause, resume, or handoff |
 | `@learning` | Save durable lessons to project memory |
 | `@safety-check` | Quick Go / Go with caution / Stop risk check |
+| `@council` | Preview council review for idea, hypothesis, or implementation validation |
 
 ### Structured Delivery
 
@@ -152,6 +153,7 @@ Most slash commands point to a full skill workflow. Lightweight workflows can be
 | `@checkpoint` | `checkpoint` | Skill-only checkpoint |
 | `@learning` | `learning` | Skill-only memory capture |
 | `@safety-check` | `safety-check` | Skill-only risk check |
+| `@council` | `council` | Skill-only preview council review |
 
 Stack-specific guidance has no slash commands. Use installed rules and stack skills such as `@dotnet-core`, `@typescript-core`, `@node-core`, or `@react-core` after `agent-runway add <stack>`.
 

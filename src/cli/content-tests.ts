@@ -90,6 +90,7 @@ async function testLitePresetUpgradesToStructured(): Promise<void> {
     assert.strictEqual(liteConfig.mode, 'lite', 'vibe-lite stores lite mode');
     assert.ok(await fs.pathExists(path.join(tempRoot, '.cursor', 'skills', 'safety-check', 'SKILL.md')), 'lite installs safety-check');
     assert.ok(await fs.pathExists(path.join(tempRoot, '.cursor', 'skills', 'learning', 'SKILL.md')), 'lite installs learning');
+    assert.ok(await fs.pathExists(path.join(tempRoot, '.cursor', 'skills', 'council', 'SKILL.md')), 'lite installs council');
     assert.ok(await fs.pathExists(path.join(tempRoot, '.cursor', 'skills', 'code-review', 'SKILL.md')), 'lite installs code-review');
     assert.ok(!(await fs.pathExists(path.join(tempRoot, '.cursor', 'commands', 'start.md'))), 'lite does not install Cursor commands');
     assert.ok(!(await fs.pathExists(path.join(tempRoot, '.claude', 'commands', 'start.md'))), 'lite does not install Claude commands');

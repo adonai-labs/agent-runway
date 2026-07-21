@@ -79,7 +79,7 @@ export const PRESETS: Preset[] = [
   {
     id: 'vibe-lite',
     name: 'Vibe/Lite',
-    description: 'Fast skill-first setup with checkpoint, safety-check, express, and minimal guardrails',
+    description: 'Fast skill-first setup with council, checkpoint, safety-check, express, and minimal guardrails',
     emoji: '[LITE]',
     stacks: [],
     mode: 'lite',

@@ -27,7 +27,15 @@ export interface Config {
 const NEW_CONFIG_FILENAME = 'agent-runway.json';
 const LEGACY_CONFIG_FILENAME = 'cursor-runway.json';
 
-const LITE_CORE_SKILLS = new Set(['start', 'express', 'checkpoint', 'learning', 'safety-check', 'code-review']);
+const LITE_CORE_SKILLS = new Set([
+  'start',
+  'express',
+  'checkpoint',
+  'learning',
+  'safety-check',
+  'code-review',
+  'council',
+]);
 const LITE_CORE_RULES = new Set(['engineering-principles.mdc', 'engineering-security.mdc', 'testing.mdc']);
 
 export function normalizeWorkflowMode(value: unknown): WorkflowMode {

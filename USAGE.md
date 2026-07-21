@@ -58,7 +58,7 @@ Use Lite when you want fast, skill-first workflows without slash command aliases
 npx agent-runway init --preset vibe-lite --target all
 ```
 
-Lite installs `@start`, `@express`, `@code-review`, `@checkpoint`, `@learning`, `@safety-check`, and a small rule set for engineering principles, security, and testing.
+Lite installs `@start`, `@express`, `@code-review`, `@checkpoint`, `@learning`, `@safety-check`, `@council` preview, and a small rule set for engineering principles, security, and testing.
 
 Upgrade to Structured when the work needs specs, tickets, agents, slash commands, lead/autonomous workflows, architecture/contrarian gates, full rules, or governed delivery:
 
@@ -378,6 +378,19 @@ Runs a short Go / Go with caution / Stop check before continuing with fast work.
 ```
 
 Use it when a Lite workflow starts touching contracts, data, auth, secrets, deployment, or many files.
+
+### `@council` - Preview Council Review
+
+Validates an idea, hypothesis, or implementation direction from product, engineering, architecture, risk/security, adoption, and contrarian perspectives before turning it into a spec, ticket, ADR, or code change.
+
+```text
+@council should we add workspace memory to the Lite preset?
+@council hypothesis: users want checkpoints more than full specs
+@council validate this implementation approach before I code it
+```
+
+By default it does not write files. If you ask it to save the review, it writes under `.agent-runway/logs/council/`.
+
 ### Other Commands
 
 - `/spec-creator` - Create or refine an implementation-ready spec
@@ -784,6 +797,4 @@ description: Deployment workflow with safety checks
 - [Contributing Guide](CONTRIBUTING.md) - How to contribute
 - [Extending Guide](EXTENDING.md) - Adding new stacks
 - [src/README.md](src/README.md) - Package internals
-
-
 

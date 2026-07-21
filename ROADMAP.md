@@ -25,6 +25,7 @@ This roadmap is directional, not a date-based commitment. Items may move as real
 - `@learning` skill for capturing durable project lessons into memory artifacts.
 - Vibe/Lite preset for fast, skill-first usage with minimal installed context, including `@code-review`.
 - `@safety-check` skill for quick Go / Go with caution / Stop risk review.
+- `@council` preview skill for council review of idea, hypothesis, or implementation validation.
 - Upgrade path from Lite to Structured through `agent-runway upgrade --to structured`.
 - Release validation with build, content validation, smoke tests, content tests, and package dry-run.
 - Content guardrails for broken links, command/agent parity, stack completeness, CLAUDE.md preservation, and mojibake detection.
@@ -36,6 +37,7 @@ This roadmap is directional, not a date-based commitment. Items may move as real
 - Add more targeted install/update regression tests.
 - Reduce large utility surfaces and make path/config/copy/generation behavior easier to review.
 - Improve documentation around local package testing and release operations.
+- Stabilize `@council` based on real idea, hypothesis, and implementation validation examples.
 
 ## Later: v1.7
 

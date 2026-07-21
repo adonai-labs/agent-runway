@@ -65,6 +65,9 @@ Upgrade to Structured when the work needs specs, tickets, agents, slash commands
 ```bash
 npx agent-runway upgrade --to structured
 ```
+
+Structured keeps the lightweight skill-only workflows too, including `@checkpoint`, `@learning`, `@safety-check`, and `@council` preview.
+
 ### Non-Interactive Setup
 
 ```bash
@@ -797,4 +800,3 @@ description: Deployment workflow with safety checks
 - [Contributing Guide](CONTRIBUTING.md) - How to contribute
 - [Extending Guide](EXTENDING.md) - Adding new stacks
 - [src/README.md](src/README.md) - Package internals
-

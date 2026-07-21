@@ -60,6 +60,7 @@ const CASES: SmokeCase[] = [
       '.cursor/commands/autonomous-lead.md',
       '.cursor/skills',
       '.cursor/skills/checkpoint/SKILL.md',
+      '.cursor/skills/council/SKILL.md',
       '.cursor/rules',
       '.cursor/agents',
       '.cursor/agent-runway.json',

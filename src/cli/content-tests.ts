@@ -58,6 +58,7 @@ async function testSkillInjection(): Promise<void> {
   await withTempInstall(async (root) => {
     const skillPath = path.join(root, '.cursor', 'skills', 'code-review', 'SKILL.md');
     const content = await fs.readFile(skillPath, 'utf-8');
+    assert.ok(await fs.pathExists(path.join(root, '.cursor', 'skills', 'council', 'SKILL.md')), 'structured installs council');
 
     assert.ok(content.includes('[searches-node.md](searches-node.md)'), 'node search ref injected');
     assert.ok(content.includes('[searches-typescript.md](searches-typescript.md)'), 'typescript search ref injected');

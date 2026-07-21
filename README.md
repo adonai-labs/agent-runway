@@ -48,7 +48,7 @@ Full delivery workflow for long-lived products, teams, and work that needs trace
 npx @adonai-labs/agent-runway init --preset node-typescript --target all
 ```
 
-Structured installs slash commands, agents, specs, tickets, lead/autonomous workflows, architecture/contrarian gates, full rules, and optional governance checks.
+Structured installs slash commands, agents, specs, tickets, lead/autonomous workflows, architecture/contrarian gates, `@council` preview, full rules, and optional governance checks.
 
 Or install first:
 
@@ -122,6 +122,8 @@ Use Structured when the work needs traceability, multiple steps, or team alignme
 | `/ticket-creator` | Create ready-to-dev tickets from descriptions or backlogs |
 | `/lead` | Full implementation workflow with quality gates |
 | `/review` | Structured code review with engineering, security, and performance lenses |
+
+Structured also includes skill-only workflows such as `@checkpoint`, `@learning`, `@safety-check`, and `@council` preview.
 
 ### Governed Autonomous Execution
 

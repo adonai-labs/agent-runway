@@ -156,7 +156,7 @@ Use `agent-runway add <stack>` to install a stack.
 ### Update Framework
 
 ```bash
-# Update to latest version
+# Refresh generated files with the currently running CLI version
 npx agent-runway update
 
 Updating Agent Runway...
@@ -165,6 +165,21 @@ Updating Agent Runway...
 ✓ Agent Runway updated successfully!
 Reload Cursor window to apply updates.
 ```
+
+`agent-runway update` refreshes generated Agent Runway files inside the project. It does not upgrade the npm package by itself.
+
+To move an existing project to the latest published Agent Runway release:
+
+```bash
+# If installed as a dev dependency
+npm install -D @adonai-labs/agent-runway@latest
+npx agent-runway update
+
+# Or run the latest CLI directly
+npx @adonai-labs/agent-runway@latest update
+```
+
+The command keeps the existing mode, targets, and stacks from `agent-runway.json`. It preserves project memory, logs, docs, checkpoints, and existing `CLAUDE.md` content outside the Agent Runway marked block.
 
 ### Delivery Metrics
 

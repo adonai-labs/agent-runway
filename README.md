@@ -165,13 +165,30 @@ Stack-specific guidance has no slash commands. Use installed rules and stack ski
 agent-runway init          # Initialize project
 agent-runway add <stack>   # Add a stack
 agent-runway remove <stack> # Remove a stack
-agent-runway update        # Update framework files
+agent-runway update        # Refresh generated framework files from the current CLI version
 agent-runway list          # List installed stacks
 agent-runway status        # Show installation state
 agent-runway metrics       # Delivery scorecard from gate verdicts + run logs
 agent-runway ci-check      # Optional governance validation for CI
 agent-runway upgrade       # Upgrade Lite projects to Structured mode
 ```
+
+### Updating Existing Projects
+
+`agent-runway update` refreshes the Agent Runway files installed in a project. It does not upgrade the npm package by itself.
+
+Use one of these flows:
+
+```bash
+# If Agent Runway is installed as a dev dependency
+npm install -D @adonai-labs/agent-runway@latest
+npx agent-runway update
+
+# Or run the latest published CLI directly
+npx @adonai-labs/agent-runway@latest update
+```
+
+The update command preserves project artifacts such as `.agent-runway/memory/`, `.agent-runway/logs/`, `.agent-runway/docs/`, checkpoints, and existing `CLAUDE.md` content outside the Agent Runway marked block.
 
 ## Artifact Model
 

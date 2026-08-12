@@ -159,6 +159,8 @@ Most slash commands point to a full skill workflow. Lightweight workflows can be
 
 Stack-specific guidance has no slash commands. Use installed rules and stack skills such as `@dotnet-core`, `@typescript-core`, `@node-core`, or `@react-core` after `agent-runway add <stack>`.
 
+`@code-review` and `/review` produce a consolidated PR-style report by default: verdict, deduplicated severity counts, source labels, findings with impact, paste-ready English PR comments, positives, and a suggested merge gate. For high-impact architecture, compliance, data consistency, or security-boundary changes, the review can include an optional contrarian lens labelled `CTR`; it is not a separate gate for ordinary PRs.
+
 ## CLI
 
 ```bash

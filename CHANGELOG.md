@@ -1,5 +1,12 @@
 # Changelog
 
+## [Unreleased]
+
+### Changed
+
+- `code-review` now defaults to a consolidated PR review report: verdict-first summary, deduplicated severity counts, source labels, paste-ready English PR comments, positives, and a suggested merge gate.
+- Added an optional `CTR` contrarian lens inside code review for high-impact architecture, audit/compliance, consistency, security-boundary, and public-contract assumptions.
+
 All notable changes to Agent Runway are documented here.
 
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versions follow [Semantic Versioning](https://semver.org/).

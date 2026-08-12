@@ -32,10 +32,21 @@ A complete review examines code through three lenses. Each has a distinct focus 
 ### Multi-pass protocol
 
 - **Standard review** (default): apply all three lenses in a single pass.
-- **High-risk review** — when the change touches a security surface, modifies a public contract, or spans many files: run one focused pass per lens. A focused pass keeps attention on a single class of issue, which surfaces findings a combined pass tends to miss. Run focused passes as separate `/review` invocations (isolated context) when possible.
+- **High-risk review** - when the change touches a security surface, modifies a public contract, or spans many files: run one focused pass per lens. A focused pass keeps attention on a single class of issue, which surfaces findings a combined pass tends to miss. Run focused passes as separate `/review` invocations (isolated context) when possible.
 - **Consolidate**: merge findings across passes into one report. De-duplicate by file + line; when two passes flag the same location, keep the highest severity and note both lenses. Never ship overlapping duplicate findings.
 
 The `Lens:` value in the handoff scopes a single focused pass; omit it (or use `all`) for a standard review.
+
+### Optional contrarian lens
+
+Use a contrarian lens only for high-impact review areas: architecture boundaries, irreversible platform choices, compliance/audit flows, data consistency, security trust boundaries, or public contracts. Do not run a full `/contrarian` gate for an ordinary PR review.
+
+When used inside code review, contrarian is a skeptical source of findings, not a separate decision workflow:
+
+- Label its source as `CTR`.
+- Require codebase evidence, the same file/line discipline, and the same severity bar as other findings.
+- Use it to challenge assumptions such as "best effort is acceptable", "this dependency belongs in this layer", "this scope is least privilege", or "consumers can handle duplicates".
+- Do not include generic "what if" concerns without a concrete failure condition.
 
 ---
 
@@ -133,7 +144,7 @@ For each finding, record:
 
 ---
 
-### Phase 3 — Detailed Review
+### Phase 3 - Detailed Review
 
 Review each file against the relevant checklist from [reference.md](reference.md):
 
@@ -176,6 +187,17 @@ Review each file against the relevant checklist from [reference.md](reference.md
 - Resources tagged
 - What-if run before applying
 
+#### 3b - Contrarian check for high-impact changes
+
+If the PR touches one of the high-impact areas listed in "Optional contrarian lens", add a brief skeptical pass:
+
+1. State the implied design assumption.
+2. Look for contradicting codebase evidence.
+3. Identify a concrete failure mode.
+4. Emit a normal code-review finding only if it has file/line evidence and actionable impact.
+
+If no concrete finding survives this bar, mention nothing in the final report.
+
 ---
 
 ### Phase 4 — Issue Classification
@@ -197,9 +219,20 @@ When triaging what must be addressed first, order by: `security > correctness/fu
 
 ---
 
-### Phase 5 — Generate Report
+### Phase 5 - Generate Report
 
-Output the review report using the template from [templates.md](templates.md).
+Output one consolidated review report using the template from [templates.md](templates.md).
+
+Required report qualities:
+
+- Start with PR/branch metadata when available: branch, base, date, reviews/lenses run, files changed, build result.
+- Put the verdict before details.
+- Include deduplicated severity counts.
+- Include a source legend when more than one lens/source contributed findings.
+- For each finding include: severity, source labels, file, line(s), snippet, impact, why fix, one paste-ready English PR comment, and at least one solution.
+- Keep comments review-ready: concise, polite, and directly pasteable into GitHub or Azure DevOps.
+- Include positives only after findings.
+- End with a suggested merge gate that names the findings that must be addressed before merge.
 
 Save to: `.agent-runway/logs/reviews/YYYY-MM-DD-<branch-or-scope>.md` (or present inline if filesystem writes are not available).
 

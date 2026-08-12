@@ -189,6 +189,18 @@ npx agent-runway metrics
 
 Aggregates the machine-readable verdict blocks (from `ticket-eval`, `po-eval`, `review`, `contrarian`) and autonomous run headers found under `.agent-runway/` into a scorecard: gate pass rates, blocking findings, acceptance criteria still `pending`, run gate pass rates, retries, time-to-green, and how often each memory entry was applied.
 
+### PR Code Review Format
+
+`@code-review` and `/review` are suitable for CI-assisted PR review. The default report is consolidated so GitHub Actions or Azure DevOps can publish it as one stable PR comment:
+
+- verdict first: `APPROVE`, `REQUEST CHANGES`, or `NEEDS DISCUSSION`
+- deduplicated severity counts
+- source labels such as `CR`, `SEC`, `PERF`, `ARCH`, and optional `CTR`
+- findings with file/line evidence, impact, why fix, a paste-ready English PR comment, and suggested solutions
+- positives and a suggested merge gate
+
+Use the optional `CTR` contrarian lens only for high-impact assumptions such as architecture boundaries, audit/compliance integrity, data consistency, least-privilege security, or public contracts. Keep ordinary PR reviews on the standard code-review lenses.
+
 ### CI governance (optional)
 
 For teams that want **verifiable** governance — not just prose in skills — run artefact checks in CI:

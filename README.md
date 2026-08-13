@@ -285,7 +285,23 @@ It is not:
 - a fully autonomous AI engineer
 - a replacement for architecture or documentation practices
 
-Governance enforcement is opt-in: use `agent-runway ci-check --profile strict` in CI when you want artifact validation. The default install does not require it.
+## CI Governance Preview
+
+`agent-runway ci-check` is a preview, opt-in CI feature for teams that want artifact validation in pull requests or build pipelines. It is intentionally separate from the default install path: Agent Runway does not require CI governance unless you add it to your own workflow.
+
+Use it in advisory mode first:
+
+```bash
+npx agent-runway ci-check
+```
+
+Use strict mode only when the team is ready for the pipeline to fail on missing or incomplete governance artifacts:
+
+```bash
+npx agent-runway ci-check --profile strict
+```
+
+Preview status means the command is usable, but its checks and JSON shape may still evolve before being treated as a stable CI contract.
 
 ## Roadmap
 

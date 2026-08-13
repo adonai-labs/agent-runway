@@ -201,7 +201,11 @@ Aggregates the machine-readable verdict blocks (from `ticket-eval`, `po-eval`, `
 
 Use the optional `CTR` contrarian lens only for high-impact assumptions such as architecture boundaries, audit/compliance integrity, data consistency, least-privilege security, or public contracts. Keep ordinary PR reviews on the standard code-review lenses.
 
-### CI governance (optional)
+### CI governance preview (optional)
+
+`agent-runway ci-check` is a preview, opt-in CI feature. Use it for GitHub Actions, Azure DevOps, or another pipeline when you want artifact checks on Agent Runway governance files.
+
+Preview status means the command is usable, but its checks and JSON shape may still evolve before being treated as a stable CI contract.
 
 For teams that want **verifiable** governance — not just prose in skills — run artefact checks in CI:
 
@@ -232,7 +236,7 @@ Example GitHub Actions step (opt-in):
   run: npx agent-runway ci-check --profile strict
 ```
 
-Most teams can skip this entirely; purists and regulated delivery paths should enable it explicitly.
+Most teams can skip this entirely. Start with advisory mode, inspect the output for a few PRs, then move to `--profile strict` only when the team accepts the gate.
 
 ---
 

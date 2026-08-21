@@ -1,10 +1,10 @@
 # Agent Runway
 
-[npm version](https://www.npmjs.com/package/@adonai-labs/agent-runway)
-[license](LICENSE)
-[stars](https://github.com/adonai-labs/agent-runway)
-[downloads](https://www.npmjs.com/package/@adonai-labs/agent-runway)
-[roadmap](ROADMAP.md)
+[![npm version](https://img.shields.io/npm/v/@adonai-labs/agent-runway.svg)](https://www.npmjs.com/package/@adonai-labs/agent-runway)
+[![license](https://img.shields.io/github/license/adonai-labs/agent-runway.svg)](LICENSE)
+[![stars](https://img.shields.io/github/stars/adonai-labs/agent-runway.svg?style=social)](https://github.com/adonai-labs/agent-runway)
+[![downloads](https://img.shields.io/npm/dm/@adonai-labs/agent-runway.svg)](https://www.npmjs.com/package/@adonai-labs/agent-runway)
+[![roadmap](https://img.shields.io/badge/roadmap-open-blue.svg)](ROADMAP.md)
 
 **AI agents are good at writing code. They are not good at remembering what they decided last week.**
 

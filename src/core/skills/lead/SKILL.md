@@ -449,6 +449,13 @@ The independent review performs the final validation. Address all blockers befor
 Use the `AskQuestion` tool to collect the commit prefix:
 - One single-select question asking for the commit type (options: `feat`, `fix`, `refactor`, `chore`)
 
+Before committing, review the diff shape. Prefer atomic commits grouped by functional intent when the work contains multiple independent changes:
+
+- Keep refactors separate from behaviour changes where practical.
+- Keep tests/docs/config-only changes easy to identify.
+- Keep dependency or generated changes separate from product logic.
+- If one commit intentionally mixes concerns, explain why in the commit body or PR description.
+
 Commit format:
 
 ```
@@ -525,4 +532,3 @@ Use the following skills for deeper reasoning when needed:
 | .NET infrastructure patterns (EF Core, messaging, caching) | `dotnet-core` — see [infrastructure.md](../dotnet-core/infrastructure.md) |
 | .NET API design | `dotnet-core` — see [api-design.md](../dotnet-core/api-design.md) |
 | .NET observability wiring | `dotnet-core` — see [observability.md](../dotnet-core/observability.md) |
-

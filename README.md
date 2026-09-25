@@ -159,7 +159,31 @@ Most slash commands point to a full skill workflow. Lightweight workflows can be
 
 Stack-specific guidance has no slash commands. Use installed rules and stack skills such as `@dotnet-core`, `@typescript-core`, `@node-core`, or `@react-core` after `agent-runway add <stack>`.
 
-`@code-review` and `/review` produce a consolidated PR-style report by default: verdict, deduplicated severity counts, source labels, findings with impact, paste-ready English PR comments, positives, and a suggested merge gate. For high-impact architecture, compliance, data consistency, or security-boundary changes, the review can include an optional contrarian lens labelled `CTR`; it is not a separate gate for ordinary PRs.
+## PR Code Review
+
+`@code-review` and `/review` produce a consolidated PR-style report: verdict, deduplicated severity counts, source labels, findings with impact, paste-ready English PR comments, positives, technical debt notes, and a suggested merge gate.
+
+Review mode is explicit so developers can choose between context efficiency and isolated attention:
+
+```text
+/review
+Files changed: [list of files]
+Lens: all
+Mode: compact
+```
+
+Compact mode is the default for ordinary PRs. It reviews the diff once and classifies findings with logical source labels: `CR` for standard code review, `SEC` for security, and `SNR` for senior architecture/operational review.
+
+```text
+/review
+Files changed: [list of files]
+Lens: all
+Mode: isolated
+```
+
+Isolated mode is for high-risk PRs: auth, PII, audit/compliance, public contracts, data migrations, IaC, concurrency, large cross-layer changes, or PRs where compact review found serious issues. It runs focused `CR`, `SEC`, and `SNR` passes over the same diff, then consolidates and de-duplicates the findings.
+
+Both modes review only the introduced change, report lines against the current file, and keep broad technical debt separate from line-level findings. For high-impact architecture, compliance, data consistency, or security-boundary changes, the review can also include an optional contrarian lens labelled `CTR`; it is not a default gate for ordinary PRs.
 
 ## CLI
 

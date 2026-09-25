@@ -114,6 +114,41 @@ Quick description of the fix.
 
 **Bad:** `fix bug` | `update code` | `add stuff` | `wip` | `fixes`
 
+## Atomic Commits and PR Shape
+
+Prefer commits that are atomic by functional intent. A reviewer should be able to understand each commit as one coherent change:
+
+- One feature slice
+- One bug fix
+- One refactor
+- One test-only change
+- One docs/config/tooling change
+
+Avoid mixing unrelated concerns in the same commit:
+
+- Refactor + behaviour change
+- Formatting churn + logic change
+- Dependency bump + feature implementation
+- Test rewrite + production behaviour change
+- Broad "update stuff" commits
+
+When practical, structure PRs so they can be reviewed commit-by-commit:
+
+- Put preparatory refactors before behaviour changes.
+- Put generated or mechanical changes in their own commit.
+- Keep dependency upgrades separate from product logic.
+- Explain any intentionally mixed commit in the PR description.
+
+Add this to PR checklists when useful:
+
+```markdown
+### Change Structure
+- [ ] Commits are atomic and grouped by functional intent
+- [ ] Refactors are separated from behaviour changes where practical
+- [ ] Tests/docs/config changes are easy to identify
+- [ ] PR can be reviewed commit-by-commit if needed
+```
+
 ## Branch Naming
 
 **Format:** `<type>/<issue>-<description>`

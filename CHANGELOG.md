@@ -1,12 +1,15 @@
 # Changelog
 
-## [1.6.0-preview.0] - 2026-08-13
+## [1.6.0] - 2026-08-27
 
 ### Changed
 
 - `code-review` now defaults to a consolidated PR review report: verdict-first summary, deduplicated severity counts, source labels, paste-ready English PR comments, positives, and a suggested merge gate.
+- Added explicit `compact` and `isolated` review modes so developers can choose between one context-efficient pass and focused high-risk passes.
 - Added an optional `CTR` contrarian lens inside code review for high-impact architecture, audit/compliance, consistency, security-boundary, and public-contract assumptions.
 - Documented `agent-runway ci-check` as a preview, opt-in CI governance feature.
+- Replaced README text links with rendered badges for npm version, license, stars, downloads, and roadmap.
+- Added guidance for atomic commits and reviewable PR shape.
 
 All notable changes to Agent Runway are documented here.
 

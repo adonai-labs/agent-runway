@@ -11,6 +11,7 @@ description: Systematic, evidence-based code review — runs mandatory searches 
 /review
 Files changed: [list of files]
 Lens: [all | engineering | security | performance]   (optional, defaults to all)
+Mode: [compact | isolated]   (optional, defaults to compact)
 ```
 
 Or when delegated from the lead skill, the file list is passed automatically.
@@ -29,13 +30,46 @@ A complete review examines code through three lenses. Each has a distinct focus 
 | **Security** | OWASP Top 10, threat model for sensitive flows, input/auth/crypto/data handling | Security Checklist (OWASP) in [reference.md](reference.md) |
 | **Performance** | Algorithmic complexity, N+1 access, resource usage, scalability under load | Phase 3 "Performance & complexity" criterion |
 
-### Multi-pass protocol
+### Review modes
 
-- **Standard review** (default): apply all three lenses in a single pass.
-- **High-risk review** - when the change touches a security surface, modifies a public contract, or spans many files: run one focused pass per lens. A focused pass keeps attention on a single class of issue, which surfaces findings a combined pass tends to miss. Run focused passes as separate `/review` invocations (isolated context) when possible.
-- **Consolidate**: merge findings across passes into one report. De-duplicate by file + line; when two passes flag the same location, keep the highest severity and note both lenses. Never ship overlapping duplicate findings.
+Developers choose the review mode based on PR risk and context budget.
 
-The `Lens:` value in the handoff scopes a single focused pass; omit it (or use `all`) for a standard review.
+#### Compact mode (default)
+
+Use compact mode for ordinary PRs, small-to-medium diffs, and CI comments where speed and low context usage matter.
+
+- Run one consolidated review over the diff.
+- Use `CR`, `SEC`, and `SNR` as source labels for classification, not as separate loaded workflows.
+- Keep the prompt and loaded references minimal: core review instructions, relevant stack search/command files, and the output template.
+- Do not load deep architecture, security, or contrarian references unless the diff creates a concrete need.
+
+#### Isolated mode
+
+Use isolated mode for high-risk PRs: security surfaces, auth, PII, audit/compliance, public contracts, data migrations, IaC, concurrency, large cross-layer changes, or changes where the first compact review found serious issues.
+
+- Run focused passes over the same diff with isolated attention:
+  - `CR` - standard review: correctness, maintainability, DRY, SOLID, Clean Code, and tests.
+  - `SEC` - security review: auth, input validation, data exposure, secrets, injection, dependency, and configuration risk.
+  - `SNR` - senior review: architecture boundaries, operational risk, coupling, API contracts, and long-term maintainability.
+- Consolidate the pass outputs into one report.
+- De-duplicate by issue, not just by exact line. When two passes flag the same issue, keep one finding, use the highest severity, and list all source labels.
+- Report line numbers against the current file, not against diff hunk offsets.
+
+The `Lens:` value scopes a focused pass. The `Mode:` value controls whether the review is one compact consolidated pass or isolated passes followed by consolidation.
+
+### PR review contract
+
+When reviewing a PR, branch, or CI-provided diff:
+
+- Review only the introduced change. Do not report pre-existing issues in unchanged code unless the changed line makes the issue reachable or materially worse.
+- Report line numbers against the current file, not against diff hunk offsets.
+- In compact mode, treat `Lens: all` as one consolidated review with three logical sources:
+  - `CR` - standard review: correctness, maintainability, DRY, SOLID, Clean Code, and tests.
+  - `SEC` - security review: auth, input validation, data exposure, secrets, injection, dependency, and configuration risk.
+  - `SNR` - senior review: architecture boundaries, operational risk, coupling, API contracts, and long-term maintainability.
+- In isolated mode, run those sources as separate focused passes and then consolidate.
+- Consolidate findings across sources. If the same issue appears in more than one source, keep one finding and list all relevant source labels.
+- Keep broad technical debt separate in the final summary. Do not turn debt themes into findings unless they are tied to a concrete changed line with actionable impact.
 
 ### Optional contrarian lens
 

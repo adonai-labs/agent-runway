@@ -39,6 +39,7 @@ Use this as the default output for PR review, branch review, and CI-generated re
 **Branch:** `[branch]`
 **Base:** `[base]`
 **Reviews run:** `/code-review` -> `[security lens]` -> `[performance lens]` -> `[contrarian lens if used]`
+**Mode:** Compact / Isolated
 **Files changed:** [count] ([+added] / [-removed])
 **Build:** Pass / Fail / Not run
 **Tests:** Pass / Fail / Not run
@@ -65,6 +66,7 @@ Use this as the default output for PR review, branch review, and CI-generated re
 - **SEC** - security lens
 - **PERF** - performance lens
 - **ARCH** - architecture checklist
+- **SNR** - senior review lens
 - **CTR** - optional contrarian lens
 
 Omit sources that were not used.
@@ -88,6 +90,10 @@ Include this section when mandatory searches were run. Omit it for diff-only CI 
 ## Positives
 
 [Specific good implementation patterns observed. Keep this short and do not let positives dilute blockers.]
+
+## Technical debt notes
+
+[Grouped debt themes observed during the review. Keep these separate from findings unless they are tied to a concrete changed line with actionable impact.]
 
 ## Suggested merge gate
 
@@ -125,9 +131,10 @@ For GitHub or Azure DevOps PR comments, use the same report but keep code snippe
 | **SEC** | Security lens |
 | **PERF** | Performance lens |
 | **ARCH** | Architecture or layering checklist |
+| **SNR** | Senior review lens for architecture boundaries, operational risk, coupling, API contracts, and long-term maintainability |
 | **CTR** | Optional contrarian lens for high-impact assumptions |
 
-When multiple passes find the same issue, keep one finding and list every source label, for example `CR, SEC, CTR`.
+When multiple passes find the same issue, keep one finding and list every source label, for example `CR, SEC, SNR`.
 
 ---
 

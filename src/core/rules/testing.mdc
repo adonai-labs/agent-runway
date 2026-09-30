@@ -79,10 +79,25 @@ Directives for writing and reviewing tests. Use Australian English spelling thro
 
 ## Test-Driven Development (TDD)
 
-- Follow Red–Green–Refactor: write a failing test, make it pass with minimal code, then refactor.
-- Write tests before implementation for new behaviour or bug fixes when the expected behaviour is clear.
-- Use TDD for business logic, validation, and algorithms; consider skipping for trivial glue code or prototypes.
+- Understand the problem before implementation: restate expected behaviour, boundaries, user impact, and risk before writing production code.
+- Follow Red–Green–Refactor when behaviour is clear: write a failing test, make it pass with minimal code, then refactor.
+- Write tests before implementation for new behaviour, bug fixes, validation rules, domain logic, algorithms, API contracts, and regression fixes when feasible.
+- If strict test-first is not practical, record the reason and define alternative evidence before implementation starts.
 - Keep the red phase short; avoid large batches of untested code.
+- Do not claim TDD when tests were written only after implementation; record them as post-implementation validation.
+
+### Test-Driven Delivery
+
+Use test-driven delivery as the default quality stance:
+
+1. Understand the problem.
+2. Define the evidence plan.
+3. Add or identify failing evidence where feasible.
+4. Implement the smallest behavior change.
+5. Refactor safely.
+6. Record validation and remaining gaps.
+
+Relax strict test-first only for exploratory spikes, trivial wiring, generated code, documentation-only changes, mechanical refactors with strong existing coverage, UI polish requiring visual evidence, or urgent mitigation with follow-up tests recorded.
 
 ---
 
@@ -130,6 +145,9 @@ Directives for writing and reviewing tests. Use Australian English spelling thro
 - [ ] Integration tests cover component interactions and external service contracts
 - [ ] E2E tests use `data-testid` and cover critical user flows
 - [ ] Dependencies are mocked; tests are isolated and repeatable
+- [ ] Behaviour changes have an evidence plan before implementation
+- [ ] New behaviour or bug fixes use test-first when feasible
+- [ ] Any relaxed test-first path is justified with alternative evidence
 - [ ] Test names are descriptive and scenario-based
 - [ ] Coverage thresholds are enforced for critical paths
 - [ ] No flaky tests in the main branch

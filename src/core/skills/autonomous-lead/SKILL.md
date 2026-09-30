@@ -78,6 +78,45 @@ Always append key final decisions to:
 
 - `.agent-runway/memory/project-decisions.md`
 
+## Optional Context Providers
+
+If a graph memory MCP, brain-context MCP, or similar context provider is available, use it as a read-only discovery source. Apply [../shared/context-provider-policy.md](../shared/context-provider-policy.md).
+
+Autonomous runs must record a context receipt in the run log:
+
+- provider name, if known
+- query intent
+- source ids/paths used
+- context accepted
+- context ignored and why
+- fallback note when unavailable
+
+The provider is never required. Continue with repository discovery if it is unavailable or low-signal.
+
+## Narrative Delivery
+
+Apply [../shared/narrative-delivery-policy.md](../shared/narrative-delivery-policy.md) throughout the autonomous run. The run log must preserve the delivery story in a compact, factual way:
+
+- why the work exists
+- what outcome the run is targeting
+- what changed during execution
+- what evidence was collected
+- what remains open
+
+This narrative is part of traceability. Do not use it to replace tests, review, ADRs, or explicit approval gates.
+
+## Test-Driven Delivery
+
+Apply [../shared/test-driven-delivery-policy.md](../shared/test-driven-delivery-policy.md) for behavior changes. Autonomous execution must not jump from request to implementation without recording:
+
+- problem understanding
+- expected behavior
+- evidence plan
+- test-first target or reason for relaxing strict test-first
+- validation actually run
+
+When feasible, establish failing evidence before production changes. When not feasible, log the fallback evidence before implementation starts.
+
 ## Non-Negotiable Logging Contract
 
 For each material decision, record:
@@ -90,6 +129,7 @@ For each material decision, record:
 - Impacted files/modules
 - Validation evidence (tests/checks)
 - Rollback plan
+- Context evidence used, including provider/source ids when applicable
 
 If this structure is missing, the run is incomplete.
 
@@ -100,6 +140,7 @@ If this structure is missing, the run is incomplete.
 1. Restate objective and boundaries.
 2. Mark assumptions explicitly.
 3. Create run log file and write initial contract, including the machine-readable run header (schema: [../shared/run-log-schema.md](../shared/run-log-schema.md)).
+4. If an optional context provider is available, query it for related modules, decisions, specs/tickets, known risks, and prior failures. Write a context receipt to the run log.
 
 Do not stop for approval unless a hard blocker exists.
 
@@ -138,7 +179,8 @@ Policy:
 
 1. Inspect docs and current code patterns.
 2. Produce a concrete implementation plan by layer.
-3. Record the plan in run log under "Planned execution".
+3. Produce an evidence plan: expected behavior, test level, command/artifact, and test-first expectation.
+4. Record the plan in run log under "Planned execution".
 
 Use `lead` planning standards:
 - explicit in-scope / out-of-scope
@@ -152,6 +194,7 @@ Use `lead` planning standards:
 2. After each slice:
    - run relevant checks/tests
    - log decisions and evidence
+   - note whether evidence was established before or after implementation
 3. If scope creep is discovered:
    - log it
    - continue only if it stays inside stated outcome
@@ -214,16 +257,19 @@ Finalise the run header: set `deviations` (count of departures from the planned 
 Run log must include these sections, in order:
 
 1. Objective and boundaries
-2. Classification and rationale
-3. Contrarian review (or "not triggered" with reason)
-4. Planned implementation
-5. Decision log (table)
-6. Files changed
-7. Validation evidence
-8. Security and contract impact
-9. Residual risks
-10. Rollback notes
-11. Follow-up actions
+2. Context receipt
+3. Delivery story
+4. Classification and rationale
+5. Contrarian review (or "not triggered" with reason)
+6. Planned implementation
+7. Decision log (table)
+8. Files changed
+9. Test-driven delivery evidence
+10. Validation evidence
+11. Security and contract impact
+12. Residual risks
+13. Rollback notes
+14. Follow-up actions
 
 ## Output Requirements
 

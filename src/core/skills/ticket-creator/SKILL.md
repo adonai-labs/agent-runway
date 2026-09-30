@@ -267,6 +267,8 @@ Use the **Feature**, **Bug**, or **Task** template from [reference.md](reference
 
 5. **Apply the clarity and scope rules:**
    - Keep each section to what a developer needs to start work — cut anything decorative or speculative
+   - Apply [../shared/narrative-delivery-policy.md](../shared/narrative-delivery-policy.md): every new ticket should have a short Context → Intent → Expected behavior → Evidence plan → Remaining work narrative.
+   - Apply [../shared/test-driven-delivery-policy.md](../shared/test-driven-delivery-policy.md): clarify the expected behaviour and evidence plan before implementation details.
    - If any section (especially acceptance criteria or QA notes) is growing into a design document, trim it and note "further detail to be captured in subtasks"
    - **New tickets only:** after drafting, apply the complexity thresholds from Phase 2, Step 5.
      - If work-item mode is `ticket` and threshold is exceeded, require split options before final approval.
@@ -285,7 +287,7 @@ Use the **Feature**, **Bug**, or **Task** template from [reference.md](reference
    | Dependencies | Named items with type: `API:`, `Schema:`, `Service:`, `Migration:` |
    | Done criteria (Tasks) | Flat checklist — `- [ ] item` format |
 
-   Narrative sections (context, user story, QA notes) may use free prose — they are for human readability only and are not parsed by downstream agents.
+   Narrative sections (source intake, narrative, user story, QA notes) may use free prose — they are for human readability only and are not parsed by downstream agents.
 
 **Proceed to Phase 4.**
 
@@ -477,4 +479,6 @@ The following conditions require a pause and a user decision before proceeding.
 ## Additional Resources
 
 - For context discovery details, templates, and codebase scanning patterns, see [reference.md](reference.md)
+- Narrative delivery policy: [../shared/narrative-delivery-policy.md](../shared/narrative-delivery-policy.md)
+- Test-driven delivery policy: [../shared/test-driven-delivery-policy.md](../shared/test-driven-delivery-policy.md)
 

@@ -10,6 +10,11 @@
 - Documented `agent-runway ci-check` as a preview, opt-in CI governance feature.
 - Replaced README text links with rendered badges for npm version, license, stars, downloads, and roadmap.
 - Added guidance for atomic commits and reviewable PR shape.
+- Added optional graph/brain-context provider policy across review, lead, architecture, contrarian, autonomous, checkpoint, and learning workflows.
+- Added Narrative Delivery guidance so tickets, commits, PRs, checkpoints, run logs, and memory entries preserve context, intent, change, evidence, and remaining work.
+- Added Test-Driven Delivery guidance so workflows understand the problem, define evidence, prefer test-first loops when feasible, and record validation gaps.
+- Added generated `AGENTS.md` support as a neutral agent entrypoint while preserving user-authored content outside the Agent Runway marked block.
+- Tightened engineering principles with function-size heuristics for focused, reviewable code.
 
 All notable changes to Agent Runway are documented here.
 

@@ -9,6 +9,13 @@ alwaysApply: false
 ## Standard PR Template
 
 ```markdown
+### Story
+**Problem:** Why this work exists.
+**Approach:** What path was chosen and why.
+**What changed:** Main behavior, code, config, or docs changes.
+**Validation:** Evidence collected.
+**Risks / Follow-ups:** Known residual risk or deferred work.
+
 ### Type of Change
 - [ ] Bug fix (non-breaking)
 - [ ] New feature (non-breaking)
@@ -116,7 +123,7 @@ Quick description of the fix.
 
 ## Atomic Commits and PR Shape
 
-Prefer commits that are atomic by functional intent. A reviewer should be able to understand each commit as one coherent change:
+Prefer commits that are atomic by functional intent. A reviewer should be able to understand each commit as one coherent step in the implementation story:
 
 - One feature slice
 - One bug fix
@@ -138,6 +145,19 @@ When practical, structure PRs so they can be reviewed commit-by-commit:
 - Put generated or mechanical changes in their own commit.
 - Keep dependency upgrades separate from product logic.
 - Explain any intentionally mixed commit in the PR description.
+- Use the commit body to explain what changed and why when the subject is not enough.
+
+## Narrative Delivery
+
+For medium or large PRs, include a short technical story:
+
+- **Problem**: the issue, request, incident, or prior decision that triggered the work
+- **Approach**: the chosen direction and any important alternative rejected
+- **What changed**: the main implementation steps
+- **Validation**: tests, checks, review, logs, or screenshots
+- **Risks / Follow-ups**: known remaining work or uncertainty
+
+Keep this factual and brief. Do not use narrative text to replace acceptance criteria, test evidence, or review findings.
 
 Add this to PR checklists when useful:
 
@@ -147,6 +167,7 @@ Add this to PR checklists when useful:
 - [ ] Refactors are separated from behaviour changes where practical
 - [ ] Tests/docs/config changes are easy to identify
 - [ ] PR can be reviewed commit-by-commit if needed
+- [ ] PR story explains problem, approach, validation, and remaining risk
 ```
 
 ## Branch Naming

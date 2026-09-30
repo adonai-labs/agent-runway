@@ -38,6 +38,8 @@ Gather only observable context:
 - current task intent
 - completed changes
 - validation already run
+- narrative state: context, current intent, completed change, evidence, next step
+- context providers consulted, if any, and the sourced evidence that mattered
 - known risks, blockers, or open questions
 - the most useful next command or file to inspect
 
@@ -83,6 +85,14 @@ Status: <clean/dirty/unknown>
 
 <What is true right now. Mention changed files when useful.>
 
+## Narrative State
+
+- **Context**: <Why this work exists or what triggered it.>
+- **Current intent**: <What outcome the current step is trying to reach.>
+- **What changed**: <Most important completed change so far.>
+- **Evidence**: <Validation/review/source evidence gathered so far.>
+- **Next step**: <Most useful continuation point.>
+
 ## Changes Made
 
 - <Observed completed change>
@@ -90,6 +100,10 @@ Status: <clean/dirty/unknown>
 ## Validation
 
 - <Command/result, or "Not run">
+
+## Context Evidence
+
+- <Provider/source ids used, or "None">
 
 ## Open Threads
 
@@ -106,6 +120,8 @@ Status: <clean/dirty/unknown>
 
 - Keep checkpoints factual and compact.
 - Prefer file paths, commands, and exact validation results over broad summaries.
+- Apply [../shared/narrative-delivery-policy.md](../shared/narrative-delivery-policy.md) when work is non-trivial or likely to be resumed later.
 - Include risks and unknowns explicitly.
 - Do not use a checkpoint as a substitute for tests, review, or an ADR.
 - If the work reveals a durable lesson, ask whether it should be added to project memory.
+- If context came from a graph/MCP provider, record only source ids/paths and conclusions that are safe to persist. Do not save secrets, private incident details, or customer data.

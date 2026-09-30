@@ -13,7 +13,7 @@ This roadmap is directional, not a date-based commitment. Items may move as real
 - Prefer workflows agents can actually follow.
 - Keep escape hatches for teams that do not need full governance.
 
-## Now: v1.5
+## Now: v1.6
 
 - Multi-environment support for Cursor, Claude Code, and VS Code.
 - Stack skills for .NET, TypeScript, Node.js, React, Python, Go, and Rust.
@@ -27,10 +27,15 @@ This roadmap is directional, not a date-based commitment. Items may move as real
 - `@safety-check` skill for quick Go / Go with caution / Stop risk review.
 - `@council` preview skill for council review of idea, hypothesis, or implementation validation.
 - Upgrade path from Lite to Structured through `agent-runway upgrade --to structured`.
+- Consolidated PR review output with compact/isolated modes, source labels, optional contrarian lens, and technical debt separation.
+- Narrative Delivery guidance for tickets, commits, PRs, checkpoints, run logs, and memory entries.
+- Test-Driven Delivery guidance for problem understanding, evidence planning, test-first loops, and validation gap recording.
+- Optional graph/brain-context provider policy for sourced context retrieval without a hard dependency.
+- Generated `AGENTS.md` entrypoint for coding agents, with user-authored content preserved outside the Agent Runway marked block.
 - Release validation with build, content validation, smoke tests, content tests, and package dry-run.
 - Content guardrails for broken links, command/agent parity, stack completeness, CLAUDE.md preservation, and mojibake detection.
 
-## Next: v1.6
+## Next: v1.7
 
 - Modularize the CLI internals into smaller focused modules.
 - Add more artifact-level regression tests for generated logs, reviews, ADRs, and memory updates.
@@ -39,7 +44,7 @@ This roadmap is directional, not a date-based commitment. Items may move as real
 - Improve documentation around local package testing and release operations.
 - Stabilize `@council` based on real idea, hypothesis, and implementation validation examples.
 
-## Later: v1.7
+## Later
 
 - Experiment with a Shared Workspace model for complex work:
   - Intent
@@ -55,6 +60,7 @@ This roadmap is directional, not a date-based commitment. Items may move as real
 ## Exploring
 
 - Better examples that show issue -> spec -> tickets -> implementation -> review.
+- A future diagram skill for architecture, sequence, flow, and system maps, with generated diagrams grounded in repository artifacts rather than unsourced descriptions.
 
 ## Not Goals
 

@@ -54,6 +54,7 @@ Save only if the lesson is:
 - specific: tied to this project or stack
 - actionable: changes future behavior
 - non-sensitive: no secrets, credentials, customer data, or private incident detail
+- sourceable: tied to a file, decision, PR, ticket, checkpoint, run log, or explicit conversation context
 
 If it is too vague, ask one clarifying question. If it is only session state, recommend `@checkpoint`.
 
@@ -70,6 +71,8 @@ Use this format:
 - **Lesson**: <what future agents should do differently>
 - **Applies when**: <scope or trigger>
 - **Source**: <file, ticket, PR, checkpoint, or conversation context>
+- **Future use**: <how this should influence later work>
+- **Context tags**: <optional module/area/risk tags for future graph indexing>
 ```
 
 ### 4. Apply memory hygiene
@@ -80,6 +83,8 @@ Before writing:
 - update an existing entry instead of duplicating it when the lesson already exists
 - keep entries short and evidence-based
 - archive superseded entries instead of deleting them if the file has an archive section
+- write memory in a way that can be indexed later by brain-context: stable title, clear trigger, concrete source, and concise tags
+- apply [../shared/narrative-delivery-policy.md](../shared/narrative-delivery-policy.md): preserve signal, lesson, source evidence, and future trigger without saving full session transcripts
 
 Use the policy in [../shared/memory-policy.md](../shared/memory-policy.md).
 Use the artifact contract in [../shared/artifact-writing-contract.md](../shared/artifact-writing-contract.md).

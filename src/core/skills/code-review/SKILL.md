@@ -71,6 +71,16 @@ When reviewing a PR, branch, or CI-provided diff:
 - Consolidate findings across sources. If the same issue appears in more than one source, keep one finding and list all relevant source labels.
 - Keep broad technical debt separate in the final summary. Do not turn debt themes into findings unless they are tied to a concrete changed line with actionable impact.
 
+### Optional context provider
+
+If a graph memory MCP, brain-context MCP, or similar context provider is available, use it as evidence, not authority. Apply [../shared/context-provider-policy.md](../shared/context-provider-policy.md):
+
+- Query by changed files, modules, symbols, PR title, and detected risk areas.
+- Look for prior decisions, ownership, known debt, recurring findings, related specs/tickets, and module relationships.
+- Use results only when they include concrete sources.
+- Do not report a finding from graph context alone; verify against the current diff or repository artifacts.
+- Include a brief "Context evidence" note in the report only when retrieved context materially influenced findings.
+
 ### Optional contrarian lens
 
 Use a contrarian lens only for high-impact review areas: architecture boundaries, irreversible platform choices, compliance/audit flows, data consistency, security trust boundaries, or public contracts. Do not run a full `/contrarian` gate for an ordinary PR review.
@@ -94,6 +104,8 @@ When used inside code review, contrarian is a skeptical source of findings, not 
 2. Determine context: is this a new feature, a bug fix, a refactor, or an infrastructure change?
 3. Identify the architectural layers touched (Domain / Application / Infrastructure / API / IaC).
 4. Note any stated constraints or acceptance criteria.
+5. If an optional context provider is available and the review is non-trivial, retrieve high-signal context for changed files/modules and record only sourced evidence.
+6. Identify behavior changes and the validation evidence expected for them: tests, contract checks, security checks, smoke tests, or documented manual evidence.
 
 ---
 
@@ -187,6 +199,7 @@ Review each file against the relevant checklist from [reference.md](reference.md
 - Anti-patterns and unnecessary complexity
 - SOLID principles
 - Error handling
+- Test-driven delivery evidence — behavior changes should have tests or credible validation evidence
 - Structured logging
 - Performance & complexity — algorithmic cost, N+1 access, unbounded allocations, avoidable work in hot paths
 
@@ -251,6 +264,13 @@ Classify each finding by two dimensions:
 
 When triaging what must be addressed first, order by: `security > correctness/functionality > maintainability > style`. A lower-severity security finding still outranks a higher-severity style nitpick.
 
+**Testing severity guidance:**
+
+- Behavior change with no tests and no credible validation evidence: Medium by default.
+- Bug fix without regression coverage: Medium by default, High if the bug affects data integrity, security, money movement, or critical workflows.
+- Security, authorization, contract, migration, or data consistency change without executable evidence: High by default.
+- Documentation-only or mechanical refactor with existing passing coverage: no finding unless evidence contradicts the claim.
+
 ---
 
 ### Phase 5 - Generate Report
@@ -298,6 +318,7 @@ Deliver final verdict:
 - [templates.md](templates.md) — report output templates
 - [reference.md](reference.md) — review checklists per concern
 - [../shared/artifact-writing-contract.md](../shared/artifact-writing-contract.md) - artifact write locations
+- [../shared/context-provider-policy.md](../shared/context-provider-policy.md) - optional graph/MCP context rules
 
 ---
 

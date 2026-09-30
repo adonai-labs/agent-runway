@@ -12,6 +12,10 @@ Use these templates when presenting gate output to the developer.
 ### Problem Statement
 [Restated problem in clear terms]
 
+### Narrative Context
+- **Context**: [Why this work exists now]
+- **Intent**: [Outcome the implementation should create]
+
 ### Existing Patterns Found
 - [Pattern/file found] — [relevance to this feature]
 - [Pattern/file found] — [relevance to this feature]
@@ -82,6 +86,12 @@ Use these templates when presenting gate output to the developer.
 - Performance: [constraints]
 - Observability: [logging/metrics needs]
 
+### Evidence Plan
+- Expected behaviour: [observable outcome]
+- Primary evidence: [unit/integration/E2E/contract/security/performance/smoke/manual]
+- Test-first expectation: [required / optional / relaxed with reason]
+- Validation command or artifact: [command/path/evidence]
+
 ### Open Questions
 1. [Question needing dev clarification]
 
@@ -140,6 +150,11 @@ Use these templates when presenting gate output to the developer.
 - [Assumption] -> [validation/test/rollback check]
 - [Assumption] -> [validation/test/rollback check]
 
+### Test-Driven Delivery Loop
+- First evidence to establish: [failing test / characterization test / contract check / reproduction signal]
+- Smallest implementation slice: [what will make the evidence pass]
+- Refactor checkpoint: [what can be cleaned after evidence is green]
+
 ---
 **GATE: Approve plan before implementation begins.**
 ```
@@ -153,6 +168,13 @@ Use these templates when presenting gate output to the developer.
 
 ### What Was Built
 [One paragraph description]
+
+### Delivery Story
+- **Context**: [Problem signal or request that triggered the work]
+- **Intent**: [Outcome the implementation targeted]
+- **Change**: [Main behavior or system change delivered]
+- **Evidence**: [Most important validation/review evidence]
+- **Remaining work**: [Known risks, follow-ups, or "None known"]
 
 ### Files Changed
 | File | Action | Description |
@@ -174,6 +196,8 @@ Use these templates when presenting gate output to the developer.
 ### Test Coverage
 - Unit tests: [count] — covering [scenarios]
 - Integration tests: [count] — covering [scenarios]
+- Test-driven delivery: [test-first followed / relaxed with reason / not applicable]
+- Evidence gaps: [none / list]
 
 ### Automated Verification
 - `dotnet build`: ✅

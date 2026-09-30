@@ -22,6 +22,13 @@ Narrative sections use free prose. Structured sections use consistent, parseable
 - Problem signal: [symptom or pain]
 - Desired outcome: [what success looks like]
 
+## Narrative
+- **Context**: [Why this work exists now]
+- **Intent**: [What outcome this ticket is trying to create]
+- **Expected behavior**: [What should be observably true after delivery]
+- **Evidence plan**: [How success will be proven]
+- **Remaining work**: [Known deferred scope, follow-ups, or "None known"]
+
 ## User Story
 As a [specific role],
 I want [specific capability],
@@ -66,6 +73,8 @@ Each criterion is testable and maps to a test. Append `Verified by: <test path o
 - **Out of scope**: [explicit exclusions for the agent — prevents over-building]
 
 ## Validation
+- Evidence plan: [test-first target or alternative validation evidence]
+- Test-first expectation: [required / optional / relaxed with reason]
 - Test [happy path scenario]
 - Test [error / failure scenario]
 - Test [edge case]
@@ -89,6 +98,19 @@ When saving to disk, follow **Artefact naming** in the skill: `.agent-runway/spe
 
 ## Summary
 Send email notifications to customers when their order status changes (confirmed, shipped, delivered) with order details and tracking information.
+
+## Source Intake
+- Source type: request
+- Source reference: Product refinement
+- Problem signal: customers must repeatedly check the website for order status updates
+- Desired outcome: customers receive timely email updates for key order status changes
+
+## Narrative
+- **Context**: Customers currently need to poll the website to know whether an order was confirmed, shipped, or delivered.
+- **Intent**: Add transactional email notifications for key order lifecycle changes without blocking order processing.
+- **Expected behavior**: Each qualifying status transition emits one customer email with relevant order details and tracking information when available.
+- **Evidence plan**: Validate one email per status change, no duplicates for repeated statuses, and graceful handling when the email provider fails.
+- **Remaining work**: Retry policy, user preferences, custom templates, SMS, in-app notifications, and delivery analytics remain out of scope.
 
 ## User Story
 As a customer,
@@ -142,6 +164,8 @@ So that I stay informed about my purchase without having to check the website re
 - **Out of scope for this ticket**: retry logic, user preferences, custom templates, SMS, in-app notifications, delivery tracking
 
 ## Validation
+- Evidence plan: add regression coverage for each status transition plus duplicate prevention and provider failure handling before or alongside implementation.
+- Test-first expectation: required for order status notification behavior and duplicate prevention.
 - Test order confirmed → email received with correct order details
 - Test order shipped → email received with tracking link
 - Test order delivered → email received with feedback link

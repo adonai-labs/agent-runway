@@ -135,6 +135,38 @@ In **Autonomous** mode, "silent validation" means the system runs the same check
 
 Execute phases sequentially. **Never skip a gate unless Task Classification permits it.** Present output using templates from [validation-templates.md](validation-templates.md).
 
+### Narrative Delivery
+
+Use [../shared/narrative-delivery-policy.md](../shared/narrative-delivery-policy.md) for medium or large work. Keep a short technical story across planning, implementation, validation, commit, and PR:
+
+- Context: why this work exists now
+- Intent: what outcome the change should create
+- Change: what implementation step was taken
+- Evidence: what proves the change is safe
+- Remaining work: risks, follow-ups, or deferred scope
+
+Do not turn small changes into long prose. Compress the narrative when the change is simple.
+
+### Test-Driven Delivery
+
+Use [../shared/test-driven-delivery-policy.md](../shared/test-driven-delivery-policy.md) for behavior changes. Before writing production code:
+
+- Understand the problem, expected behavior, boundaries, and risk.
+- Define the evidence plan: which tests, checks, or artifacts will prove the change.
+- Prefer test-first for new behavior, bug fixes, validation rules, domain logic, API contracts, security-sensitive behavior, and regressions.
+- If strict test-first is not practical, record why and choose the smallest credible alternative evidence.
+
+Do not skip problem understanding because implementation is fast.
+
+### Optional Context Providers
+
+If a graph memory MCP, brain-context MCP, or similar context provider is available, use it during discovery for non-trivial work. Apply [../shared/context-provider-policy.md](../shared/context-provider-policy.md):
+
+- Query for relevant modules, prior decisions, known risks, recurring failures, related specs/tickets, and ownership or dependency links.
+- Use results only when they include concrete sources such as files, ADRs, tickets, specs, run logs, module references, or relationship metadata.
+- Record material context evidence in the phase output: what was queried, which sources mattered, and how the evidence changed the plan.
+- Continue normally if the provider is unavailable or returns low-signal context.
+
 ---
 
 ### Pre-Phase 0 — Input Validation
@@ -179,12 +211,13 @@ Apply the shared policy **Minimum context** and **Simplicity before abstraction*
    - Similar features already implemented
    - Existing services, repositories, or handlers that could be extended
    - Relevant domain entities or value objects
-3. Propose **2–3 distinct approaches** with trade-offs.
+3. If an optional context provider is available, query it for related decisions, modules, dependencies, prior failures, and existing specs/tickets. Keep only sourced, high-signal evidence and note it in the Phase 0 output.
+4. Propose **2–3 distinct approaches** with trade-offs.
    - For non-trivial design decisions, read [../architect/tradeoffs.md](../architect/tradeoffs.md) to frame the trade-off correctly.
    - For pattern selection, read [../architect/patterns.md](../architect/patterns.md) to identify the right structural fit.
    - For antipattern detection in the proposed approach, read [../architect/antipatterns.md](../architect/antipatterns.md).
-4. Recommend one approach with rationale. Apply decision heuristics from [../architect/decision-heuristics.md](../architect/decision-heuristics.md) to defend the recommendation.
-5. If contrarian trigger is active, delegate to the `contrarian` agent before presenting findings:
+5. Recommend one approach with rationale. Apply decision heuristics from [../architect/decision-heuristics.md](../architect/decision-heuristics.md) to defend the recommendation.
+6. If contrarian trigger is active, delegate to the `contrarian` agent before presenting findings:
    - Complete the `/contrarian Handoff` template from [validation-templates.md](validation-templates.md) with the problem, chosen approach, risk classification, and constraints.
    - The contrarian agent runs with an isolated context window — it challenges the chosen approach without the bias of the exploration reasoning built up in this session.
    - Surface the contrarian verdict as part of Phase 0 output. If the verdict is `Stop`, do not proceed — escalate with blocker details before asking for approach selection.
@@ -206,6 +239,7 @@ Use the `AskQuestion` tool to collect approval before proceeding:
 1. Document the full understanding of the requirement:
    - Functional scope: what the feature does
    - Out of scope: what it explicitly does not do
+   - Expected behaviour: what must be observably true after the change
    - Affected areas: which layers, services, and data models are touched
    - Dependencies: external services, events, scheduled jobs
    - Non-functional requirements: security, performance, observability
@@ -219,6 +253,10 @@ Use the `AskQuestion` tool to collect approval before proceeding:
    - preferred persistence/integration mechanism
    - operational constraints (latency/cost/observability)
    - team constraints (skills, maintainability window)
+5. Define the initial evidence plan:
+   - acceptance scenario or bug signal
+   - test level: unit, integration, E2E, contract, security, performance, smoke, or manual
+   - whether test-first is expected or relaxed with reason
 
 **Present using Phase 1 template.**
 
@@ -247,6 +285,10 @@ Use the `AskQuestion` tool to confirm scope before proceeding:
    - validation rule to add
    - test case to add
    - rollback condition to monitor
+5. Plan the test-driven delivery loop:
+   - failing test, characterization test, contract check, or reproduction signal to establish first
+   - smallest implementation slice to turn evidence green
+   - refactor or cleanup step after evidence passes
 
 **Present using Phase 2 template.**
 
@@ -345,10 +387,12 @@ If a stack-specific testing reference exists for this project, load it before wr
 
 For every new or modified behaviour:
 
+- Confirm the evidence plan from Phase 1/2 was followed, or record why it changed
 - Unit tests for domain logic and core business rules (isolated, no real I/O)
 - Integration tests for infrastructure adapters and external services
 - Tests assert behaviour, not implementation details
 - Cover: happy path, edge cases (null, empty, boundary), failure paths
+- Bug fixes include regression coverage when feasible
 
 Run the project's test suite. All tests must pass before continuing.
 
@@ -455,6 +499,7 @@ Before committing, review the diff shape. Prefer atomic commits grouped by funct
 - Keep tests/docs/config-only changes easy to identify.
 - Keep dependency or generated changes separate from product logic.
 - If one commit intentionally mixes concerns, explain why in the commit body or PR description.
+- Each commit should represent one coherent step in the implementation story: context, intent, change, and evidence should be understandable from the commit message/body and surrounding PR.
 
 Commit format:
 
@@ -473,6 +518,14 @@ Raises OrderCancelledEvent for downstream notification handling.
 ```
 
 Then create a PR if the branch is not main.
+
+PR description should summarize the full story:
+
+- Problem
+- Approach
+- What changed
+- Validation
+- Risks / follow-ups
 
 ---
 
@@ -516,6 +569,9 @@ Do not modify any `.cursor` file directly — only log the improvement for the t
 - [validation-templates.md](validation-templates.md) — phase checkpoint output templates
 - [reference.md](reference.md) — search commands and key file paths
 - [../shared/artifact-writing-contract.md](../shared/artifact-writing-contract.md) - artifact write locations
+- [../shared/context-provider-policy.md](../shared/context-provider-policy.md) - optional graph/MCP context rules
+- [../shared/narrative-delivery-policy.md](../shared/narrative-delivery-policy.md) - narrative tickets, commits, PRs, checkpoints, and memory
+- [../shared/test-driven-delivery-policy.md](../shared/test-driven-delivery-policy.md) - problem understanding, evidence planning, and test-first loops
 
 ---
 

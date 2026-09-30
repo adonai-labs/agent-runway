@@ -28,6 +28,17 @@ Your role is adversarial: find the strongest argument against the selected path.
 
 Restate the chosen approach in one sentence. If the handoff is ambiguous, ask one clarifying question before proceeding.
 
+### Step 1.5 — Optional Context Provider Check
+
+If a graph memory MCP, brain-context MCP, or similar context provider is available, query it for contrary evidence before forming the verdict. Apply [../shared/context-provider-policy.md](../shared/context-provider-policy.md):
+
+- Prior decisions that conflict with the chosen approach
+- Historical failures or recurring review findings in the affected modules
+- Boundary, dependency, ownership, or contract relationships the handoff may have missed
+- Previously rejected alternatives and why they were rejected
+
+Use only sourced evidence. Do not produce a `Stop` verdict based on unsourced graph summaries.
+
 ### Step 2 — Codebase Search
 
 Search the codebase for evidence relevant to the chosen approach:
@@ -36,6 +47,7 @@ Search the codebase for evidence relevant to the chosen approach:
 - Prior implementations of similar decisions and their outcomes
 - Architectural boundaries that the approach may violate
 - Shared infrastructure, contracts, or dependencies affected
+- Sourced context-provider evidence, if available
 
 Document every relevant file or pattern found.
 
@@ -126,3 +138,7 @@ artifact: [decision/spec/approach evaluated]
 ```
 
 Persist it: append this block to the spec's Contrarian Review section under `.agent-runway/specs/` (or the run log) so `agent-runway metrics` can read it.
+
+## Supporting Files
+
+- [../shared/context-provider-policy.md](../shared/context-provider-policy.md) - optional graph/MCP context rules

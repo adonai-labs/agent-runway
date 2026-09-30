@@ -145,6 +145,29 @@ async function testClaudeMdPreservesExistingContent(): Promise<void> {
   console.log('ok content:claudeMdPreservesExistingContent');
 }
 
+async function testAgentsMdPreservesExistingContent(): Promise<void> {
+  const originalCwd = process.cwd();
+  const tempRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'agent-runway-agents-merge-'));
+  try {
+    process.chdir(tempRoot);
+    await fs.writeFile(path.join(tempRoot, 'AGENTS.md'), ['# Existing Agent Rules', '', '- Keep my cross-agent instruction.', ''].join('\n'));
+
+    await initCommand({ yes: true, scope: 'project', target: 'all', stacks: 'node,typescript' });
+    await updateCommand();
+
+    const content = await fs.readFile(path.join(tempRoot, 'AGENTS.md'), 'utf-8');
+    assert.ok(content.includes('# Existing Agent Rules'), 'existing AGENTS.md heading preserved');
+    assert.ok(content.includes('- Keep my cross-agent instruction.'), 'existing AGENTS.md instruction preserved');
+    assert.ok(content.includes('<!-- agent-runway:agents:start -->'), 'Agent Runway AGENTS.md block marker written');
+    assert.ok(content.includes('Use Agent Runway artifacts as the project delivery context.'), 'generated Agent Runway AGENTS.md content included');
+    assert.strictEqual((content.match(/agent-runway:agents:start/g) ?? []).length, 1, 'Agent Runway AGENTS.md block is not duplicated');
+  } finally {
+    process.chdir(originalCwd);
+    await fs.remove(tempRoot);
+  }
+  console.log('ok content:agentsMdPreservesExistingContent');
+}
+
 async function testAddPreservesExistingStackInjection(): Promise<void> {
   await withTempInstall(async (root) => {
     await addCommand('react');
@@ -385,6 +408,7 @@ async function main(): Promise<void> {
   await testLitePresetUpgradesToStructured();
   await testClaudeMdContainsMaintainabilityRule();
   await testClaudeMdPreservesExistingContent();
+  await testAgentsMdPreservesExistingContent();
   await testAddPreservesExistingStackInjection();
   await testRemoveRefreshesCursorArtifacts();
   await testRemoveDeletesProjectSpecTemplates();

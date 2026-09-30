@@ -46,16 +46,26 @@ The goal is not to produce elegant diagrams. The goal is to help make **better d
 
 ## How to use this skill
 
+### Optional context providers
+
+If a graph memory MCP, brain-context MCP, or similar context provider is available, use it during architecture discovery. Apply [../shared/context-provider-policy.md](../shared/context-provider-policy.md):
+
+- Query for prior ADRs, related decisions, module relationships, public contracts, ownership, integration paths, known constraints, and historical failures.
+- Use returned context only when it includes concrete sources.
+- Surface conflicts between graph context and current code/requirements instead of silently choosing one.
+- Include a short "Context evidence" section when provider evidence materially affects a recommendation or ADR.
+
 ### For design proposals
 1. If the problem, constraints, or context are ambiguous, use the `AskQuestion` tool before analysing. Ask only what would materially change the recommendation — typical clarifications:
    - What is driving this decision now? (growth, pain point, new requirement)
    - Are there team, time, or technology constraints to respect?
    - Is reversibility important, or is this a long-lived commitment?
-2. Apply decision heuristics from [decision-heuristics.md](decision-heuristics.md)
-3. Surface relevant trade-offs from [tradeoffs.md](tradeoffs.md)
-4. Check for antipatterns from [antipatterns.md](antipatterns.md)
-5. Recommend a pattern from [patterns.md](patterns.md) if applicable
-6. Produce output using templates from [templates.md](templates.md)
+2. If an optional context provider is available, query for related decisions, module relationships, contracts, and known risks.
+3. Apply decision heuristics from [decision-heuristics.md](decision-heuristics.md)
+4. Surface relevant trade-offs from [tradeoffs.md](tradeoffs.md)
+5. Check for antipatterns from [antipatterns.md](antipatterns.md)
+6. Recommend a pattern from [patterns.md](patterns.md) if applicable
+7. Produce output using templates from [templates.md](templates.md)
 
 ### For architecture reviews
 1. If the proposal is incomplete or the intent is unclear, use the `AskQuestion` tool to clarify before reviewing:
@@ -101,3 +111,4 @@ The goal is not to produce elegant diagrams. The goal is to help make **better d
 - [patterns.md](patterns.md) — reusable architecture and design patterns
 - [review-lenses.md](review-lenses.md) — lenses for reviewing proposals and changes
 - [templates.md](templates.md) — reusable output templates
+- [../shared/context-provider-policy.md](../shared/context-provider-policy.md) — optional graph/MCP context rules

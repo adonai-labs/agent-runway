@@ -107,6 +107,20 @@ Each target installs different files:
 | `claude` | `.claude/` commands and agents, `CLAUDE.md`, `.agent-runway/skills/` and `rules/`. Existing `CLAUDE.md` content is preserved; Agent Runway updates only its marked block. |
 | `vscode` | `.github/copilot-instructions.md`, `.github/instructions/`, `prompts/`, `agents/`, `skills/` |
 
+Project installs also create or update a root `AGENTS.md` with an Agent Runway marked block. Existing content outside that block is preserved, so teams can keep their own agent instructions alongside the generated Runway entrypoint.
+
+### Generated Instruction Files
+
+Agent Runway keeps long-lived project knowledge in `.agent-runway/` artifacts and uses generated instruction files only as entrypoints.
+
+| File | Purpose | Update behavior |
+| ---- | ------- | --------------- |
+| `AGENTS.md` | Neutral instructions for coding agents that support the `AGENTS.md` convention | Agent Runway updates only the marked block |
+| `CLAUDE.md` | Claude Code entrypoint and rule index | Agent Runway updates only the marked block |
+| `.github/copilot-instructions.md` | VS Code Copilot project instructions | Regenerated from framework state |
+
+Do not put all engineering standards directly into `AGENTS.md` or `CLAUDE.md`. Put durable project decisions in `.agent-runway/memory/`, ADRs/docs in `.agent-runway/docs/`, and generated framework rules in `.agent-runway/rules/`.
+
 ---
 
 ## Managing Stacks
@@ -179,7 +193,7 @@ npx agent-runway update
 npx @adonai-labs/agent-runway@latest update
 ```
 
-The command keeps the existing mode, targets, and stacks from `agent-runway.json`. It preserves project memory, logs, docs, checkpoints, and existing `CLAUDE.md` content outside the Agent Runway marked block.
+The command keeps the existing mode, targets, and stacks from `agent-runway.json`. It preserves project memory, logs, docs, checkpoints, and existing `CLAUDE.md` / `AGENTS.md` content outside the Agent Runway marked blocks.
 
 ### Delivery Metrics
 
@@ -200,6 +214,44 @@ Aggregates the machine-readable verdict blocks (from `ticket-eval`, `po-eval`, `
 - positives and a suggested merge gate
 
 Use the optional `CTR` contrarian lens only for high-impact assumptions such as architecture boundaries, audit/compliance integrity, data consistency, least-privilege security, or public contracts. Keep ordinary PR reviews on the standard code-review lenses.
+
+### Narrative Delivery
+
+Use narrative delivery when work is large enough that future readers need more than the diff:
+
+- **Context**: why the work exists now
+- **Intent**: what outcome the change should create
+- **Change**: what implementation step was taken
+- **Evidence**: tests, checks, review, logs, screenshots, or metrics
+- **Remaining work**: risks, deferred scope, or follow-ups
+
+Tickets use this to explain the problem and evidence plan before implementation details. Commits use it by staying atomic: each commit should represent one coherent step in the implementation story. PRs use it as the full chapter:
+
+```markdown
+### Story
+**Problem:** Why this work exists.
+**Approach:** What path was chosen and why.
+**What changed:** Main behavior, code, config, or docs changes.
+**Validation:** Evidence collected.
+**Risks / Follow-ups:** Known residual risk or deferred work.
+```
+
+Keep it brief. Narrative text should clarify intent and evidence; it does not replace acceptance criteria, tests, code review, or ADRs.
+
+### Test-Driven Delivery
+
+Use test-driven delivery for behavior changes:
+
+1. Understand the problem, user impact, expected behavior, and boundaries.
+2. Define the evidence plan before implementation.
+3. Add or identify failing evidence when feasible.
+4. Implement the smallest change that makes the evidence pass.
+5. Refactor without changing behavior.
+6. Record validation and remaining gaps.
+
+Evidence can be a unit test, integration test, E2E test, contract check, security check, smoke test, reproducible bug signal, or documented manual validation. Prefer test-first for new behavior, bug fixes, validation rules, domain logic, API contracts, authorization changes, and regressions.
+
+When strict test-first is not practical, record the reason and the alternative evidence. Do not skip problem understanding just because code generation is fast.
 
 ### CI governance preview (optional)
 
@@ -716,7 +768,7 @@ npm run build
 npm pack --dry-run
 
 # In a separate test project
-npm install -D /absolute/path/to/adonai-labs-agent-runway-1.5.0.tgz
+npm install -D /absolute/path/to/adonai-labs-agent-runway-1.6.0.tgz
 npx agent-runway init --yes --target claude --preset node-typescript
 ```
 
@@ -726,6 +778,7 @@ Then open the test project in Claude Code and verify:
 ls .claude/commands/
 ls .agent-runway/skills/
 cat CLAUDE.md | head -20
+cat AGENTS.md | head -20
 ```
 
 Expected behavior:
@@ -734,6 +787,8 @@ Expected behavior:
 - Skills are available under `.agent-runway/skills/`.
 - `CLAUDE.md` contains an Agent Runway block marked with `<!-- agent-runway:claude:start -->` and `<!-- agent-runway:claude:end -->`.
 - If the project already had a `CLAUDE.md`, existing content stays outside that block.
+- `AGENTS.md` contains an Agent Runway block marked with `<!-- agent-runway:agents:start -->` and `<!-- agent-runway:agents:end -->`.
+- If the project already had an `AGENTS.md`, existing content stays outside that block.
 
 ### Commands Not Available (Claude Code)
 
@@ -744,7 +799,10 @@ ls .claude/commands/
 # 2. Check CLAUDE.md exists at project root
 cat CLAUDE.md | head -5
 
-# 3. Reinstall Claude target
+# 3. Check AGENTS.md exists at project root
+cat AGENTS.md | head -5
+
+# 4. Reinstall Claude target
 npx agent-runway init --target claude --stacks typescript
 ```
 

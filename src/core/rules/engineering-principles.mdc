@@ -57,6 +57,8 @@ Large files are a design smell even when the code still works.
 ## Functions do one thing
 
 - Functions should be short, focused, and at a single level of abstraction
+- Prefer functions under 60 lines; treat functions over 60 lines as a refactor prompt unless the structure is intentionally simple and linear
+- Functions over 100 lines require a clear justification or extraction plan, except for generated code, declarative test data, migrations, or framework-required boilerplate
 - Extract sub-steps into well-named helper functions rather than layering nested conditionals and logic in one place
 - A function doing more than one thing is a candidate for extraction
 - Side effects should be obvious from the name and placement
@@ -191,6 +193,7 @@ Before a piece of work is considered done:
 
 - [ ] Naming is clear and communicates intent
 - [ ] Functions are focused and at a single level of abstraction
+- [ ] Large functions, files, or classes have been split or explicitly justified
 - [ ] Error paths are handled explicitly
 - [ ] No hardcoded values that should be configurable
 - [ ] No sensitive data in log output

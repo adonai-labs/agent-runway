@@ -1,10 +1,12 @@
 # Agent Runway
 
-[![npm version](https://img.shields.io/npm/v/@adonai-labs/agent-runway.svg)](https://www.npmjs.com/package/@adonai-labs/agent-runway)
-[![license](https://img.shields.io/github/license/adonai-labs/agent-runway.svg)](LICENSE)
-[![stars](https://img.shields.io/github/stars/adonai-labs/agent-runway.svg?style=social)](https://github.com/adonai-labs/agent-runway)
-[![downloads](https://img.shields.io/npm/dm/@adonai-labs/agent-runway.svg)](https://www.npmjs.com/package/@adonai-labs/agent-runway)
-[![roadmap](https://img.shields.io/badge/roadmap-open-blue.svg)](ROADMAP.md)
+<p>
+  <a href="https://www.npmjs.com/package/@adonai-labs/agent-runway"><img alt="npm version" src="https://img.shields.io/npm/v/@adonai-labs/agent-runway.svg"></a>
+  <a href="https://github.com/adonai-labs/agent-runway/blob/HEAD/LICENSE"><img alt="license" src="https://img.shields.io/github/license/adonai-labs/agent-runway.svg"></a>
+  <a href="https://github.com/adonai-labs/agent-runway"><img alt="stars" src="https://img.shields.io/github/stars/adonai-labs/agent-runway.svg?style=social"></a>
+  <a href="https://www.npmjs.com/package/@adonai-labs/agent-runway"><img alt="downloads" src="https://img.shields.io/npm/dm/@adonai-labs/agent-runway.svg"></a>
+  <a href="https://github.com/adonai-labs/agent-runway/blob/HEAD/ROADMAP.md"><img alt="roadmap" src="https://img.shields.io/badge/roadmap-open-blue.svg"></a>
+</p>
 
 **AI agents are good at writing code. They are not good at remembering what they decided last week.**
 
@@ -12,7 +14,7 @@ Agent Runway keeps delivery knowledge in the repository: specs, memory, checkpoi
 
 It does not replace your stack, architecture, or process. It wraps around them.
 
-As of v1.5, Agent Runway supports Cursor, Claude Code, and VS Code Copilot, and ships implementation skills for .NET, TypeScript, Node.js, React, Python, Go, and Rust.
+As of v1.6, Agent Runway supports Cursor, Claude Code, and VS Code Copilot, and ships implementation skills for .NET, TypeScript, Node.js, React, Python, Go, and Rust.
 
 ## Requirements
 
@@ -94,6 +96,18 @@ Memory     -> capture decisions and lessons for future sessions
 ```
 
 Artifacts are active engineering context, not passive docs. Specs, tickets, memory files, checkpoints, and run logs shape how agents reason, plan, and execute across sessions.
+
+## Narrative Delivery
+
+Agent Runway encourages delivery artifacts to tell a short technical story: why the work exists, what changed, what evidence proves it is safe, and what remains open.
+
+This shows up in tickets, implementation summaries, commits, PR descriptions, checkpoints, run logs, and memory entries. The goal is not longer documentation; it is traceable intent that humans and future agents can recover without reconstructing the story from the diff.
+
+## Test-Driven Delivery
+
+Agent Runway treats tests and validation evidence as part of the delivery loop, not as an afterthought. For behavior changes, workflows start by understanding the problem, defining expected behavior, and choosing the evidence that will prove the change before implementation begins.
+
+When behavior is clear, use a test-first loop: failing evidence, smallest implementation, refactor, and recorded validation. When strict test-first is not practical, the workflow records why and uses the smallest credible alternative evidence.
 
 ## Work Modes
 
@@ -214,7 +228,7 @@ npx agent-runway update
 npx @adonai-labs/agent-runway@latest update
 ```
 
-The update command preserves project artifacts such as `.agent-runway/memory/`, `.agent-runway/logs/`, `.agent-runway/docs/`, checkpoints, and existing `CLAUDE.md` content outside the Agent Runway marked block.
+The update command preserves project artifacts such as `.agent-runway/memory/`, `.agent-runway/logs/`, `.agent-runway/docs/`, checkpoints, and existing `CLAUDE.md` / `AGENTS.md` content outside the Agent Runway marked blocks.
 
 ## Artifact Model
 
@@ -244,6 +258,14 @@ Delivery knowledge lives in the repository, not in chat.
 | `docs` | Business context, architecture, contracts, and testing context |
 | `logs` | Checkpoints, review outputs, and autonomous execution traces |
 
+## Optional Context Providers
+
+Agent Runway can use external context providers such as graph memory MCPs, brain-context MCPs, vector search, or knowledge graphs when they are available. They are optional discovery sources, not hard dependencies.
+
+The core rule is evidence over authority: provider results can guide review, planning, architecture, and autonomous execution only when they include concrete sources such as file paths, ADRs, specs, tickets, run logs, checkpoints, module references, or relationship metadata.
+
+When a provider is configured, skills such as `@code-review`, `/lead`, `/architect`, `/contrarian`, `/autonomous-lead`, `@checkpoint`, and `@learning` can use it to retrieve high-signal context, record source evidence, and fall back to normal repository discovery when the provider is unavailable.
+
 ## Supported Environments
 
 - Cursor
@@ -264,7 +286,21 @@ Target-specific files:
 | Claude Code | `.claude/commands/`, `.claude/agents/`, `CLAUDE.md`, `.agent-runway/skills/`, `.agent-runway/rules/`. Existing `CLAUDE.md` content is preserved; Agent Runway updates only its marked block. |
 | VS Code | `.github/copilot-instructions.md`, `.github/instructions/`, `.github/prompts/`, `.github/agents/`, `.github/skills/` |
 
+Agent Runway also writes a root `AGENTS.md` with a marked Agent Runway block. This provides a neutral entrypoint for coding agents that support `AGENTS.md` while preserving any user-authored content outside the generated block.
+
 Lite installs a smaller subset: skills, selected rules, and the `.agent-runway/` artifact layer.
+
+### Generated Agent Instructions
+
+Agent Runway uses generated instruction files as lightweight entrypoints, not as the place to store all project knowledge.
+
+| File | Purpose | Preservation |
+| ---- | ------- | ------------ |
+| `AGENTS.md` | Neutral instructions for coding agents that support the `AGENTS.md` convention | Existing content outside the Agent Runway block is preserved |
+| `CLAUDE.md` | Claude Code entrypoint and rule index | Existing content outside the Agent Runway block is preserved |
+| `.github/copilot-instructions.md` | VS Code Copilot project instructions | Regenerated from the current framework state |
+
+Put durable decisions in `.agent-runway/memory/`, ADRs and architecture context in `.agent-runway/docs/`, and generated standards in `.agent-runway/rules/`.
 
 ### Global Installation
 

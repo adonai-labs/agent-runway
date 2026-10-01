@@ -1,12 +1,9 @@
 # Agent Runway
 
-<p>
-  <a href="https://www.npmjs.com/package/@adonai-labs/agent-runway"><img alt="npm version" src="https://img.shields.io/npm/v/@adonai-labs/agent-runway.svg"></a>
-  <a href="https://github.com/adonai-labs/agent-runway/blob/HEAD/LICENSE"><img alt="license" src="https://img.shields.io/github/license/adonai-labs/agent-runway.svg"></a>
-  <a href="https://github.com/adonai-labs/agent-runway"><img alt="stars" src="https://img.shields.io/github/stars/adonai-labs/agent-runway.svg?style=social"></a>
-  <a href="https://www.npmjs.com/package/@adonai-labs/agent-runway"><img alt="downloads" src="https://img.shields.io/npm/dm/@adonai-labs/agent-runway.svg"></a>
-  <a href="https://github.com/adonai-labs/agent-runway/blob/HEAD/ROADMAP.md"><img alt="roadmap" src="https://img.shields.io/badge/roadmap-open-blue.svg"></a>
-</p>
+[npm](https://www.npmjs.com/package/@adonai-labs/agent-runway) ·
+[license](https://github.com/adonai-labs/agent-runway/blob/HEAD/LICENSE) ·
+[repository](https://github.com/adonai-labs/agent-runway) ·
+[roadmap](https://github.com/adonai-labs/agent-runway/blob/HEAD/ROADMAP.md)
 
 **AI agents are good at writing code. They are not good at remembering what they decided last week.**
 

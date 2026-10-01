@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.6.1] - 2026-10-01
+
+### Fixed
+
+- Replaced remote README badge images with plain links so the npm package page renders the header cleanly.
+
+---
+
 ## [1.6.0] - 2026-08-27
 
 ### Changed

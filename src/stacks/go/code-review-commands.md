@@ -28,7 +28,7 @@ go vet ./...
 ## Linting
 
 ```bash
-golangci-lint run
+golangci-lint run          # v2; also checks formatting when formatters are configured
 ```
 
 Linting should pass. Document failures as High findings.

@@ -1,6 +1,6 @@
 ---
 description: C#/.NET-specific clean code standards and idioms. Covers naming conventions, C# language patterns, async/await correctness, DI, and .NET tooling hygiene. Complements engineering-principles.mdc.
-globs: **/*.cs,**/*.csproj,**/*.sln
+globs: "**/*.cs,**/*.csproj,**/*.sln"
 alwaysApply: false
 ---
 

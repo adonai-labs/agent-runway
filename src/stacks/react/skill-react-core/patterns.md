@@ -119,13 +119,15 @@ const AuthContext = createContext<AuthContextValue | null>(null);
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
 
-  // Stable reference; value rarely changes — context is appropriate here
+  // Stable reference; value rarely changes — context is appropriate here.
+  // With the React Compiler enabled, the manual useMemo can be dropped.
   const value = useMemo<AuthContextValue>(
     () => ({ user, signOut: () => setUser(null) }),
     [user],
   );
 
-  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
+  // React 19: render the context itself as the provider
+  return <AuthContext value={value}>{children}</AuthContext>;
 }
 
 // Custom hook that enforces provider presence
@@ -137,9 +139,41 @@ export function useAuth(): AuthContextValue {
 ```
 
 **Rules:**
-- Wrap context value in `useMemo` to prevent consumer re-renders on parent renders
+- Memoise the context value (or rely on the React Compiler) to prevent consumer re-renders on parent renders
 - Provide a custom hook with a provider guard; never use `useContext` directly outside the context file
 - Split contexts by update frequency — auth and theme are infrequent; form state is not a context concern
+
+---
+
+## Actions and forms (React 19)
+
+Use Actions for mutations triggered by forms; React manages pending state and form reset.
+
+```tsx
+function RenameForm({ name, rename }: { name: string; rename: (n: string) => Promise<string> }) {
+  const [optimisticName, setOptimisticName] = useOptimistic(name);
+  const [error, submit, isPending] = useActionState(
+    async (_prev: string | null, form: FormData) => {
+      const next = String(form.get('name'));
+      setOptimisticName(next);
+      try { await rename(next); return null; } catch { return 'Rename failed'; }
+    },
+    null,
+  );
+
+  return (
+    <form action={submit}>
+      <p>{optimisticName}</p>
+      <input name="name" defaultValue={name} />
+      <button disabled={isPending}>Save</button>
+      {error && <p role="alert">{error}</p>}
+    </form>
+  );
+}
+```
+
+- Function components take `ref` as a regular prop — no `forwardRef` in new code
+- `use(promise)` suspends on a promise created outside render (loader, cache); `use(Context)` may be called conditionally
 
 ---
 
@@ -154,9 +188,9 @@ interface TabsProps { children: ReactNode; defaultTab?: string }
 export function Tabs({ children, defaultTab }: TabsProps) {
   const [active, setActive] = useState(defaultTab ?? '');
   return (
-    <TabsContext.Provider value={{ active, setActive }}>
+    <TabsContext value={{ active, setActive }}>
       <div role="tablist">{children}</div>
-    </TabsContext.Provider>
+    </TabsContext>
   );
 }
 

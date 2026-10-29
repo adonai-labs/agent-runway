@@ -82,6 +82,8 @@ public class GetOrderByIdQueryHandler : IRequestHandler<GetOrderByIdQuery, Order
 
 ## MediatR registration
 
+> **Licensing:** MediatR (v13+) and FluentAssertions (v8+) moved to commercial licenses. For new projects prefer plain handler interfaces injected directly (or the MIT `Mediator` source generator by martinothamar), and Shouldly or AwesomeAssertions (MIT fork of FluentAssertions 7) for assertions. Existing MediatR usage is fine if the licence is in place; the patterns below apply to any mediator or direct-handler setup.
+
 Register MediatR and all handlers in the Application layer:
 
 ```csharp

@@ -38,21 +38,11 @@ Applied when working with TypeScript source files. Use Australian English spelli
 
 ---
 
-## Secrets Hygiene
+## Secrets and Dependencies
 
-- Never hardcode secrets in source — use environment variables; validate with Zod at startup
-- Never log secrets, tokens, or full request bodies containing credentials
-- Rotate secrets on suspected exposure; treat rotation as a normal operational procedure
-- Use `.env.example` to document required variables; add `.env` to `.gitignore`
-
----
-
-## Dependency Security
-
-- Run `npm audit --audit-level=high` in CI as a blocking step
-- Review transitive dependency updates; use `npm ci` (not `npm install`) in CI for reproducible installs
-- Scan for supply-chain risks with `socket` or `snyk` for high-value projects
-- Remove unused packages (`npx depcheck`); smaller surface area means fewer vulnerabilities
+- Never hardcode secrets; never log tokens or credential-bearing request bodies. Document required variables in `.env.example`; keep `.env` in `.gitignore`
+- Never ship server secrets to browser bundles — only explicitly public variables (`VITE_*`, `NEXT_PUBLIC_*`) belong in client code
+- Dependency auditing and server-runtime hardening: see `dependency-check.mdc` and, for Node services, `node-security.mdc`
 
 ---
 
@@ -62,5 +52,4 @@ Applied when working with TypeScript source files. Use Australian English spelli
 - [ ] No `as` assertions on untrusted data; `unknown` used and narrowed
 - [ ] JWT claims (`iss`, `aud`, `exp`) validated on every token
 - [ ] Secrets validated at startup; never logged
-- [ ] `npm audit --audit-level=high` passes in CI
 - [ ] Stack traces never returned in API error responses

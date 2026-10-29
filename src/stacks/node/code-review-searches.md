@@ -17,10 +17,20 @@ Critical. Validate any dynamic execution usage; avoid in production code.
 ## Category: Child Process Shell Injection Risk
 
 ```bash
-rg "exec\(|spawn\(|execFile\(" --type ts --type js
+rg "\b(exec|execSync)\(|shell:\s*true" --type ts --type js
 ```
 
-High. Verify untrusted input is not interpolated into shell commands.
+High. `exec`/`execSync` and `shell: true` run through a shell. Verify no untrusted input is interpolated; prefer `execFile`/`spawn` with an argument array.
+
+---
+
+## Category: Outbound Requests to Variable URLs (SSRF)
+
+```bash
+rg '(fetch|axios\.(get|post|request)|got)\(\s*[a-zA-Z_`]' --type ts --type js
+```
+
+High. Check whether the URL can be influenced by user input; validate against an allow-list and block internal ranges.
 
 ---
 
@@ -37,10 +47,10 @@ High. Services should handle termination signals and close dependencies safely.
 ## Category: Unhandled Promise Patterns
 
 ```bash
-rg "void\s+\w+\(|\.then\(|\.catch\(" --type ts --type js
+rg "\bvoid\s+\w+\(|\.then\(" --type ts --type js
 ```
 
-Medium-High. Confirm rejected promises are handled and background tasks are supervised.
+Medium-High. Confirm rejected promises are handled and background tasks are supervised. Enable `@typescript-eslint/no-floating-promises` to catch the rest.
 
 ---
 

@@ -1,6 +1,6 @@
 ---
 description: .NET-specific architecture, structural patterns, and IaC standards. Covers Clean Architecture in .NET, CQRS/MediatR, feature organisation, IaC with Bicep/Terraform, observability, and testing strategy for .NET solutions. Complements engineering-architecture.mdc.
-globs: **/*.cs,**/*.csproj,**/*.sln,**/*.tf,**/*.bicep,**/*.yaml,**/*.yml
+globs: "**/*.cs,**/*.csproj,**/*.sln,**/*.tf,**/*.bicep,**/*.yaml,**/*.yml"
 alwaysApply: false
 ---
 
@@ -33,6 +33,8 @@ Infrastructure                      →  Application (interfaces)
 ---
 
 ## CQRS and MediatR
+
+> **Licensing:** MediatR (v13+) and FluentAssertions (v8+) moved to commercial licenses. For new projects prefer plain handler interfaces injected directly (or the MIT `Mediator` source generator by martinothamar), and Shouldly or AwesomeAssertions (MIT fork of FluentAssertions 7) for assertions. Existing MediatR usage is fine if the licence is in place; the patterns below apply to any mediator or direct-handler setup.
 
 - Commands: change state, enforce domain rules, return `Result<T>` or void
 - Queries: read-only, project to consumer DTOs, use `AsNoTracking()`

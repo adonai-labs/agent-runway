@@ -19,7 +19,7 @@ All must pass. Document any failures as Critical findings.
 
 ```powershell
 dotnet format --verify-no-changes
-dotnet list package --vulnerable
+dotnet list package --vulnerable --include-transitive
 ```
 
 All must pass. Document any failures as Critical findings.

@@ -1,55 +1,64 @@
 ---
-description: Node.js runtime and backend best practices — configuration, process lifecycle, API robustness, async error handling, observability, and security. Applied when working on Node.js services, CLIs, or server-side code.
-globs: "**/*.js,**/*.cjs,**/*.mjs,**/*.ts"
+description: Node.js runtime best practices — supported versions, ESM and TypeScript execution, configuration, async error handling, process lifecycle, and observability. Applied when working on Node.js services, CLIs, or server-side code. Type-level guidance lives in typescript.mdc; security in node-security.mdc; structure in node-architecture.mdc.
+globs: "**/*.js,**/*.cjs,**/*.mjs,**/*.ts,**/*.mts,**/*.cts"
 alwaysApply: false
 ---
 
-# Node.js Best Practices
+# Node.js Runtime Best Practices
 
-Use these directives for Node.js services, APIs, workers, and CLIs.
-
----
-
-## Configuration and Environment
-
-- Validate required environment variables at startup and fail fast when missing.
-- Keep secrets out of source control and logs.
-- Use explicit defaults only for non-sensitive optional config.
-- Keep runtime config typed and centralised in one module.
+Directives for Node.js services, APIs, workers, and CLIs. Australian English spelling throughout.
 
 ---
 
-## Error Handling and Reliability
+## Runtime and Modules
 
-- Handle promise rejections explicitly; avoid fire-and-forget without supervision.
-- Map unexpected errors to safe external responses; never leak stack traces to clients.
-- Use structured error classes or error codes for predictable handling.
-- Add timeout and retry policy for outbound calls where retries are safe.
+- Target an active LTS (Node 22 or 24); declare it in `package.json` `engines` and `.nvmrc`/`.node-version`
+- Prefer ESM (`"type": "module"`); import built-ins with the `node:` prefix
+- Use built-ins before dependencies: `fetch`, `AbortSignal.timeout()`, `node:test`, `--watch`, `--env-file`, `util.parseArgs`
+- TypeScript: Node 22.18+/23.6+ strips erasable types natively (no flag). Use it for scripts and dev; enable `erasableSyntaxOnly` in `tsconfig`. Still run `tsc --noEmit` for type checking, and compile (`tsc`/bundler) for production if you need non-erasable syntax
+
+---
+
+## Configuration
+
+- Read `process.env` in one config module only; validate with Zod at startup and fail fast
+- Export a single typed, frozen `config` object
+- Never default-fill secrets; explicit defaults only for non-sensitive optional values
+
+---
+
+## Async Errors
+
+- Every promise is awaited, returned, or explicitly supervised — no floating promises (`@typescript-eslint/no-floating-promises`)
+- Express 5 forwards rejected handler promises to error middleware; Express 4 needs a wrapper (see `api-design-typescript.mdc`)
+- Register `process.on('unhandledRejection')` / `uncaughtException` to log and exit — do not try to keep running
+- Set timeouts on all outbound I/O (`AbortSignal.timeout(ms)`); retry only idempotent operations, with backoff and jitter
+- Map unexpected errors to safe responses; never leak stack traces to clients
 
 ---
 
 ## Process Lifecycle
 
-- Handle `SIGTERM` and `SIGINT` for graceful shutdown.
-- Stop accepting new work before shutting down dependencies.
-- Close DB connections, message consumers, and HTTP servers cleanly.
-- Exit with non-zero code on unrecoverable startup failures.
+- Handle `SIGTERM` and `SIGINT`: stop accepting new work → drain in-flight requests/messages → close DB pools, consumers, and the HTTP server → exit
+- Bound the shutdown with a timeout, then force exit with non-zero code
+- Exit non-zero on unrecoverable startup failures
+- Do not block the event loop: offload CPU-heavy work to `worker_threads` or a job queue; use streams with `pipeline()` for large payloads
 
 ---
 
 ## Observability
 
-- Use structured logs (JSON or key-value) with consistent fields.
-- Include correlation/request IDs across async boundaries.
-- Emit health and readiness endpoints for services.
-- Track latency, error rates, and saturation for critical paths.
+- Structured JSON logs (Pino) with consistent fields; redact secrets
+- Propagate a request/correlation ID using `AsyncLocalStorage`
+- Expose `/health` (liveness) and `/ready` (dependencies) for services
+- Instrument with OpenTelemetry (`@opentelemetry/sdk-node`, loaded before app code via `--import`)
 
 ---
 
-## Security Basics
+## Checklist
 
-- Validate all external input at boundaries.
-- Apply strict CORS, auth, and rate limiting for public endpoints.
-- Avoid dynamic code execution (`eval`, `new Function`) in production paths.
-- Keep dependencies updated and review high/critical vulnerabilities.
-
+- [ ] LTS Node version pinned in `engines`
+- [ ] Config validated once at startup; no stray `process.env` reads
+- [ ] No floating promises; outbound calls have timeouts
+- [ ] Graceful shutdown on SIGTERM/SIGINT with bounded timeout
+- [ ] Structured logs with correlation IDs; health endpoints present

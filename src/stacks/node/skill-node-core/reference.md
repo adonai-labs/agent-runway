@@ -12,11 +12,11 @@ Common commands, useful built-ins, and Node.js toolchain reference.
 {
   "scripts": {
     "start": "node dist/index.js",
-    "start:dev": "node --watch --env-file=.env src/index.ts",  // Node 22+ native watch
+    "start:dev": "node --watch --env-file=.env src/index.ts",  // Node 22.18+/23.6+: native watch + type stripping
     "build": "tsc --project tsconfig.json",
     "typecheck": "tsc --noEmit",
-    "lint": "eslint src --ext .ts",
-    "lint:fix": "eslint src --ext .ts --fix",
+    "lint": "eslint .",            // flat config selects files; no --ext
+    "lint:fix": "eslint . --fix",
     "format:check": "prettier --check src",
     "test": "vitest run",
     "test:watch": "vitest",
@@ -56,7 +56,9 @@ await delay(1000);  // promisified delay
 
 ---
 
-## Express boilerplate
+## Express 5 boilerplate
+
+Express 5 forwards rejected promises from async handlers to the error middleware — no `asyncHandler` wrapper needed (Express 4 still needs one).
 
 ```typescript
 // src/api/app.ts
@@ -111,13 +113,14 @@ export async function buildApp(deps: AppDependencies) {
 ## Useful runtime flags
 
 ```bash
-# Node.js 22+ — native TypeScript support (experimental, no type checking)
-node --experimental-strip-types src/index.ts
+# Run TypeScript directly — type stripping is on by default since Node 22.18 / 23.6
+# (erasable syntax only; no type checking — run `tsc --noEmit` separately)
+node src/index.ts
 
-# Native watch mode (Node 18+)
+# Native watch mode
 node --watch src/index.js
 
-# Load env file (Node 20.6+)
+# Load env file (local development)
 node --env-file=.env src/index.js
 
 # Enable source map support for readable stack traces

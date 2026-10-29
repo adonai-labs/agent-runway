@@ -1,16 +1,16 @@
 ---
 name: dotnet-core
-description: .NET and C# implementation guidance — stack-specific. Covers application patterns, infrastructure, observability, testing, security, and API design for .NET 8/9 applications. Use when the user asks how to implement something in .NET, whether C# code is idiomatic, MediatR/EF Core patterns, .NET testing, observability, ASP.NET Core, or Minimal API vs controllers. Invoke via skill discovery or `@dotnet-core` after `agent-runway add dotnet`. Combines with the `architect` skill for design and trade-off reasoning.
+description: .NET and C# implementation guidance — stack-specific. Covers application patterns, infrastructure, observability, testing, security, and API design for .NET 10 (LTS) applications (most guidance also applies to .NET 8/9). Use when the user asks how to implement something in .NET, whether C# code is idiomatic, MediatR/EF Core patterns, .NET testing, observability, ASP.NET Core, or Minimal API vs controllers. Invoke via skill discovery or `@dotnet-core` after `agent-runway add dotnet`. Combines with the `architect` skill for design and trade-off reasoning.
 ---
 
 # .NET Core
 
 ## How to invoke
 
-After `agent-runway add dotnet`, the skill is installed at `.cursor/skills/dotnet-core/`. Use:
+After `agent-runway add dotnet`, the skill is installed into each configured agent's skills directory as `dotnet-core`. Use:
 
 - **Cursor:** `@dotnet-core` or ask a .NET question while editing `*.cs` (rules auto-attach)
-- **Claude Code:** reference `.agent-runway/skills/dotnet-core/SKILL.md` or ask in context of C# files
+- **Claude Code / other agents:** invoke the `dotnet-core` skill by name, or ask in context of C# files
 
 Examples:
 - How should I structure this CQRS handler?

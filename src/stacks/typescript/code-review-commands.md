@@ -26,8 +26,8 @@ All must pass. Document any failures as Critical findings.
 ## Linting & Type Check
 
 ```bash
-npm run lint
-npm run type-check
+npm run lint        # ESLint flat config; never pass --ext
+npx tsc --noEmit
 ```
 
 Or equivalent for your project. All must pass. Document any failures as High findings.
@@ -37,13 +37,13 @@ Or equivalent for your project. All must pass. Document any failures as High fin
 ## Vulnerability Check
 
 ```bash
-npm audit
+npm audit --omit=dev --audit-level=high
 ```
 
 Or for yarn/pnpm:
 
 ```bash
-yarn audit
+yarn npm audit     # Yarn Berry
 pnpm audit
 ```
 

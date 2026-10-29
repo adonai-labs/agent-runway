@@ -21,31 +21,32 @@ Toolchain, `package.json`, and common commands for React applications.
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "react":                    "^18.3",
-    "react-dom":                "^18.3",
-    "react-router-dom":         "^6",
+    "react":                    "^19",
+    "react-dom":                "^19",
+    "react-router":             "^7",
     "@tanstack/react-query":    "^5",
-    "zod":                      "^3",
+    "zod":                      "^4",
     "react-hook-form":          "^7",
-    "@hookform/resolvers":      "^3",
+    "@hookform/resolvers":      "^5",
     "dompurify":                "^3"
   },
   "devDependencies": {
-    "@vitejs/plugin-react":         "^4",
-    "vite":                         "^5",
+    "@vitejs/plugin-react":         "^5",
+    "vite":                         "^7",
     "typescript":                   "^5",
-    "@types/react":                 "^18",
-    "@types/react-dom":             "^18",
-    "@types/dompurify":             "^3",
-    "vitest":                       "^2",
-    "@vitest/coverage-v8":          "^2",
+    "@types/react":                 "^19",
+    "@types/react-dom":             "^19",
+    "vitest":                       "^4",
+    "@vitest/coverage-v8":          "^3",
+    "jsdom":                        "latest",
     "@testing-library/react":       "^16",
     "@testing-library/user-event":  "^14",
     "@testing-library/jest-dom":    "^6",
     "jest-axe":                     "^8",
     "msw":                          "^2",
     "eslint":                       "^9",
-    "@typescript-eslint/eslint-plugin": "^8"
+    "typescript-eslint":            "^8",
+    "eslint-plugin-react-hooks":    "latest"
   }
 }
 ```
@@ -55,16 +56,17 @@ Toolchain, `package.json`, and common commands for React applications.
 ## Vite config
 
 ```ts
-// vite.config.ts
-import { defineConfig } from 'vite';
+// vite.config.ts — defineConfig from 'vitest/config' types the `test` block
+import { defineConfig } from 'vitest/config';
 import react from '@vitejs/plugin-react';
-import path from 'path';
 
 export default defineConfig({
+  // Optional: enable the React Compiler via babel-plugin-react-compiler
+  // plugins: [react({ babel: { plugins: ['babel-plugin-react-compiler'] } })],
   plugins: [react()],
   resolve: {
     alias: {
-      '@': path.resolve(__dirname, './src'),
+      '@': new URL('./src', import.meta.url).pathname,
     },
   },
   test: {
@@ -113,12 +115,13 @@ npx depcheck                      # unused and missing dependencies
 
 | Decision | Recommended | Notes |
 |----------|-------------|-------|
-| Bundler | Vite | Faster dev server; esbuild-based |
+| Bundler | Vite | Fast dev server; native ESM |
 | Test runner | Vitest | Native Vite integration; Jest-compatible API |
 | Component testing | React Testing Library | Behaviour-focused; pairs with Vitest |
 | HTTP mocking | MSW v2 | Intercepts at service worker level; realistic |
-| Forms | react-hook-form + zod | Performant; uncontrolled inputs; type-safe schema |
+| Forms | React 19 Actions (`useActionState`) for simple forms; react-hook-form + zod for complex ones | Type-safe schema validation |
 | Server state | React Query v5 | Fetch, cache, sync; keeps server data out of Zustand |
 | Client state | Zustand | Minimal API; no boilerplate; only when context is insufficient |
-| Routing | react-router-dom v6 | Data router; loader/action pattern for server-rendered data |
+| Routing | react-router v7 (`react-router-dom` merged into `react-router`) | Data/declarative mode for SPAs; loaders/actions |
+| Memoisation | React Compiler | Auto-memoises; avoid manual `useMemo`/`useCallback` when enabled |
 | XSS sanitisation | DOMPurify | Only needed when rendering user-supplied HTML |

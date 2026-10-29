@@ -19,7 +19,7 @@ If scripts differ, run the project-equivalent build and test commands. Failures 
 
 ```bash
 npm run lint
-npm run type-check
+npx tsc --noEmit
 ```
 
 If TypeScript is not used, run the available static checks for the project.
@@ -29,7 +29,7 @@ If TypeScript is not used, run the available static checks for the project.
 ## Dependency and Security Checks
 
 ```bash
-npm audit
+npm audit --omit=dev --audit-level=high
 npm outdated
 ```
 

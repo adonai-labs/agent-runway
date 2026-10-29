@@ -105,15 +105,15 @@ structlog.configure(
 ## Dependency security
 
 ```bash
-# Audit for known vulnerabilities
-pip-audit                        # fast, pip-native
-safety check -r requirements.txt # alternative
+# Audit the project environment for known vulnerabilities.
+# pip-audit exits non-zero when any vulnerability is found, so it blocks CI as-is.
+uv run pip-audit
+
+# Audit a requirements file instead of the environment
+pip-audit -r requirements.txt
 
 # Check for outdated deps
-pip list --outdated
-
-# In CI — fail on high/critical
-pip-audit --fail-on-vuln
+uv tree --outdated
 ```
 
 **Rules:**

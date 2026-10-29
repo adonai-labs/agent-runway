@@ -264,18 +264,26 @@ builder.Services.AddAuthorization(options =>
 
 ## API documentation
 
-Use Swagger/OpenAPI generated from code:
+Use the built-in OpenAPI support (`Microsoft.AspNetCore.OpenApi`, .NET 9+); Swashbuckle is no longer the template default:
 
 ```csharp
-builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen(options =>
+builder.Services.AddOpenApi(options =>
 {
-    options.SwaggerDoc("v1", new OpenApiInfo { Title = "MyApp API", Version = "v1" });
-    options.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme { ... });
+    options.AddDocumentTransformer((document, context, ct) =>
+    {
+        document.Info = new() { Title = "MyApp API", Version = "v1" };
+        return Task.CompletedTask;
+    });
 });
+
+var app = builder.Build();
+if (app.Environment.IsDevelopment())
+{
+    app.MapOpenApi();               // serves /openapi/v1.json
+}
 ```
 
-Annotate endpoints with `ProducesResponseType` and `[Tags]` for organised documentation.
+Use a document transformer to add security schemes; pair with a UI such as Scalar if interactive docs are needed. Annotate endpoints with `ProducesResponseType` and `[Tags]` for organised documentation.
 
 ---
 

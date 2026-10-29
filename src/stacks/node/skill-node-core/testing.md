@@ -16,10 +16,18 @@
 
 | Type | What to test | Tools |
 |------|-------------|-------|
-| **Unit** | Use cases, domain logic, stream transformers, utility functions | Vitest / Jest |
+| **Unit** | Use cases, domain logic, stream transformers, utility functions | Vitest (or `node:test` for zero-dependency packages) |
 | **Integration** | Repositories, queue consumers, HTTP clients against real infra | Vitest + Testcontainers |
 | **API** | HTTP layer — routing, middleware, error mapping, auth | Supertest |
 | **Process** | Startup, shutdown, signal handling, unhandled rejection behaviour | Node child_process |
+
+---
+
+## Runner choice
+
+- **Vitest** is the default — same runner as `typescript-core`, `vi.fn()` mocks, watch mode, coverage
+- **`node:test`** + `node:assert/strict` is a zero-dependency option for libraries and CLIs (`node --test`, with `mock.fn()` from `node:test`)
+- Keep Jest only in projects that already use it
 
 ---
 

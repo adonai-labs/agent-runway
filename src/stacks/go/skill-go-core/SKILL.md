@@ -7,10 +7,10 @@ description: Go implementation guidance — stack-specific. Covers project struc
 
 ## How to invoke
 
-After `agent-runway add go`, the skill is installed at `.cursor/skills/go-core/`. Use:
+After `agent-runway add go`, the skill is installed into each configured agent's skills directory as `go-core`. Use:
 
 - **Cursor:** `@go-core` or ask a Go question while editing `*.go` (rules auto-attach)
-- **Claude Code:** reference `.agent-runway/skills/go-core/SKILL.md` or ask in context of Go files
+- **Claude Code / other agents:** invoke the `go-core` skill by name, or ask in context of Go files
 
 Examples:
 - How should I structure this HTTP service?
@@ -62,5 +62,5 @@ Simplicity is the core Go value. Respect it.
 ## Related
 
 - `architect` — design decisions and ADRs
-- `code-review` — `code-review-searches.md` for Go-specific review passes
-- Rules in `.cursor/rules/` — `go.mdc` auto-attaches on `*.go` files
+- `code-review` — `searches-go.md` and `commands-go.md` (installed into the code-review skill) for stack-specific review passes
+- Rules: `{{rules}}/go.mdc` auto-attaches on `*.go` files

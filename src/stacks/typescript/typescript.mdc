@@ -25,15 +25,17 @@ Enable these `compilerOptions`; do not disable strict mode.
 | `noImplicitReturns` | All code paths must return |
 | `noImplicitOverride` | Require `override` when overriding |
 | `allowUnreachableCode: false` | Error on unreachable code |
+| `verbatimModuleSyntax` | Type-only imports must use `import type`; emitted imports match source |
 
 - Do not use `skipLibCheck: true` unless necessary for legacy dependencies
-- Prefer `moduleResolution: "bundler"` for modern bundlers; `"node16"` for Node
+- Prefer `moduleResolution: "bundler"` for bundled apps; `module`/`moduleResolution: "nodenext"` for code run directly by Node
+- Enable `verbatimModuleSyntax`; for code run via Node's built-in type stripping also enable `erasableSyntaxOnly` (no `enum`, `namespace`, or parameter properties)
 
 ---
 
 ## Path Mapping
 
-- Use `baseUrl: "."` and `paths` for aliases (e.g. `@/*`, `@components/*`, `@utils/*`)
+- Use `paths` for aliases (no `baseUrl` needed) (e.g. `@/*`, `@components/*`, `@utils/*`)
 - Prefer short, consistent aliases over long relative imports
 - For Electron: separate `tsconfig.main.json` and `tsconfig.renderer.json` with distinct `include`/`exclude` and `rootDir`/`outDir`
 - Ensure `paths` resolve correctly in both IDE and build; extend from a base config if shared

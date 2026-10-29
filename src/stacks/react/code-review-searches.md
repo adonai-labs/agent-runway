@@ -1,46 +1,56 @@
 # React-Specific Code Review Searches
 
-These searches complement the universal searches in `code-review/systematic-searches-base.md`.
+These searches complement the universal searches in `code-review/systematic-searches-base.md`. Ripgrep's `ts` type covers `.ts` and `.tsx`; add `--type js` for JavaScript projects.
 
 ---
 
-## Category: Inline Functions in JSX Props
+## Category: Hook Dependency Arrays
 
 ```bash
-rg "onClick=\{.*=>|onChange=\{.*=>|onSubmit=\{.*=>" --type ts
+rg "use(Effect|LayoutEffect|Callback|Memo)\(" -A 5 --type ts
 ```
 
-Low-Medium. Inline arrow functions create new instances on every render. Consider extracting to useCallback for performance in frequently re-rendered components.
+High. Verify dependency arrays are complete and accurate (prefer `eslint-plugin-react-hooks` to catch these). Missing dependencies cause stale closures. If the React Compiler is enabled, question new manual `useMemo` / `useCallback`.
 
 ---
 
-## Category: Missing Dependency Arrays
+## Category: Array Index as Key
 
 ```bash
-rg "useEffect\(|useCallback\(|useMemo\(" -A 5 --type ts
+rg "key=\{\s*(index|idx|i)\s*\}" --type ts
 ```
 
-High. Verify dependency arrays are complete and accurate. Missing dependencies cause stale closures. Extra dependencies cause unnecessary re-renders.
+Medium. Index keys break state and focus when lists are reordered, filtered, or inserted into. Use a stable id from the data.
 
 ---
 
-## Category: Keys on List Items
+## Category: Fetching in useEffect
 
 ```bash
-rg "\.map\(" -A 3 --type ts
+rg -U "useEffect\(\s*\(\)\s*=>\s*\{[^}]*\bfetch\(" --type ts
 ```
 
-Medium. Verify each mapped element has a unique, stable key prop. Using array index as key is an anti-pattern.
+Medium. Ad-hoc fetching in effects misses caching, races, and cancellation. Prefer TanStack Query/SWR, router loaders, or `use()` with a cached promise.
 
 ---
 
 ## Category: Direct State Mutation
 
 ```bash
-rg "\.push\(|\.pop\(|\.splice\(|\.sort\(|\.reverse\(" --type ts --type ts
+rg "\b(state|prev)[\w.]*\.(push|pop|splice|sort|reverse)\(" --type ts
 ```
 
-High. Verify these mutations are not applied to React state directly. State must be immutable - use spread operator or array methods that return new arrays.
+High. State must be immutable — use spread, `toSorted()`, `toReversed()`, or other non-mutating methods.
+
+---
+
+## Category: Legacy APIs (React 19)
+
+```bash
+rg "forwardRef\(|\.Provider\b|ReactDOM\.render\(|react-dom/test-utils|propTypes|defaultProps" --type ts
+```
+
+Low. `ref` is a regular prop in React 19; `<Context>` replaces `<Context.Provider>`; `ReactDOM.render`, `react-dom/test-utils`, and function-component `propTypes`/`defaultProps` are removed.
 
 ---
 
@@ -50,4 +60,4 @@ High. Verify these mutations are not applied to React state directly. State must
 rg "dangerouslySetInnerHTML" --type ts
 ```
 
-Critical. This API exposes XSS risk. Verify content is sanitized with DOMPurify or similar library before rendering.
+Critical. This API exposes XSS risk. Verify content is sanitised with DOMPurify (or equivalent) before rendering.

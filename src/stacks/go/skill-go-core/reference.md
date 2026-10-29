@@ -11,7 +11,7 @@
 ```go
 module github.com/example/my-service
 
-go 1.23
+go 1.25
 
 require (
     golang.org/x/sync v0.7.0
@@ -20,6 +20,7 @@ require (
     go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracehttp v1.26.0
     go.uber.org/zap v1.27.0                  // alternative to slog for high-throughput logging
 )
+// Versions are illustrative — use `go get <module>@latest` and commit go.sum.
 
 require (
     // indirect dependencies — managed by go mod tidy
@@ -69,8 +70,8 @@ go mod verify
 
 | Tool | Purpose | Install |
 |------|---------|---------|
-| `golangci-lint` | Multi-linter (errcheck, govet, staticcheck, …) | `go install github.com/golangci/golangci-lint/cmd/golangci-lint@latest` |
-| `govulncheck` | Known vulnerability scan | `go install golang.org/x/vuln/cmd/govulncheck@latest` |
+| `golangci-lint` | Multi-linter (errcheck, govet, staticcheck, …) | `go install github.com/golangci/golangci-lint/v2/cmd/golangci-lint@latest` |
+| `govulncheck` | Known vulnerability scan | `go install golang.org/x/vuln/cmd/govulncheck@latest` (or pin via `go get -tool`, Go 1.24+) |
 | `testcontainers-go` | Real infra in tests | `go get github.com/testcontainers/testcontainers-go` |
 | `errgroup` | Concurrent goroutines with error propagation | `go get golang.org/x/sync/errgroup` |
 
@@ -79,21 +80,23 @@ go mod verify
 ## golangci-lint config
 
 ```yaml
-# .golangci.yml
-linters:
-  enable:
-    - errcheck       # check that errors are handled
-    - govet          # suspicious code constructs
-    - staticcheck    # comprehensive static analysis
-    - gosimple       # simplification suggestions
-    - ineffassign    # unused assignments
-    - gofmt          # formatting
-    - goimports      # import ordering
+# .golangci.yml — golangci-lint v2 format
+version: "2"
 
-linters-settings:
-  errcheck:
-    check-type-assertions: true
-    check-blank: true
+linters:
+  default: standard            # errcheck, govet, ineffassign, staticcheck (includes gosimple), unused
+  enable:
+    - gosec                    # security checks
+    - errorlint                # correct error wrapping/comparison
+  settings:
+    errcheck:
+      check-type-assertions: true
+      check-blank: true
+
+formatters:
+  enable:
+    - gofmt
+    - goimports
 
 run:
   timeout: 5m

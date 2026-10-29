@@ -7,10 +7,10 @@ description: TypeScript implementation guidance — stack-specific. Covers archi
 
 ## How to invoke
 
-After `agent-runway add typescript`, the skill is installed at `.cursor/skills/typescript-core/`. Use:
+After `agent-runway add typescript`, the skill is installed into each configured agent's skills directory as `typescript-core`. Use:
 
 - **Cursor:** `@typescript-core` or ask a TypeScript question while editing `*.ts` / `*.tsx` (rules auto-attach)
-- **Claude Code:** reference `.agent-runway/skills/typescript-core/SKILL.md` or ask in context of TypeScript files
+- **Claude Code / other agents:** invoke the `typescript-core` skill by name, or ask in context of TypeScript files
 
 Examples:
 - How should I structure this service layer?
@@ -67,5 +67,5 @@ Simplicity first. SOLID, DRY, and Clean Architecture apply at the right scale �
 ## Related
 
 - `architect` — design decisions and ADRs
-- `code-review` — searches-typescript.md for review passes
-- Rules in `.cursor/rules/` — typescript.mdc, api-design-typescript.mdc, code-convention.mdc auto-attach on `*.ts` files
+- `code-review` — `searches-typescript.md` and `commands-typescript.md` (installed into the code-review skill) for stack-specific review passes
+- Rules: `{{rules}}/typescript.mdc`, `{{rules}}/typescript-security.mdc`, and `{{rules}}/code-convention.mdc` auto-attach on `*.ts` / `*.tsx`; `{{rules}}/typescript-testing.mdc` (tests), `{{rules}}/api-design-typescript.mdc` (routes/controllers/handlers), `{{rules}}/dependency-check.mdc` (package manifests)

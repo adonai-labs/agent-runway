@@ -1,6 +1,6 @@
 ---
 description: .NET-specific security standards for ASP.NET Core applications. Covers EF Core injection prevention, ASP.NET Core Identity, JWT validation, Key Vault integration, OWASP mitigations with .NET APIs, and HTTP security headers. Complements engineering-security.mdc.
-globs: **/*.cs,**/*.csproj,**/*.json,**/*.yaml,**/*.yml
+globs: "**/*.cs,**/*.csproj,**/*.json,**/*.yaml,**/*.yml"
 alwaysApply: false
 ---
 
@@ -138,14 +138,19 @@ app.Use(async (context, next) =>
 ## Insecure deserialisation
 
 - Never use `BinaryFormatter`; it is a known remote code execution vector
-- Use `System.Text.Json` with strict options:
+- Use `System.Text.Json` with strict options — reject unknown members, keep property matching case-sensitive:
 
 ```csharp
-var options = new JsonSerializerOptions
+// .NET 8+: per-type or per-options strictness
+var options = new JsonSerializerOptions(JsonSerializerDefaults.Web)
 {
-    PropertyNameCaseInsensitive = true,
-    UnknownTypeHandling = JsonUnknownTypeHandling.JsonNode  // .NET 6+
+    PropertyNameCaseInsensitive = false,
+    UnmappedMemberHandling = JsonUnmappedMemberHandling.Disallow,
 };
+
+// .NET 9+: preset that disallows unmapped/duplicate properties, enforces
+// required/non-nullable members, and is case-sensitive
+var strict = JsonSerializerOptions.Strict;
 ```
 
 - Do not deserialise untrusted JSON into dynamic types or `object`

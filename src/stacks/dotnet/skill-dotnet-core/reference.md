@@ -4,13 +4,30 @@ Quick reference for .NET Core development: NuGet packages, CLI commands, common 
 
 ---
 
+## Target framework
+
+Target .NET 10 (LTS, November 2025) for new projects:
+
+```xml
+<PropertyGroup>
+  <TargetFramework>net10.0</TargetFramework>
+  <Nullable>enable</Nullable>
+  <ImplicitUsings>enable</ImplicitUsings>
+  <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+</PropertyGroup>
+```
+
+Pin the SDK with `global.json` and centralise package versions in `Directory.Packages.props`. OpenAPI documents come from the built-in `Microsoft.AspNetCore.OpenApi` package (`AddOpenApi()` / `MapOpenApi()`); Swashbuckle is no longer in the templates.
+
+---
+
 ## Key NuGet packages
 
 ### Application layer
 
 | Package | Purpose |
 |---------|---------|
-| `MediatR` | CQRS mediator, pipeline behaviours |
+| `Mediator` (source generator, MIT) or direct handlers | CQRS dispatch, pipeline behaviours — `MediatR` v13+ requires a commercial licence |
 | `FluentValidation` | Fluent validation rules |
 | `FluentValidation.DependencyInjectionExtensions` | DI registration of validators |
 | `ErrorOr` or `OneOf` | Discriminated union result types |
@@ -51,7 +68,7 @@ Quick reference for .NET Core development: NuGet packages, CLI commands, common 
 |---------|---------|
 | `xunit` | Test framework |
 | `Moq` or `NSubstitute` | Mocking |
-| `FluentAssertions` | Readable assertions |
+| `Shouldly` or `AwesomeAssertions` | Readable assertions — `FluentAssertions` v8+ requires a commercial licence |
 | `Microsoft.AspNetCore.Mvc.Testing` | WebApplicationFactory integration tests |
 | `Testcontainers` | Real database/service containers in tests |
 | `Respawn` | Database reset between tests |
@@ -63,7 +80,7 @@ Quick reference for .NET Core development: NuGet packages, CLI commands, common 
 
 ```bash
 # Create solution and projects
-dotnet new sln -n MyApp
+dotnet new sln -n MyApp          # .NET 10 SDK creates MyApp.slnx by default
 dotnet new webapi -n MyApp.Api
 dotnet new classlib -n MyApp.Application
 dotnet new classlib -n MyApp.Domain

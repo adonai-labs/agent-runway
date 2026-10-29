@@ -31,8 +31,7 @@ npm run lint
 Or for specific linters:
 
 ```bash
-npx eslint src/
-npx eslint --ext .tsx,.ts src/
+npx eslint .          # flat config (eslint.config.js) decides which files are linted; --ext is not supported
 ```
 
 All must pass. Document any failures as High findings.
@@ -53,15 +52,13 @@ All type errors must be resolved. Document any failures as High findings.
 
 ## React-Specific Checks
 
-If using Create React App or similar tools:
-
 ```bash
-# Check for unused dependencies
+# Unused / missing dependencies
 npx depcheck
 
-# Check bundle size
-npm run build -- --stats
-# Then analyze with webpack-bundle-analyzer
+# Bundle size (Vite): build, then inspect the output sizes
+npx vite build
+npx vite-bundle-visualizer   # optional treemap of the production bundle
 ```
 
 Review bundle size and dependency usage. Large bundles affect performance.

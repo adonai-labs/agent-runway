@@ -12,24 +12,24 @@
 [package]
 name    = "my-service"
 version = "0.1.0"
-edition = "2021"
+edition = "2024"            # requires Rust 1.85+
 
 [dependencies]
 # Web
-axum       = { version = "0.7", features = ["macros"] }
+axum       = { version = "0.8", features = ["macros"] }   # path params use "/{id}", not "/:id"
 tokio      = { version = "1", features = ["full"] }
-tower      = { version = "0.4" }
-tower-http = { version = "0.5", features = ["trace", "cors"] }
+tower      = { version = "0.5" }
+tower-http = { version = "0.6", features = ["trace", "cors"] }
 
 # Serialisation
 serde         = { version = "1", features = ["derive"] }
 serde_json    = "1"
 
 # Database
-sqlx = { version = "0.7", features = ["postgres", "runtime-tokio", "uuid", "chrono", "macros"] }
+sqlx = { version = "0.8", features = ["postgres", "runtime-tokio", "uuid", "chrono", "macros"] }
 
 # Error handling
-thiserror = "1"
+thiserror = "2"
 anyhow    = "1"
 
 # Validation

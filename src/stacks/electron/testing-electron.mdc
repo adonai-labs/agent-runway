@@ -1,127 +1,81 @@
 ---
-description: Testing patterns for Electron applications — main process, renderer process, IPC, and E2E testing. Extends core/rules/testing.mdc with Electron-specific guidance.
-globs: "**/*.test.*,**/*.spec.*,**/tests/**,**/test/**,**/__tests__/**"
+description: Testing patterns for Electron applications — main-process services and IPC handlers, preload bridges, renderer code against a mocked bridge, and Playwright E2E. Extends core/rules/testing.mdc with Electron-specific guidance.
+globs: "**/e2e/**,**/*.e2e.ts,**/electron/**/*.test.ts,**/src/main/**/*.test.ts,**/src/preload/**/*.test.ts"
 alwaysApply: false
 ---
 
 # Testing Electron Applications
 
-Extends `core/rules/testing.mdc` with Electron-specific testing patterns.
+Extends `core/rules/testing.mdc`. Examples use Vitest; renderer component testing follows the React rules.
 
 ---
 
-## Main Process Testing
+## Main Process
 
-- Mock Electron APIs (`app`, `BrowserWindow`, `ipcMain`) for unit tests
-- Test window creation, lifecycle, and configuration in isolation
-- Test IPC handler registration and message routing
-- Mock file system operations and native modules
-- Test app lifecycle events (ready, window-all-closed, etc.)
+- Keep business logic in plain services with no `electron` import; unit test them directly
+- Export IPC handler functions separately from their `ipcMain.handle` registration so they can be called with a fake event
+- Mock `electron` only at the boundary (`app`, `BrowserWindow`, `dialog`)
 
-**Example:**
 ```typescript
-import { BrowserWindow } from 'electron';
-
-jest.mock('electron', () => ({
-  BrowserWindow: jest.fn(),
-  app: {
-    on: jest.fn(),
-    quit: jest.fn(),
-  },
+vi.mock('electron', () => ({
+  app: { on: vi.fn(), quit: vi.fn(), getPath: vi.fn(() => '/tmp') },
+  BrowserWindow: vi.fn(),
+  ipcMain: { handle: vi.fn() },
 }));
-```
 
----
+it('rejects an untrusted sender', async () => {
+  const event = { senderFrame: { url: 'https://evil.example' } } as unknown as IpcMainInvokeEvent;
+  await expect(saveFileHandler(event, 'data')).rejects.toThrow('Untrusted sender');
+});
 
-## Renderer Process Testing
-
-- Mock `window.electronAPI` or `contextBridge` exports
-- Avoid real Electron APIs in unit tests
-- Test components independently of IPC
-- Mock preload script exports
-- Use JSDOM or similar for DOM testing
-
-**Example:**
-```typescript
-// Mock window.electronAPI
-global.window.electronAPI = {
-  send: jest.fn(),
-  on: jest.fn(),
-};
-```
-
----
-
-## IPC Testing
-
-- **Handler validation**: Test that IPC handlers validate input types and shapes
-- **Return values**: Assert handlers return expected data structures
-- **Error handling**: Test error scenarios and ensure proper error messages
-- **Bidirectional**: Test both `ipcMain.handle` and `ipcRenderer.invoke` paths
-- **Security**: Verify handlers check permissions before performing sensitive operations
-
-**Example:**
-```typescript
-// Test IPC handler
-const result = await ipcMain.handlers.get('get-user')(event, userId);
-expect(result).toMatchObject({ id: userId, name: expect.any(String) });
-```
-
----
-
-## React + Electron Testing
-
-- **Custom hooks**: Use `@testing-library/react-hooks` with `renderHook` and `act`
-- **Context providers**: Wrap components under test with Electron context providers
-- **Electron APIs in hooks**: Mock Electron APIs before invoking hooks that call them
-- **Event listeners**: Test cleanup of IPC event listeners on unmount
-
-**Example:**
-```typescript
-import { renderHook } from '@testing-library/react-hooks';
-
-const { result } = renderHook(() => useElectronStore(), {
-  wrapper: ElectronProvider,
+it('rejects an oversized payload', async () => {
+  await expect(saveFileHandler(trustedEvent, 'x'.repeat(2_000_000))).rejects.toThrow();
 });
 ```
 
 ---
 
-## End-to-End Testing
+## IPC Handlers
 
-- Use **Playwright** for Electron E2E testing (Spectron is deprecated)
-- Launch app with test configuration
-- Test full user flows including main/renderer interaction
-- Test IPC communication in real scenarios
-- Test native menus, dialogs, and system integrations
-
-**Example:**
-```typescript
-import { _electron as electron } from 'playwright';
-
-const app = await electron.launch({ args: ['main.js'] });
-const window = await app.firstWindow();
-await window.click('[data-testid="save-button"]');
-```
+- Test sender validation and payload validation for every handler (valid, wrong type, too large, wrong origin)
+- Assert structured error results, not just "throws"
+- Test that window-scoped listeners are removed when the window closes
 
 ---
 
-## Common Pitfalls
+## Preload and Renderer
 
-- ❌ Don't use real Electron in unit tests (slow, brittle)
-- ❌ Don't forget to clean up IPC listeners
-- ❌ Don't test IPC and business logic together
-- ✅ Mock Electron APIs at the boundary
-- ✅ Test IPC handlers separately from business logic
-- ✅ Use integration tests for IPC communication paths
+- Renderer code talks to `window.api` only — mock it in tests (`vi.stubGlobal('api', { saveFile: vi.fn() })`)
+- Do not import `electron` from renderer tests; if you need to, the renderer is coupled to Node
+- Test hooks that subscribe to IPC events clean up on unmount (`renderHook` from `@testing-library/react`)
+
+---
+
+## End-to-End (Playwright)
+
+- Use Playwright's Electron support (Spectron is dead); launch the **built** app
+- Use an isolated `userData` directory per test run
+- Cover critical flows end to end, plus security smoke checks (e.g. `window.require` and `process` are undefined in the renderer)
+
+```typescript
+import { _electron as electron, expect, test } from '@playwright/test';
+
+test('saves a document', async () => {
+  const app = await electron.launch({ args: ['out/main/index.js'], env: { ...process.env, APP_ENV: 'test' } });
+  const window = await app.firstWindow();
+  expect(await window.evaluate(() => typeof (window as any).require)).toBe('undefined');
+  await window.getByRole('button', { name: 'Save' }).click();
+  await expect(window.getByText('Saved')).toBeVisible();
+  await app.close();
+});
+```
 
 ---
 
 ## Checklist
 
-- [ ] Main process tests mock Electron APIs
-- [ ] Renderer tests mock preload/contextBridge exports
-- [ ] IPC handlers validate input and handle errors
-- [ ] Custom hooks clean up listeners on unmount
-- [ ] E2E tests use Playwright (not Spectron)
-- [ ] Test data isolation between test runs
+- [ ] Services tested without Electron; handlers tested with fake events
+- [ ] Every handler has sender- and payload-validation tests
+- [ ] Renderer tests mock `window.api`, never `electron`
+- [ ] Playwright E2E against the built app with isolated user data
+- [ ] Renderer security smoke test (no Node globals)

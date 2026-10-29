@@ -41,7 +41,6 @@ Linting should pass with no errors. Document failures as High findings.
 ## Format Check
 
 ```bash
-black --check .
 ruff format --check .
 ```
 
@@ -52,7 +51,7 @@ Code must be formatted. Document failures as Medium findings.
 ## Security Audit
 
 ```bash
-# Dependency vulnerabilities
+# Dependency vulnerabilities (non-zero exit when any are found)
 pip-audit
 
 # Static security analysis

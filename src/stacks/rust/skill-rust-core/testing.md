@@ -51,7 +51,6 @@ mod tests {
         error: Option<OrderError>,
     }
 
-    #[async_trait::async_trait]
     impl OrderRepository for FakeOrderRepo {
         async fn find_by_id(&self, _id: &OrderId) -> Result<Option<Order>, OrderError> {
             Ok(None)

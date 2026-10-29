@@ -50,16 +50,12 @@ async fn place_order(dto: PlaceOrderDto) -> Result<OrderId> {
 ## Trait-based dependency injection
 
 ```rust
-// domain/ports.rs
-use async_trait::async_trait;
-
-#[async_trait]
+// domain/ports.rs — native async fn in traits (Rust 1.75+); no async_trait needed
 pub trait OrderRepository: Send + Sync {
     async fn find_by_id(&self, id: &OrderId) -> Result<Option<Order>, OrderError>;
     async fn save(&self, order: &Order) -> Result<(), OrderError>;
 }
 
-#[async_trait]
 pub trait EventPublisher: Send + Sync {
     async fn publish(&self, event: DomainEvent) -> Result<(), OrderError>;
 }
@@ -88,7 +84,7 @@ impl<R: OrderRepository, E: EventPublisher> OrderService<R, E> {
 }
 ```
 
-Prefer generics (`<R: Trait>`) when the concrete type is known at compile time (tests, wiring in `main`). Use `Arc<dyn Trait>` in `AppState` when the concrete type varies at runtime (e.g. different backends per tenant).
+Prefer generics (`<R: Trait>`) when the concrete type is known at compile time (tests, wiring in `main`). Native `async fn` in traits is **not** object-safe: when you need `Arc<dyn Trait>` (e.g. different backends per tenant), use `#[async_trait]` on that trait only. If generic code must prove the returned future is `Send` (e.g. spawned tasks), declare the method as `fn save(&self, o: &Order) -> impl Future<Output = Result<(), OrderError>> + Send;` or use `#[trait_variant::make(Send)]`.
 
 ---
 
@@ -96,9 +92,11 @@ Prefer generics (`<R: Trait>`) when the concrete type is known at compile time (
 
 ```rust
 // main.rs
+type AppOrderService = OrderService<SqlxOrderRepo, NatsEventPublisher>;
+
 #[derive(Clone)]
 struct AppState {
-    order_service: Arc<dyn OrderServiceTrait + Send + Sync>,
+    order_service: Arc<AppOrderService>,   // concrete type: no dyn, no async_trait
     config:        Arc<Config>,
 }
 
@@ -117,6 +115,7 @@ async fn main() -> anyhow::Result<()> {
 
     let app = Router::new()
         .route("/orders", post(place_order))
+        .route("/orders/{id}", get(get_order))   // axum 0.8 path syntax
         .with_state(state);
 
     axum::serve(TcpListener::bind("0.0.0.0:8080").await?, app).await?;

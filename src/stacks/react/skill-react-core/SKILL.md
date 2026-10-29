@@ -1,16 +1,18 @@
 ---
 name: react-core
-description: React implementation guidance — stack-specific. Covers project structure, component patterns, state management, testing with React Testing Library, security, accessibility, and performance for React 18+ applications. Use when the user asks about React-specific structure, hooks, state decisions, testing strategy, or production concerns. Invoke via @react-core after `agent-runway add react`. Combines with typescript-core for type patterns and architect for design reasoning.
+description: React implementation guidance — stack-specific. Covers project structure, component patterns, state management, testing with React Testing Library, security, accessibility, and performance for React 19 SPAs (Vite). Use when the user asks about React-specific structure, hooks, state decisions, testing strategy, or production concerns. Invoke via @react-core after `agent-runway add react`. Combines with typescript-core for type patterns and architect for design reasoning.
 ---
 
 # React Core
 
+Scope: React 19 SPA (Vite). Server Components and SSR are framework concerns (Next.js, React Router framework mode) and out of scope here.
+
 ## How to invoke
 
-After `agent-runway add react`, the skill is installed at `.cursor/skills/react-core/`. Use:
+After `agent-runway add react`, the skill is installed into each configured agent's skills directory as `react-core`. Use:
 
 - **Cursor:** `@react-core` or ask a React question while editing `*.tsx` / `*.jsx` (rules auto-attach)
-- **Claude Code:** reference `.agent-runway/skills/react-core/SKILL.md` or ask in context of React files
+- **Claude Code / other agents:** invoke the `react-core` skill by name, or ask in context of React files
 
 Examples:
 - How should I structure this feature's components?
@@ -30,7 +32,7 @@ Simplicity first. React's mental model is already a good guide — follow it rat
 - Composition over configuration; small, focused components over large multi-responsibility ones
 - SOLID applies: SRP means one reason to render, DIP via props and hooks rather than direct coupling
 - DRY for business logic in hooks and services; duplication in JSX is often acceptable
-- Measure before memoising — `React.memo`, `useMemo`, and `useCallback` have a cost; profile first
+- Measure before memoising — prefer the React Compiler; add `React.memo`, `useMemo`, `useCallback` by hand only when profiling shows benefit
 - Accessibility is not optional — semantic HTML and ARIA are part of the implementation, not an afterthought
 
 ---
@@ -64,5 +66,5 @@ Simplicity first. React's mental model is already a good guide — follow it rat
 ## Related
 
 - `typescript-core` — type patterns for props, hooks, and service layers
-- `code-review` — `code-review-searches.md` for React-specific review passes
-- Rules in `.cursor/rules/` — `react.mdc` and `testing-react.mdc` auto-attach on `*.tsx` files
+- `code-review` — `searches-react.md` and `commands-react.md` (installed into the code-review skill) for stack-specific review passes
+- Rules: `{{rules}}/react.mdc` auto-attaches on `*.tsx` / `*.jsx`; `{{rules}}/testing-react.mdc` on test files

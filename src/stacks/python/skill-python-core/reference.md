@@ -25,7 +25,7 @@ dependencies = [
     "opentelemetry-instrumentation-fastapi>=0.44b0",
 ]
 
-[project.optional-dependencies]
+[dependency-groups]              # PEP 735; `uv add --dev` writes here
 dev = [
     "pytest>=8",
     "pytest-asyncio>=0.23",
@@ -34,16 +34,18 @@ dev = [
     "testcontainers[postgres]>=4",
     "pip-audit>=2.7",
     "mypy>=1.9",
-    "ruff>=0.4",
+    "ruff>=0.8",
 ]
 
 [build-system]
 requires = ["hatchling"]
 build-backend = "hatchling.build"
 
-[tool.ruff]
+[tool.ruff]                      # ruff is both linter and formatter — no black/isort/flake8
 line-length = 100
-select = ["E", "F", "I", "UP", "B", "SIM"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "SIM", "S"]   # S = bandit security rules
 ignore = ["E501"]
 
 [tool.mypy]
@@ -64,9 +66,8 @@ addopts = "--strict-markers -q"
 # Install uv
 curl -LsSf https://astral.sh/uv/install.sh | sh
 
-# Create project and venv
+# Create project (uv creates and manages .venv automatically)
 uv init my-service
-uv venv
 
 # Add dependency
 uv add fastapi
@@ -78,7 +79,11 @@ uv add --dev pytest pytest-asyncio
 uv lock
 
 # Install from lock (CI)
-uv sync --frozen
+uv sync --locked
+
+# Run tools inside the project environment
+uv run pytest
+uv run ruff check .
 ```
 
 ---
@@ -87,14 +92,14 @@ uv sync --frozen
 
 ```bash
 # Run dev server
-uvicorn src.main:app --reload
+uv run uvicorn src.main:app --reload
 
 # Type check
-mypy src
+uv run mypy src
 
-# Lint and format
-ruff check src
-ruff format src
+# Lint and format (ruff only)
+uv run ruff check src
+uv run ruff format src
 
 # Tests
 pytest                                   # all tests
@@ -102,12 +107,11 @@ pytest tests/unit                        # unit only
 pytest -m "not integration"             # skip integration
 pytest --cov=src --cov-report=term-missing
 
-# Security audit
-pip-audit
-pip-audit --fail-on-vuln               # CI blocking check
+# Security audit — exits non-zero when vulnerabilities are found (CI blocking by default)
+uv run pip-audit
 
 # Dependency check
-uv pip list --outdated
+uv tree --outdated
 ```
 
 ---

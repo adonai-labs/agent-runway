@@ -7,10 +7,10 @@ description: Node.js implementation guidance — stack-specific. Covers architec
 
 ## How to invoke
 
-After `agent-runway add node`, the skill is installed at `.cursor/skills/node-core/`. Use:
+After `agent-runway add node`, the skill is installed into each configured agent's skills directory as `node-core`. Use:
 
 - **Cursor:** `@node-core` or ask a Node.js question while editing `*.js` / `*.ts` (rules auto-attach)
-- **Claude Code:** reference `.agent-runway/skills/node-core/SKILL.md` or ask in context of Node.js files
+- **Claude Code / other agents:** invoke the `node-core` skill by name, or ask in context of Node.js files
 
 Examples:
 - How should I structure this Express service?
@@ -44,8 +44,8 @@ Simplicity first. Add complexity only when the problem demands it.
 
 - Project structure scaled to complexity
 - Async patterns: async/await, streams, graceful shutdown
-- Express / Fastify API patterns — middleware, routing, error handling
-- Testing: Supertest, Testcontainers, process and queue testing
+- Express 5 / Fastify API patterns — middleware, routing, error handling
+- Testing: Vitest + Supertest (`node:test` for zero-dependency packages), Testcontainers, process and queue testing
 - Security: OWASP Node, child process safety, SSRF, secrets
 - Observability: Pino, OpenTelemetry, health checks
 
@@ -57,7 +57,7 @@ Simplicity first. Add complexity only when the problem demands it.
 |------|----------|
 | [architecture.md](architecture.md) | Project structure, layering, hexagonal patterns, module system |
 | [patterns.md](patterns.md) | Async patterns, streams, EventEmitter, worker threads, queues |
-| [testing.md](testing.md) | Jest + Supertest, Testcontainers, worker and stream testing |
+| [testing.md](testing.md) | Vitest + Supertest (or `node:test`), Testcontainers, worker and stream testing |
 | [security.md](security.md) | OWASP Node, child process safety, dependency audit, secrets |
 | [observability.md](observability.md) | Pino, OpenTelemetry, health checks, memory and CPU profiling |
 | [reference.md](reference.md) | Common CLI commands, package.json scripts, useful built-ins |
@@ -68,5 +68,5 @@ Simplicity first. Add complexity only when the problem demands it.
 
 - `typescript-core` — type safety, tsconfig, TypeScript patterns
 - `architect` — design decisions and ADRs
-- `code-review` — searches-node.md for review passes
-- Rules in `.cursor/rules/` — node.mdc auto-attaches on Node.js files
+- `code-review` — `searches-node.md` and `commands-node.md` (installed into the code-review skill) for stack-specific review passes
+- Rules: `{{rules}}/node.mdc` (runtime), `{{rules}}/node-architecture.mdc` and `{{rules}}/node-security.mdc` (server code), `{{rules}}/node-testing.mdc` (tests)

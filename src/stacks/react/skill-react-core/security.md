@@ -53,7 +53,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 
 const schema = z.object({
-  email: z.string().email('Invalid email'),
+  email: z.email('Invalid email'),          // zod 4 top-level format
   amount: z.number().positive().max(10_000, 'Amount too large'),
 });
 

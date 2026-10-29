@@ -1,5 +1,5 @@
 ---
-description: Node.js testing guidelines — API testing with Supertest, process lifecycle testing, queue consumer testing, stream testing, and Testcontainers for real infrastructure. Applied when working with Node.js test files.
+description: Node.js testing guidelines — Vitest (or node:test) with Supertest for API tests, process lifecycle testing, queue consumer testing, stream testing, and Testcontainers for real infrastructure. Applied when working with Node.js test files.
 globs: "**/*.test.ts,**/*.spec.ts,**/*.test.js,**/*.spec.js,**/vitest.config.*,**/jest.config.*"
 alwaysApply: false
 ---
@@ -7,6 +7,13 @@ alwaysApply: false
 # Node.js Testing Guidelines
 
 Applied when working with Node.js test files and configuration. Australian English spelling throughout.
+
+---
+
+## Runner
+
+- Default to **Vitest** (shared with the TypeScript rules); `node:test` + `node:assert` is a zero-dependency option for libraries and CLIs
+- Keep Jest only where already configured
 
 ---
 
@@ -45,10 +52,8 @@ Applied when working with Node.js test files and configuration. Australian Engli
 
 ## Integration Testing
 
-- Use **Testcontainers** for real PostgreSQL, Redis, Kafka, or other infrastructure dependencies
-- Start containers in `beforeAll`, truncate state in `beforeEach`, stop in `afterAll`
-- Set a generous timeout on `beforeAll` (≥60s) — container startup in CI can be slow
-- Do not use in-memory SQLite as a Postgres proxy — behaviour differs
+- Follow `typescript-testing.mdc` (Testcontainers, real databases, lifecycle hooks)
+- Set a generous `beforeAll` timeout (≥60s) — container startup in CI can be slow
 
 ---
 

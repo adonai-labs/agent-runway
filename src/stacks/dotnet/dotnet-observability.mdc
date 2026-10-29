@@ -1,6 +1,6 @@
 ---
 description: .NET-specific observability standards for ASP.NET Core APIs. Covers structured logging with ILogger, OpenTelemetry tracing, correlation IDs, health endpoints, ProblemDetails error responses, and middleware patterns. Complements dotnet-architecture.mdc.
-globs: **/*.cs,**/*.csproj,**/*.json,**/*.yaml,**/*.yml
+globs: "**/*.cs,**/*.csproj,**/*.json,**/*.yaml,**/*.yml"
 alwaysApply: false
 ---
 

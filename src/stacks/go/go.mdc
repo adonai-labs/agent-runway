@@ -23,7 +23,7 @@ Directives for Go development. Apply when working with `.go` files or `go.mod`.
 - Never start a goroutine without a clear stop/lifecycle; avoid goroutine leaks.
 - Protect shared state with a mutex or a channel — not both for the same data.
 - Run tests with `-race`; data races are bugs even if they don't fail today.
-- Do not capture loop variables by reference in goroutines without copying (pre-1.22 semantics).
+- Declare `go 1.22` or later in `go.mod`: each loop iteration gets its own variable, so `v := v` copies are no longer needed (remove them in new code).
 
 ## Interfaces and API Design
 

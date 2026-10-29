@@ -17,7 +17,7 @@ High. Each usage should be justified. Prefer pattern matching or ? operator for 
 ## Category: Unsafe Blocks
 
 ```bash
-rg "unsafe " --type rust
+rg "\bunsafe\s*(\{|fn|impl|trait|extern)" --type rust
 ```
 
 Critical. Every unsafe block requires documentation explaining why it's safe. Unsafe code should be minimal and well-justified.
@@ -94,6 +94,26 @@ Low-Medium. String concatenation with + creates intermediate allocations. Use fo
 
 ---
 
+## Category: Legacy axum Path Syntax (axum 0.8)
+
+```bash
+rg "\.route\(\s*\"[^\"]*/[:*]\w+" --type rust
+```
+
+High. axum 0.8 uses `/{id}` and `/{*rest}`; `/:id` and `/*rest` routes panic at startup. Update when upgrading from 0.7.
+
+---
+
+## Category: Unneeded async_trait
+
+```bash
+rg "#\[async_trait(::async_trait)?\]" --type rust
+```
+
+Low. Native `async fn` in traits is stable since Rust 1.75. Keep `async_trait` only for traits used as `dyn Trait`.
+
+---
+
 ## Category: Lifetime Issues
 
 Manual review required. Look for:
@@ -116,7 +136,7 @@ Medium. Public items should have doc comments (///). Check if public API is docu
 ## Category: Deprecated Items
 
 ```bash
-rg "#\[deprecated\]" --type rust
+rg "#\[deprecated" --type rust
 ```
 
 Medium. Check if deprecated items are still in use. Plan migration path.

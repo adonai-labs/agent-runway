@@ -1,71 +1,69 @@
 ---
-description: Node.js security guidelines — child process safety, SSRF prevention, HTTP security headers, body limits, secrets hygiene, and dependency auditing. Applied when working on Node.js services and backend code.
-globs: "**/*.js,**/*.cjs,**/*.mjs,**/*.ts"
+description: Node.js server security — child process safety, SSRF prevention, path traversal, HTTP security headers, body limits, rate limiting, and secrets handling. Applied to Node.js server, API, route, and middleware code. Language-level input validation and auth token rules live in typescript-security.mdc.
+globs: "**/server/**,**/api/**,**/routes/**,**/controllers/**,**/handlers/**,**/middleware/**,**/infrastructure/**"
 alwaysApply: false
 ---
 
 # Node.js Security Guidelines
 
-Applied when working with Node.js service code. Australian English spelling throughout.
+Runtime and HTTP-server security for Node.js. Australian English spelling throughout.
 
 ---
 
 ## Child Process Safety
 
-- Use `execFile` (not `exec`) — it does not invoke a shell, eliminating shell injection
-- Never interpolate user-controlled data into command strings
-- Validate file paths before passing to child processes; reject paths containing `..` or null bytes
-- Set an execution timeout on all child processes; terminate on timeout
+- Use `execFile`/`spawn` with an argument array — never `exec` or `shell: true` with interpolated input
+- Validate executables and arguments against an allow-list
+- Set a `timeout` and `maxBuffer` on every child process
+
+---
+
+## File System and Paths
+
+- Resolve user-supplied paths with `path.resolve(base, input)` and verify the result starts with `base + path.sep`
+- Reject null bytes; never pass user input to `require()`/`import()`
+- Avoid `eval`, `new Function`, and `vm` for untrusted code — `vm` is not a sandbox
 
 ---
 
 ## SSRF Prevention
 
-- Validate all user-supplied URLs against an explicit allowlist of permitted hostnames before making outbound HTTP requests
-- Block requests to loopback (`127.x.x.x`, `::1`, `localhost`) and RFC 1918 private ranges
-- Use a dedicated HTTP client with configurable redirect limits; disable open redirects for internal clients
+- Validate user-supplied URLs against an allow-list of hostnames and schemes (`https:` only)
+- Resolve DNS and block loopback, link-local (`169.254.0.0/16`, cloud metadata), and RFC 1918 ranges
+- Limit redirects and re-validate each redirect target
 
 ---
 
-## HTTP Security Headers
+## HTTP Hardening
 
-- Apply `helmet()` middleware to every Express/Fastify app; configure CSP explicitly
-- Set a strict body size limit (`express.json({ limit: '100kb' })`) to prevent memory exhaustion
-- Enable `HSTS` in production; enforce HTTPS at the load balancer and in the app
-
----
-
-## Rate Limiting and Abuse Prevention
-
-- Apply rate limiting to all public-facing endpoints; use stricter limits on auth endpoints
-- Use `express-rate-limit` or Fastify equivalents; back with Redis for distributed deployments
-- Return `429 Too Many Requests` with a `Retry-After` header
+- Apply `helmet()` (Express) or `@fastify/helmet`; configure CSP explicitly for HTML responses
+- Limit body size (`express.json({ limit: '100kb' })`, Fastify `bodyLimit`)
+- Set server timeouts (`headersTimeout`, `requestTimeout`) to resist slow-loris attacks
+- Enforce HTTPS and HSTS in production; set `trust proxy` correctly behind a load balancer
+- Rate-limit public endpoints (stricter on auth); back with Redis when running multiple instances; return `429` with `Retry-After`
 
 ---
 
-## Secrets and Environment
+## Secrets
 
-- Validate all required environment variables at startup with Zod; fail fast on missing secrets
-- Never log secrets, tokens, or password fields; configure Pino `redact` for sensitive paths
-- Use a secrets manager (AWS Secrets Manager, Vault, Doppler) in production — not `.env` files
+- Load secrets from a secrets manager (AWS Secrets Manager, Vault, Azure Key Vault) in production; `.env` files for local development only
+- Configure Pino `redact` for authorisation headers, cookies, and password/token fields
+- Run with `NODE_ENV=production` so frameworks hide error details
 
 ---
 
 ## Dependency Security
 
-- Run `npm audit --audit-level=high` in CI as a blocking step
-- Use `npm ci` in CI for reproducible installs
-- Review and pin critical dependency versions; use Dependabot or Renovate for automated updates
-- Regularly remove unused packages (`npx depcheck`)
+- `npm ci` in CI; `npm audit --audit-level=high` as a blocking step
+- Renovate or Dependabot for updates; review install scripts of new dependencies (`npm install --ignore-scripts` for untrusted packages)
 
 ---
 
 ## Checklist
 
-- [ ] `execFile` used for all child processes; no user input in command strings
-- [ ] Outbound HTTP requests to user-supplied URLs validated against an allowlist
-- [ ] `helmet()` applied; CSP configured; body size limited
+- [ ] No shell interpolation; child processes have timeouts
+- [ ] User-supplied paths and URLs validated (traversal, SSRF)
+- [ ] `helmet`, body limits, and server timeouts configured
 - [ ] Rate limiting on public and auth endpoints
+- [ ] Secrets from a manager; redacted in logs
 - [ ] `npm audit --audit-level=high` passes in CI
-- [ ] Secrets validated at startup; never logged or committed
-- [ ] Stack traces not returned in API responses (`NODE_ENV=production`)

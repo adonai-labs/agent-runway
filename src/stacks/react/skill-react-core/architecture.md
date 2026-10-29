@@ -69,7 +69,7 @@ src/
 ```tsx
 // src/App.tsx — route-level code splitting as the default
 import { lazy, Suspense } from 'react';
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { BrowserRouter, Routes, Route } from 'react-router';
 
 const Orders   = lazy(() => import('./features/orders/OrdersPage'));
 const Settings = lazy(() => import('./features/settings/SettingsPage'));

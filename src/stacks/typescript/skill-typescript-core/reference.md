@@ -73,8 +73,8 @@ import { placeOrder } from './use-cases/place-order.js';
     "build": "tsc --project tsconfig.json",
     "build:watch": "tsc --project tsconfig.json --watch",
     "typecheck": "tsc --noEmit",
-    "lint": "eslint src --ext .ts",
-    "lint:fix": "eslint src --ext .ts --fix",
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix",
     "format": "prettier --write src",
     "format:check": "prettier --check src",
     "test": "vitest run",
@@ -91,14 +91,18 @@ import { placeOrder } from './use-cases/place-order.js';
 ## ESLint configuration (flat config)
 
 ```typescript
-// eslint.config.ts
+// eslint.config.ts — ESLint 9 flat config; files are selected here, not with --ext
+import { defineConfig } from 'eslint/config';
+import js from '@eslint/js';
 import tseslint from 'typescript-eslint';
 
-export default tseslint.config(
-  ...tseslint.configs.strictTypeChecked,
+export default defineConfig(
+  { ignores: ['dist/**'] },
+  js.configs.recommended,
+  tseslint.configs.strictTypeChecked,
   {
     languageOptions: {
-      parserOptions: { project: true, tsconfigRootDir: import.meta.dirname },
+      parserOptions: { projectService: true, tsconfigRootDir: import.meta.dirname },
     },
     rules: {
       '@typescript-eslint/no-explicit-any': 'error',
@@ -106,7 +110,7 @@ export default tseslint.config(
       '@typescript-eslint/no-misused-promises': 'error',
       '@typescript-eslint/consistent-type-imports': ['error', { prefer: 'type-imports' }],
     },
-  }
+  },
 );
 ```
 

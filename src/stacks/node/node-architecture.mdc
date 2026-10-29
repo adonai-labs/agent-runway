@@ -1,67 +1,68 @@
 ---
-description: Node.js architecture guidelines — project structure, layering, hexagonal adapters, config validation, and process entry point patterns. Applied when working on Node.js service architecture and structure.
-globs: "**/*.js,**/*.cjs,**/*.mjs,**/*.ts,**/package.json"
+description: Node.js service architecture — layered/hexagonal structure, dependency direction, multiple entry points, composition root, and module boundaries. Applied to Node.js service entry points, layer directories, and package manifests. Runtime concerns (config, lifecycle) live in node.mdc.
+globs: "**/src/main.ts,**/src/index.ts,**/src/server.ts,**/src/app.ts,**/src/main.js,**/src/index.js,**/domain/**,**/application/**,**/infrastructure/**,**/package.json"
 alwaysApply: false
 ---
 
 # Node.js Architecture Guidelines
 
-Applied when working with Node.js service architecture. Australian English spelling throughout.
+Structure for Node.js services. Australian English spelling throughout.
 
 ---
 
 ## Project Structure
 
-- Separate concerns into `domain/`, `application/`, `infrastructure/`, `api/`, and `shared/` — dependency flow is always inward
-- Keep business rules (domain and application) independent of Express, Fastify, or any HTTP framework
-- Centralise all `process.env` access in a typed config module; validate at startup with Zod
+Start flat for small services. When the service grows, separate by layer with dependencies pointing inward:
+
+```text
+src/
+  domain/          # entities, value objects, domain errors — no framework imports
+  application/     # use cases, port interfaces
+  infrastructure/  # DB, queue, HTTP-client adapters implementing ports
+  api/             # HTTP routes/handlers mapping requests to use cases
+  config.ts        # typed, validated config (see node.mdc)
+  main.ts          # composition root
+```
+
+For larger codebases, group by feature first (`src/orders/{domain,application,...}`).
 
 ---
 
 ## Layer Rules
 
-- **Domain:** no external dependencies; entities, value objects, port interfaces
-- **Application:** depends on domain only; defines port interfaces infrastructure must implement
-- **Infrastructure:** implements ports; contains DB adapters, queue clients, HTTP clients
-- **API:** depends on application; maps HTTP to use cases and results to responses
-- **Shared:** cross-cutting utilities; imports nothing from domain, application, or infrastructure
+- **Domain:** no external dependencies
+- **Application:** depends on domain only; defines ports infrastructure must implement
+- **Infrastructure:** implements ports; the only layer that imports DB drivers or SDKs
+- **API / workers:** depend on application; translate transport ↔ use case
+- Enforce boundaries with `eslint-plugin-boundaries` or `dependency-cruiser` once the codebase is large enough to drift
 
 ---
 
 ## Multiple Entry Points (Hexagonal)
 
-When a service has both HTTP and queue consumers, treat each as an independent adapter calling the same application use cases. The core (domain + application) never knows which adapter triggered it.
+HTTP servers, queue consumers, cron jobs, and CLIs are independent adapters calling the same use cases. The core never knows which adapter triggered it. Give each its own entry file (`main-http.ts`, `main-worker.ts`) sharing one composition function.
 
 ---
 
-## Config
+## Composition Root
 
-- Use Zod to validate and type all environment variables at startup — fail fast on missing config
-- Export a single typed `config` object; never read `process.env` directly outside the config module
-- Do not default-fill secrets; a missing secret at startup is safer than silent misconfiguration
-
----
-
-## Process Entry Point
-
-- Compose the application from the outside in: validate config → create infrastructure → wire use cases → start server/workers → register shutdown handlers
-- Handle `SIGTERM` and `SIGINT` for graceful shutdown
-- Exit with non-zero code on startup failure via an uncaught rejection handler on `main()`
+- Wire from the outside in: load config → create infrastructure clients → construct use cases → start server/workers → register shutdown hooks
+- Use plain constructor/function injection; a DI container is optional, not required
+- Keep `main.ts` free of business logic
+- Export a `buildApp(deps)` factory so tests can construct the app with fakes without listening on a port
 
 ---
 
-## Module System
+## Module Boundaries
 
-- Prefer ESM (`"type": "module"`) for new projects
-- Use `node:` prefix for built-in imports — explicit and avoids naming conflicts
-- Avoid barrel `index.ts` files in large codebases — they slow type-checking and break tree-shaking
+- One public entry per feature/module; avoid deep imports across features
+- Avoid barrel `index.ts` re-exports of everything in large codebases — they slow type-checking and create cycles
 
 ---
 
 ## Checklist
 
-- [ ] Entry point composes app from outside in; no logic in `index.ts` other than wiring
-- [ ] Config validated with Zod at startup; single typed export
-- [ ] SIGTERM / SIGINT handlers registered; graceful shutdown closes all infrastructure
-- [ ] Layer boundaries respected; domain and application import nothing from infrastructure
-- [ ] Built-in imports use `node:` prefix
+- [ ] Dependencies point inward; domain/application import no infrastructure or framework code
+- [ ] Each entry point is a thin adapter over shared use cases
+- [ ] Composition root wires everything; `buildApp(deps)` testable without `listen()`
+- [ ] No circular dependencies between features

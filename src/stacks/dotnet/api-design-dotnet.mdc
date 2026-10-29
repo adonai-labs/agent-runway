@@ -47,6 +47,8 @@ public class UsersController : ControllerBase
 
 ## MediatR CQRS Pattern
 
+> MediatR v13+ is commercially licensed. The same command/query shape works with direct handler injection or the MIT `Mediator` source generator.
+
 ### Commands and Queries
 
 ```csharp

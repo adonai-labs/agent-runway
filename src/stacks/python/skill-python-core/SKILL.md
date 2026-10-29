@@ -7,10 +7,10 @@ description: Python implementation guidance — stack-specific. Covers project s
 
 ## How to invoke
 
-After `agent-runway add python`, the skill is installed at `.cursor/skills/python-core/`. Use:
+After `agent-runway add python`, the skill is installed into each configured agent's skills directory as `python-core`. Use:
 
 - **Cursor:** `@python-core` or ask a Python question while editing `*.py` (rules auto-attach)
-- **Claude Code:** reference `.agent-runway/skills/python-core/SKILL.md` or ask in context of Python files
+- **Claude Code / other agents:** invoke the `python-core` skill by name, or ask in context of Python files
 
 Examples:
 - How should I structure this FastAPI service?
@@ -61,5 +61,5 @@ Simplicity first. Python's culture favours readability and directness — respec
 ## Related
 
 - `architect` — design decisions and ADRs
-- `code-review` — searches-python.md for review passes
-- Rules in `.cursor/rules/` — python.mdc auto-attaches on `*.py` files
+- `code-review` — `searches-python.md` and `commands-python.md` (installed into the code-review skill) for stack-specific review passes
+- Rules: `{{rules}}/python.mdc` auto-attaches on `*.py` files

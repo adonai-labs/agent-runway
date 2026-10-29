@@ -1,6 +1,6 @@
 ---
 description: .NET-specific testing standards for ASP.NET Core applications. Covers test naming, project structure, unit and integration testing patterns, builders, Testcontainers, and WebApplicationFactory. Complements engineering-principles.mdc and dotnet-architecture.mdc.
-globs: **/*.cs,**/*.csproj
+globs: "**/*.cs,**/*.csproj"
 alwaysApply: false
 ---
 
@@ -47,7 +47,7 @@ Each test project references only the layer it tests; it does not skip layers.
 
 ## Unit tests — handlers and domain
 
-- Use `xUnit` with `FluentAssertions`; avoid raw `Assert.*` calls
+- Use `xUnit` with a fluent assertion library; avoid raw `Assert.*` calls. FluentAssertions v8+ is commercial — prefer `Shouldly` or `AwesomeAssertions` (MIT fork with the same `.Should()` API used in the examples below)
 - No infrastructure dependencies; stub with `NSubstitute` or `Moq`
 - Arrange/Act/Assert sections separated by a blank line; no inline comments labelling them
 

@@ -7,10 +7,10 @@ description: Rust implementation guidance — stack-specific. Covers project str
 
 ## How to invoke
 
-After `agent-runway add rust`, the skill is installed at `.cursor/skills/rust-core/`. Use:
+After `agent-runway add rust`, the skill is installed into each configured agent's skills directory as `rust-core`. Use:
 
 - **Cursor:** `@rust-core` or ask a Rust question while editing `*.rs` (rules auto-attach)
-- **Claude Code:** reference `.agent-runway/skills/rust-core/SKILL.md` or ask in context of Rust files
+- **Claude Code / other agents:** invoke the `rust-core` skill by name, or ask in context of Rust files
 
 Examples:
 - How should I structure this Axum service?
@@ -63,5 +63,5 @@ Rust's type system and ownership model enforce correctness — let them do the w
 ## Related
 
 - `architect` — design decisions and ADRs
-- `code-review` — Rust-specific review searches
-- Rules in `.cursor/rules/` — `rust-development.mdc` auto-attaches on `*.rs` files
+- `code-review` — `searches-rust.md` and `commands-rust.md` (installed into the code-review skill) for stack-specific review passes
+- Rules: `{{rules}}/rust-development.mdc` auto-attaches on `*.rs` files

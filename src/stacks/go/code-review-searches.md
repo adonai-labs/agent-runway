@@ -7,7 +7,7 @@ These searches complement the universal searches in `code-review/systematic-sear
 ## Category: Ignored Errors
 
 ```bash
-rg ", _ :?=\s" --type go
+rg ",\s*_\s*:?=\s|^\s*_\s*=\s*\w+[\w.]*\(" --type go
 ```
 
 High. Discarding an error with `_` hides failures. Each instance must be justified; otherwise handle or wrap the error.
@@ -74,23 +74,13 @@ High. Verify every opened resource has a matching `defer Close()`. Leaks exhaust
 
 ---
 
-## Category: Loop Variable Capture
-
-```bash
-rg "for .*:= range" --type go
-```
-
-Medium. On Go < 1.22, capturing the loop variable in a goroutine or closure shares one variable. Copy it inside the loop.
-
----
-
 ## Category: Insecure Randomness
 
 ```bash
-rg "math/rand" --type go
+rg "\"math/rand(/v2)?\"" --type go
 ```
 
-Medium. `math/rand` is not cryptographically secure. Use `crypto/rand` for tokens, secrets, or IDs.
+Medium. `math/rand` and `math/rand/v2` are not cryptographically secure. Use `crypto/rand` for tokens, secrets, or IDs.
 
 ---
 

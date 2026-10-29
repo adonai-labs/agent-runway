@@ -88,6 +88,8 @@ let s3 = &s2;  // borrow; s2 still valid
 - Avoid blocking in async code — use `tokio::task::spawn_blocking` for CPU-bound or blocking work.
 - Prefer `#[tokio::main]` for application entry points; configure the runtime (e.g. `multi_thread`) as needed.
 - Use `?` in async functions — they work with `Result`; ensure error types implement `From` for propagation.
+- Use native `async fn` in traits (Rust 1.75+); reach for `async_trait` only when you need `dyn Trait` (native async trait methods are not object-safe).
+- axum 0.8: path parameters use `/{id}` (and `/{*rest}` for wildcards); `/:id` no longer works.
 
 ---
 
@@ -107,7 +109,7 @@ let s3 = &s2;  // borrow; s2 still valid
 - Release profile — use `opt-level = 3`, `lto = true`, `codegen-units = 1`, `panic = "abort"` for smaller, faster binaries.
 - Feature flags — use `[features]` and `#[cfg(feature = "name")]` for optional functionality; avoid default features that pull in heavy deps.
 - Dev-dependencies — put test/bench-only crates (e.g. `criterion`, `proptest`) in `[dev-dependencies]`.
-- Edition — use `edition = "2021"` for new projects.
+- Edition — use `edition = "2024"` (Rust 1.85+) for new projects; migrate older crates with `cargo fix --edition`.
 
 ---
 

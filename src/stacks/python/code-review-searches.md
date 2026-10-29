@@ -27,7 +27,7 @@ High. Mutable default arguments are shared across calls. Default to `None` and c
 ## Category: SQL Injection Risk
 
 ```bash
-rg "execute\(.*(%|\+|f\")" --type py
+rg "(execute|executemany|text)\(\s*(f[\"']|.*(%\s|\+|\.format\())" --type py
 ```
 
 Critical. String formatting in SQL enables injection. Use parameterised queries.

@@ -12,7 +12,7 @@ Directives for Python development. Apply when working with `.py` files, `pyproje
 
 ## Code Style
 
-- Follow PEP 8; let `black` and `ruff` enforce formatting rather than hand-tuning.
+- Follow PEP 8; use `ruff` for both linting (`ruff check`) and formatting (`ruff format`) — no separate black/isort/flake8.
 - Use `snake_case` for functions and variables, `PascalCase` for classes, `UPPER_SNAKE` for constants.
 - Keep functions small and single-purpose; prefer early returns over deep nesting.
 - Prefer comprehensions over manual loops for simple transformations, but not at the cost of readability.
@@ -41,7 +41,7 @@ Directives for Python development. Apply when working with `.py` files, `pyproje
 ## Packaging and Imports
 
 - Prefer absolute imports; avoid wildcard `from x import *`.
-- Pin dependencies in `pyproject.toml`/lock files; keep runtime and dev dependencies separate.
+- Manage projects with `uv` (`uv add`, `uv lock`, `uv sync --locked`); commit `uv.lock`; keep dev tools in `[dependency-groups]`.
 - Avoid mutable default arguments — use `None` and create the value inside the function.
 
 ## Testing

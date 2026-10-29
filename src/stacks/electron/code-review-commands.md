@@ -1,19 +1,23 @@
 # Electron Code Review Commands
 
 ## Build and type check
-```
+
+```bash
 npm run build
-npm run typecheck
+npx tsc --noEmit
 ```
 
 ## Tests
-```
+
+```bash
 npm test
-npm run test:e2e
+npm run test:e2e          # Playwright against the built app
 ```
 
 ## Security audit
-```
-npm audit
-npx electronegativity -i . -o findings.csv
+
+```bash
+npm audit --omit=dev --audit-level=high
+npx @doyensec/electronegativity -i . -o findings.csv   # static Electron misconfiguration scan
+npx @electron/fuses read --app <path-to-packaged-app>   # verify fuses in the packaged build
 ```

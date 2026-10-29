@@ -1,5 +1,5 @@
 ---
-description: React best practices — component patterns, hooks, state management, context, performance, testing, accessibility, and modern React 18+ features. Applied when working with React components.
+description: React best practices — component patterns, hooks, state management, context, performance, testing, accessibility, and modern React 19 features. Applied when working with React components.
 globs: "**/*.tsx,**/*.jsx"
 alwaysApply: false
 ---
@@ -60,17 +60,22 @@ src/
 - Name hooks with `use` prefix; return a tuple or object.
 - Return `[value, setter] as const` for useState-like APIs.
 - Include cleanup in `useEffect` (event listeners, timers, subscriptions).
-- Use `useCallback` for returned callbacks to avoid unnecessary re-renders.
+- Wrap returned callbacks in `useCallback` only when the project does not use the React Compiler and consumers are memoised.
 - Document dependencies correctly in `useEffect` arrays.
 
 ---
 
-## Modern React 18+
+## Modern React (19)
 
-- **useTransition**: Mark non-urgent updates (e.g. search results) so the UI stays responsive.
-- **useDeferredValue**: Defer expensive children when input changes rapidly.
-- **Server Components** (React 18.3+): Use for data fetching and static content; mark client components with `'use client'`.
-- **Automatic batching**: State updates are batched; no need for `unstable_batchedUpdates`.
+- **Actions**: Pass async functions to `<form action={fn}>` or `startTransition`; React tracks pending state, errors, and resets forms.
+- **useActionState**: Manage form/action result + pending state (`const [state, formAction, isPending] = useActionState(fn, initial)`).
+- **useOptimistic**: Show optimistic UI while an action is in flight; it reverts automatically on failure.
+- **use**: Read a promise (inside `<Suspense>`) or a context conditionally; do not create the promise during render — pass it in from a loader or cache.
+- **ref as a prop**: Function components receive `ref` as a normal prop; do not add new `forwardRef` wrappers.
+- **`<Context>` as provider**: Render `<ThemeContext value={...}>` instead of `<ThemeContext.Provider>`.
+- **React Compiler**: When enabled, it memoises components and values automatically — do not add manual `useMemo`/`useCallback`/`React.memo` by default.
+- **useTransition / useDeferredValue**: Keep the UI responsive during non-urgent updates.
+- **Server Components** (stable in React 19, framework-provided e.g. Next.js/React Router framework mode): Use for data fetching and static content; mark client components with `'use client'`. Plain Vite SPAs are client-only.
 
 ---
 
@@ -86,7 +91,7 @@ src/
 
 ## Context with Performance Optimisation
 
-- Wrap the context value in `useMemo` to avoid unnecessary re-renders.
+- Memoise the context value (`useMemo`) unless the React Compiler is enabled.
 - Split contexts by update frequency (e.g. theme vs. user data).
 - Prefer small, focused contexts over one large context.
 - Provide a custom hook (e.g. `useTheme`) that throws if used outside the provider.
@@ -102,19 +107,21 @@ const value = useMemo(() => ({ theme, toggleTheme }), [theme]);
 - **Prop drilling**: Extract to Context or composition; avoid passing props through many levels.
 - **Direct DOM manipulation**: Let React manage the DOM.
 - **Mutating state**: Use `setState` or the updater function; never mutate `state` directly.
-- **Over-memoising**: Do not wrap simple components in `React.memo`; profile first.
+- **Over-memoising**: Do not wrap simple components in `React.memo`; profile first (or let the React Compiler handle it).
+- **New `forwardRef` usage**: Accept `ref` as a prop instead (React 19).
 - **Storing derived data in state**: Compute on render or use `useMemo` when expensive.
 - **Missing `useEffect` dependencies**: Include all values used inside the effect.
-- **Inline object/function creation as props**: Use `useMemo`/`useCallback` when passing to memoised children.
+- **Fetching in `useEffect` by default**: Prefer a server-state library (TanStack Query, SWR), router loaders, or `use()` with a cached promise.
 
 ---
 
 ## Performance Directives
 
+- **React Compiler first**: If enabled, avoid manual memoisation; the guidance below applies to codebases without it.
 - **React.memo**: Use for components that re-render often with the same props; skip for cheap renders.
 - **useMemo**: Use for expensive computations; avoid for trivial work.
 - **useCallback**: Use when passing callbacks to memoised children; avoid for inline handlers.
-- Use virtualisation (`react-window`, `react-virtualized`) for long lists.
+- Use virtualisation (`react-window`, TanStack Virtual) for long lists.
 - Debounce or throttle high-frequency inputs (search, scroll).
 - Clean up subscriptions, listeners, and timers in `useEffect` return.
 
@@ -169,9 +176,10 @@ const Dashboard = lazy(() => import('./pages/Dashboard'));
 - [ ] Components are functional with typed props
 - [ ] Hooks follow naming and cleanup conventions
 - [ ] State choice (local/context/external) is appropriate
-- [ ] Context values are memoised; contexts are split by concern
+- [ ] Contexts are split by concern; values memoised (or React Compiler enabled)
 - [ ] No prop drilling, direct DOM manipulation, or state mutation
-- [ ] Memoisation used only where profiling shows benefit
+- [ ] Memoisation used only where profiling shows benefit; no new `forwardRef`
+- [ ] Forms/mutations use Actions (`useActionState`, `useOptimistic`) where appropriate
 - [ ] Routes and heavy components are lazy-loaded
 - [ ] Tests use React Testing Library and assert behaviour
 - [ ] Semantic HTML and ARIA used for accessibility

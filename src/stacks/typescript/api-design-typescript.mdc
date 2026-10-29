@@ -1,391 +1,145 @@
 ---
-description: API Design for TypeScript — Express, NestJS, Fastify patterns, middleware, validation, and error handling. Extends core/rules/api-design.mdc with TypeScript-specific guidance.
-globs: "**/*.ts,**/routes/**,**/controllers/**,**/handlers/**"
+description: API design for TypeScript HTTP services — Express 5, Fastify, NestJS handler patterns, Zod request validation, typed errors with Problem Details, OpenAPI, rate limiting, and CORS. Extends core/rules/api-design.mdc. Applied to route, controller, and handler code.
+globs: "**/routes/**,**/controllers/**,**/handlers/**,**/api/**,**/*.controller.ts,**/*.routes.ts,**/*.router.ts"
 alwaysApply: false
 ---
+# API Design for TypeScript
 
-# API Design for TypeScript/Node.js
+Extends `core/rules/api-design.mdc`. Runtime concerns (process lifecycle, config, logging) live in the Node rules; type-level patterns live in `typescript.mdc`.
 
-Extends `core/rules/api-design.mdc` with TypeScript and Node.js specific patterns.
+## Framework choice
 
----
+| Framework | Use when |
+|-----------|----------|
+| Express 5 | Simple services, large middleware ecosystem. Rejected promises from async handlers are forwarded to the error handler natively. |
+| Fastify | Throughput matters; built-in JSON Schema validation and serialisation (use `fastify-type-provider-zod` for Zod). |
+| NestJS | Large teams wanting opinionated modules, DI, and decorators. |
 
-## Framework Selection
+Examples below target **Express 5**. On Express 4, wrap async handlers (`(fn) => (req, res, next) => fn(req, res, next).catch(next)`) or use `express-async-errors`.
 
-### Express (Simple, flexible)
+## Thin handlers
+
+Handlers parse input, call one service/use case, and map the result. No business logic, no SQL.
 
 ```typescript
-import express, { Request, Response, NextFunction } from 'express';
-
-const app = express();
-
-app.get('/api/users/:id', async (req: Request, res: Response, next: NextFunction) => {
-  try {
-    const user = await userService.getUser(parseInt(req.params.id));
-    res.json(user);
-  } catch (error) {
-    next(error);
-  }
+router.get('/users/:id', async (req, res) => {
+  const { id } = IdParams.parse(req.params);
+  const user = await userService.getUser(id);   // throws NotFoundError
+  res.json(toUserResponse(user));               // map domain -> DTO; never leak entities
 });
 ```
 
-### NestJS (Enterprise, opinionated)
+## Validate every input with Zod
 
-```typescript
-@Controller('users')
-export class UsersController {
-  constructor(private readonly usersService: UsersService) {}
-
-  @Get(':id')
-  @ApiResponse({ status: 200, type: UserDto })
-  @ApiResponse({ status: 404, description: 'User not found' })
-  async getUser(@Param('id', ParseIntPipe) id: number): Promise<UserDto> {
-    return this.usersService.findOne(id);
-  }
-}
-```
-
-### Fastify (Fast, low overhead)
-
-```typescript
-import Fastify from 'fastify';
-
-const fastify = Fastify({ logger: true });
-
-fastify.get<{ Params: { id: string } }>('/api/users/:id', async (request, reply) => {
-  const user = await userService.getUser(parseInt(request.params.id));
-  return user;
-});
-```
-
----
-
-## Type-Safe Request/Response
-
-### Zod Validation
+Validate `params`, `query`, and `body` at the boundary; derive types from schemas.
 
 ```typescript
 import { z } from 'zod';
 
-const CreateUserSchema = z.object({
-  email: z.string().email().max(255),
+const IdParams = z.object({ id: z.coerce.number().int().positive() });
+const CreateUserBody = z.object({
+  email: z.email().max(255),
   name: z.string().min(2).max(100),
-  age: z.number().int().min(18).optional(),
 });
+type CreateUserBody = z.infer<typeof CreateUserBody>;
 
-type CreateUserDto = z.infer<typeof CreateUserSchema>;
-
-// Middleware
-const validate = (schema: z.ZodSchema) => {
-  return (req: Request, res: Response, next: NextFunction) => {
-    try {
-      schema.parse(req.body);
-      next();
-    } catch (error) {
-      if (error instanceof z.ZodError) {
-        res.status(400).json({ errors: error.errors });
-      }
-    }
-  };
+const validateBody = <T extends z.ZodType>(schema: T): RequestHandler => (req, _res, next) => {
+  const result = schema.safeParse(req.body);
+  if (!result.success) return next(new ValidationError(z.flattenError(result.error).fieldErrors));
+  req.body = result.data;
+  next();
 };
 
-// Usage
-app.post('/api/users', validate(CreateUserSchema), async (req, res) => {
-  const userData = req.body as CreateUserDto;
-  // ...
+router.post('/users', validateBody(CreateUserBody), async (req, res) => {
+  const user = await userService.create(req.body as CreateUserBody);
+  res.status(201).location(`/users/${user.id}`).json(toUserResponse(user));
 });
 ```
 
-### io-ts (Runtime type checking)
+## Typed errors and one error handler
 
 ```typescript
-import * as t from 'io-ts';
-import { isRight } from 'fp-ts/Either';
-
-const User = t.type({
-  id: t.number,
-  email: t.string,
-  name: t.string,
-});
-
-type User = t.TypeOf<typeof User>;
-
-const result = User.decode(req.body);
-if (isRight(result)) {
-  const user: User = result.right;
-  // ...
-} else {
-  res.status(400).json({ errors: result.left });
-}
-```
-
----
-
-## Error Handling
-
-### Custom Error Classes
-
-```typescript
-class AppError extends Error {
-  constructor(
-    public statusCode: number,
-    public message: string,
-    public isOperational = true
-  ) {
+export class AppError extends Error {
+  constructor(readonly status: number, message: string, readonly code: string) {
     super(message);
-    Error.captureStackTrace(this, this.constructor);
+    this.name = new.target.name;
+  }
+}
+export class NotFoundError extends AppError {
+  constructor(resource: string) { super(404, `${resource} not found`, 'not_found'); }
+}
+export class ValidationError extends AppError {
+  constructor(readonly errors: Record<string, string[] | undefined>) {
+    super(400, 'Validation failed', 'validation_failed');
   }
 }
 
-class NotFoundError extends AppError {
-  constructor(resource: string) {
-    super(404, `${resource} not found`);
-  }
-}
-
-class ValidationError extends AppError {
-  constructor(public errors: Record<string, string[]>) {
-    super(400, 'Validation failed');
-  }
-}
-```
-
-### Global Error Handler
-
-```typescript
-const errorHandler = (
-  err: Error,
-  req: Request,
-  res: Response,
-  next: NextFunction
-) => {
+// Register last. Responds with RFC 9457 Problem Details.
+export const errorHandler: ErrorRequestHandler = (err, req, res, _next) => {
   if (err instanceof AppError) {
-    return res.status(err.statusCode).json({
-      status: 'error',
-      message: err.message,
+    res.status(err.status).type('application/problem+json').json({
+      type: `about:blank`, title: err.message, status: err.status, code: err.code,
       ...(err instanceof ValidationError && { errors: err.errors }),
     });
+    return;
   }
-
-  // Log unexpected errors
-  console.error(err);
-
-  res.status(500).json({
-    status: 'error',
-    message: 'Internal server error',
-  });
-};
-
-app.use(errorHandler);
-```
-
----
-
-## Middleware Patterns
-
-### Async Handler Wrapper
-
-```typescript
-type AsyncHandler = (
-  req: Request,
-  res: Response,
-  next: NextFunction
-) => Promise<void>;
-
-const asyncHandler = (fn: AsyncHandler) => {
-  return (req: Request, res: Response, next: NextFunction) => {
-    Promise.resolve(fn(req, res, next)).catch(next);
-  };
-};
-
-// Usage
-app.get('/api/users/:id', asyncHandler(async (req, res) => {
-  const user = await userService.getUser(parseInt(req.params.id));
-  res.json(user);
-}));
-```
-
-### Authentication Middleware
-
-```typescript
-interface AuthRequest extends Request {
-  user?: { id: number; email: string };
-}
-
-const authenticate = async (
-  req: AuthRequest,
-  res: Response,
-  next: NextFunction
-) => {
-  const token = req.headers.authorization?.replace('Bearer ', '');
-
-  if (!token) {
-    throw new AppError(401, 'No token provided');
-  }
-
-  try {
-    const payload = jwt.verify(token, process.env.JWT_SECRET!);
-    req.user = payload as { id: number; email: string };
-    next();
-  } catch {
-    throw new AppError(401, 'Invalid token');
-  }
+  req.log?.error({ err }, 'unhandled error');
+  res.status(500).type('application/problem+json').json({ title: 'Internal Server Error', status: 500 });
 };
 ```
 
----
+- Never send stack traces or internal messages for 5xx responses
+- Map domain errors to status codes in one place, not in each handler
 
-## Response Helpers
-
-```typescript
-class ApiResponse {
-  static success<T>(res: Response, data: T, statusCode = 200) {
-    return res.status(statusCode).json({
-      status: 'success',
-      data,
-    });
-  }
-
-  static error(res: Response, message: string, statusCode = 500) {
-    return res.status(statusCode).json({
-      status: 'error',
-      message,
-    });
-  }
-
-  static paginated<T>(
-    res: Response,
-    data: T[],
-    page: number,
-    limit: number,
-    total: number
-  ) {
-    return res.json({
-      status: 'success',
-      data,
-      pagination: {
-        page,
-        limit,
-        total,
-        pages: Math.ceil(total / limit),
-      },
-    });
-  }
-}
-```
-
----
-
-## OpenAPI / Swagger
-
-### Express with Swagger
+## Authentication middleware
 
 ```typescript
-import swaggerJsdoc from 'swagger-jsdoc';
-import swaggerUi from 'swagger-ui-express';
-
-const swaggerOptions = {
-  definition: {
-    openapi: '3.0.0',
-    info: {
-      title: 'API Documentation',
-      version: '1.0.0',
-    },
-  },
-  apis: ['./src/routes/*.ts'],
+export const authenticate: RequestHandler = async (req, _res, next) => {
+  const token = req.headers.authorization?.match(/^Bearer (.+)$/)?.[1];
+  if (!token) throw new AppError(401, 'Missing token', 'unauthenticated');
+  req.user = await verifyAccessToken(token);   // validates signature, alg, iss, aud, exp
+  next();
 };
-
-const swaggerSpec = swaggerJsdoc(swaggerOptions);
-app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
-
-/**
- * @swagger
- * /api/users/{id}:
- *   get:
- *     summary: Get user by ID
- *     parameters:
- *       - in: path
- *         name: id
- *         required: true
- *         schema:
- *           type: integer
- */
 ```
 
-### NestJS with Swagger
+Augment `Express.Request` via declaration merging (`declare global { namespace Express { interface Request { user?: AuthUser } } }`) instead of casting.
 
-```typescript
-@ApiTags('users')
-@Controller('users')
-export class UsersController {
-  @Get(':id')
-  @ApiOperation({ summary: 'Get user by ID' })
-  @ApiParam({ name: 'id', type: Number })
-  @ApiResponse({ status: 200, type: UserDto })
-  async getUser(@Param('id') id: number) {}
-}
+## Responses
 
-// In main.ts
-const config = new DocumentBuilder()
-  .setTitle('API')
-  .setVersion('1.0')
-  .build();
-const document = SwaggerModule.createDocument(app, config);
-SwaggerModule.setup('api-docs', app, document);
-```
+- Plural nouns, no verbs in paths: `GET /orders`, `POST /orders`, `GET /orders/{id}`
+- `201` + `Location` for creates, `204` for deletes, `202` for accepted async work
+- Paginate collections: `{ data, page: { cursor | page, limit, total? } }`; cap `limit`
+- Do not wrap every success in `{ status: 'success' }`; HTTP status already carries it
 
----
+## OpenAPI
 
-## Rate Limiting
+Generate the spec from the same schemas used for validation so they cannot drift:
+
+- Zod: `@asteasolutions/zod-to-openapi` or `zod-openapi`
+- Fastify: `@fastify/swagger` from route schemas
+- NestJS: `@nestjs/swagger` decorators / CLI plugin
+
+Serve the document in non-production environments or publish it as a build artefact.
+
+## Rate limiting and CORS
 
 ```typescript
 import rateLimit from 'express-rate-limit';
-
-const limiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 100, // limit each IP to 100 requests per windowMs
-  message: 'Too many requests, please try again later.',
-  standardHeaders: true,
-  legacyHeaders: false,
-});
-
-app.use('/api/', limiter);
-
-// Different limits for different routes
-const authLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000,
-  max: 5, // 5 attempts
-});
-
-app.post('/api/auth/login', authLimiter, loginHandler);
-```
-
----
-
-## CORS Configuration
-
-```typescript
 import cors from 'cors';
 
-app.use(cors({
-  origin: process.env.NODE_ENV === 'production'
-    ? ['https://yourapp.com']
-    : ['http://localhost:3000'],
-  credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'],
-  allowedHeaders: ['Content-Type', 'Authorization'],
-}));
+app.use('/api/', rateLimit({ windowMs: 15 * 60_000, limit: 100, standardHeaders: 'draft-8', legacyHeaders: false }));
+app.post('/api/auth/login', rateLimit({ windowMs: 15 * 60_000, limit: 5 }), loginHandler);
+
+app.use(cors({ origin: config.CORS_ORIGINS, credentials: true }));   // explicit allow-list; never '*' with credentials
 ```
 
----
+Use a shared store (e.g. Redis) for rate limits when running more than one instance.
 
 ## Checklist
 
-- [ ] Request/response types are validated with Zod or io-ts
-- [ ] Error handling uses custom error classes
-- [ ] Global error handler returns consistent format
-- [ ] Async handlers wrap async route handlers
-- [ ] Authentication middleware is type-safe
-- [ ] API documentation with Swagger/OpenAPI
-- [ ] Rate limiting protects against abuse
-- [ ] CORS is configured for production
+- [ ] Params, query, and body validated with Zod; types inferred from schemas
+- [ ] Handlers are thin; domain entities mapped to response DTOs
+- [ ] Typed error classes; single error handler returning Problem Details
+- [ ] Express 5 (or async wrapper on Express 4) so async errors reach the handler
+- [ ] OpenAPI generated from validation schemas
+- [ ] Rate limiting on public and auth endpoints; CORS allow-list from config

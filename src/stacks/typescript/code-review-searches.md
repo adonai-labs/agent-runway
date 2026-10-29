@@ -1,143 +1,103 @@
 # TypeScript-Specific Code Review Searches
 
-These searches complement the universal searches in `code-review/systematic-searches-base.md`.
+These searches complement the universal searches in `code-review/systematic-searches-base.md`. Ripgrep's `ts` type covers `.ts`, `.tsx`, `.mts`, and `.cts`. React-specific passes live in the React stack.
 
 ---
 
 ## Category: Any Type Usage
 
 ```bash
-rg "\bany\b" --type ts
+rg ":\s*any\b|<any>|as any\b|any\[\]" --type ts
 ```
 
-High. Using `any` defeats TypeScript's type safety. Use `unknown` and narrow, or define proper types.
+High. `any` defeats type safety. Use `unknown` and narrow, or define proper types.
 
 ---
 
-## Category: Type Assertions without Validation
+## Category: Double Assertions
 
 ```bash
-rg "as \w+|<\w+>" --type ts
+rg "as unknown as\b" --type ts
 ```
 
-Medium. Review each assertion. Prefer type guards or runtime validation (Zod, io-ts).
+High. Forces an unrelated type onto a value. Replace with a type guard or schema validation (Zod).
+
+---
+
+## Category: Assertions on Untrusted Data
+
+```bash
+rg "(JSON\.parse\([^)]*\)|\.json\(\)\)?|req\.(body|query|params))\s+as\s+\w+" --type ts
+```
+
+High. Parsed JSON and request input must be validated at runtime, not asserted.
 
 ---
 
 ## Category: Non-null Assertions
 
 ```bash
-rg "!" --type ts
+rg "[\w)\]]!(\.|\[|\))" --type ts
 ```
 
-Medium. Review usage of `!` operator. Prefer optional chaining (`?.`) and explicit checks.
+Medium. Review each `value!` usage. Prefer optional chaining (`?.`), nullish coalescing, or an explicit check.
 
 ---
 
-## Category: @ts-ignore and @ts-expect-error
+## Category: @ts-ignore, @ts-nocheck, and eslint-disable
 
 ```bash
-rg "@ts-ignore|@ts-expect-error" --type ts
+rg "@ts-ignore|@ts-nocheck|@ts-expect-error|eslint-disable" --type ts
 ```
 
-High. Each match must have a comment explaining why. Prefer fixing the type issue.
+High. Each match needs an explanatory comment. Prefer `@ts-expect-error` over `@ts-ignore`; prefer fixing the type issue.
 
 ---
 
 ## Category: Console Methods in Production Code
 
 ```bash
-rg "console\.(log|warn|error|debug)" --type ts
+rg "console\.(log|warn|error|debug)" --type ts -g '!**/*.test.*' -g '!**/*.spec.*'
 ```
 
-Medium. Remove debug console statements. Use proper logging library in production code.
+Medium. Use the project's structured logger.
 
 ---
 
-## Category: Promises without Await
+## Category: Floating Promises
 
 ```bash
-rg "\.then\(|\.catch\(" --type ts
+rg "^\s*[\w.]+\([^)]*\)\.then\(" --type ts
 ```
 
-Low-Medium. Consider using async/await for better readability and error handling.
+Medium. A `.then()` chain started as a statement is often not awaited or returned. Enable `@typescript-eslint/no-floating-promises` for full coverage.
 
 ---
 
-## Category: Missing Error Handling
+## Category: Hardcoded Secrets
 
 ```bash
-rg "fetch\(|axios\." --type ts
+rg -i "(api[_-]?key|secret|token|password)\s*[:=]\s*['\"][^'\"]{8,}['\"]" --type ts
 ```
 
-High. Verify every API call has proper error handling (try/catch or .catch()).
-
----
-
-## Category: Hardcoded URLs and API Keys
-
-```bash
-rg "(http://|https://|api[_-]?key|token)" --type ts -i
-```
-
-Critical. Verify no hardcoded production URLs or secrets. Use environment variables.
+Critical. Move to configuration loaded from the environment or a secrets manager.
 
 ---
 
 ## Category: Empty Catch Blocks
 
 ```bash
-rg "catch\s*\([^)]*\)\s*\{[\s\r\n]*\}" --type ts
+rg -U "catch\s*(\([^)]*\))?\s*\{\s*\}" --type ts
 ```
 
-Critical. Silent failures. At minimum log the error or rethrow.
+Critical. Silent failures. At minimum log the error or rethrow. (`-U` lets the pattern span lines.)
 
 ---
 
 ## Category: TODO/FIXME Comments
 
 ```bash
-rg "TODO|FIXME|HACK|XXX" --type ts -i
+rg "TODO|FIXME|HACK|XXX" --type ts
 ```
 
-Medium. Each match must be accompanied by a linked issue or be removed before merge.
-
----
-
-## Category: Disabled ESLint Rules
-
-```bash
-rg "eslint-disable|@ts-nocheck" --type ts
-```
-
-High. Each match must have a comment explaining why. Avoid disabling rules without justification.
-
----
-
-## Category: React-specific: Inline Functions in JSX
-
-```bash
-rg "onClick=\{.*=>|onChange=\{.*=>" --type ts
-```
-
-Low-Medium. Consider extracting to useCallback for performance in frequently re-rendered components.
-
----
-
-## Category: React-specific: Missing Dependency Arrays
-
-```bash
-rg "useEffect\(|useCallback\(|useMemo\(" -A 5 --type ts
-```
-
-High. Verify dependency arrays are complete. Missing dependencies cause stale closures.
-
----
-
-## Category: React-specific: Keys on List Items
-
-```bash
-rg "\.map\(" -A 3 --type ts
-```
-
-Medium. Verify each mapped element has a unique, stable `key` prop.
+Medium. Each match must link an issue or be removed before merge.

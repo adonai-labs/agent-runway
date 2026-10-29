@@ -1,76 +1,51 @@
 ---
-id: "108"
-category: "quality"
-description: Dependency management and security vulnerability scanning guidelines for Node.js/npm projects.
+description: Dependency management and vulnerability scanning for Node.js/npm projects — unused dependency detection, npm audit triage, scoring, and remediation. Applied when working with package manifests and lockfiles.
 globs: "**/package.json,**/package-lock.json,**/yarn.lock,**/pnpm-lock.yaml"
 alwaysApply: false
 ---
+# Dependency Health Check
 
-## When I ask **"dependency health"** (or similar), do **all** of the following:
+When asked for **dependency health** (or similar), do the following.
 
-1. **Detect unused dependencies**
-
-```bash
-npm run depcheck
-```
-
-Parse the JSON:
-- `dependencies` → list of unused production deps
-- `using` → map of used deps to file locations
-- `invalidFiles` → note any config parsing issues
-
-2. **Check security advisories**
+## 1. Detect unused and missing dependencies
 
 ```bash
-npm audit --json
+npx knip                 # unused deps, exports, and files (preferred; understands most frameworks)
+npx depcheck --json      # lighter alternative
 ```
 
-For each vulnerability, record:
-- Package name and severity (critical, high, moderate, low, info)
-- Whether it's direct or indirect dependency
-- Recommended fix version (if available)
+From depcheck JSON: `dependencies` = unused production deps, `devDependencies` = unused dev deps, `missing` = imported but not declared. Verify each "unused" result manually — dynamic imports, config-file plugins, and CLI-only tools are common false positives.
 
-3. **Manual cross-check for common missed packages**
+## 2. Check security advisories
 
-Check these packages that depcheck often misses:
-- `date-fns` (used in calendar components)
-- `zod` (schema validation)
-- `react-flow-renderer` vs `reactflow` (version conflicts)
+```bash
+npm audit --omit=dev --json        # production tree
+npm audit --audit-level=high       # CI gate: non-zero exit on high/critical
+# pnpm audit / yarn npm audit for other package managers
+```
 
-4. **Produce dependency analysis table**
+For each advisory record package, severity, direct or transitive, and fixed version.
 
-| Package | Used? | Where Found / Status | Security Advisories (severity) |
-|---|----|----|-----|
-| [package] | ✅/❌ | Location or "Not found" | Advisory details |
-| **Overall Score** | **X / 10** | | |
+## 3. Dependency analysis table
 
-**Score calculation:**
-- Start at 10
-- -1 for each unused production dependency
-- -2 for each "info" or "low" advisory  
-- -3 for each "moderate" advisory
-- -4 for each "high" advisory
-- -5 for each "critical" advisory
-- Floor at 1, cap at 10
+| Package | Used? | Where found / status | Advisories (severity) |
+|---------|-------|----------------------|-----------------------|
+| `pkg` | yes/no | location or "not found" | details |
+| **Overall score** | **X / 10** | | |
 
-5. **List concrete remediation steps**
+Score: start at 10; -1 per unused production dependency; -1 per low, -3 per moderate, -4 per high, -5 per critical advisory; floor at 1, cap at 10.
 
-Examples:
+## 4. Remediation
+
 - `npm uninstall <unused-pkg>`
-- `npm update <pkg>@latest`
-- `npm audit fix`
-- Move dev tools from dependencies to devDependencies
+- `npm update <pkg>` within range, or `npm install <pkg>@<fixed-version>` for a major bump (check changelog)
+- `npm audit fix` (never `--force` without reviewing the breaking changes)
+- Use `overrides` (npm) / `resolutions` (yarn) / `pnpm.overrides` for transitive fixes when upstream is slow
+- Move build/test tools from `dependencies` to `devDependencies`
+- Remove duplicate packages solving the same problem (e.g. two date libraries)
 
-**Special considerations for your Vite+React setup:**
-- Check for UI component library usage (@radix-ui/*)
-- Verify 3D library usage (@react-three/*)
-- Look for duplicate React Flow packages
-- Ensure dev tools are in devDependencies
+## Notes
 
-**Notes:**
-- Only consider production dependencies for unused package scoring
-- For dynamic imports, add `/* depcheck: ignore */` near the import
-- Check both automatic and manual analysis for completeness
-- Fix TypeScript config syntax errors that may affect depcheck
-
-
+- Commit the lockfile; use `npm ci` in CI
+- Score only production dependencies for "unused"
+- Prefer well-maintained packages; flag dependencies with no release in 2+ years

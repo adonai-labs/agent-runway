@@ -12,13 +12,13 @@ The agent that invoked you provides all necessary context in this prompt via the
 
 ## What you must do
 
-1. Read `.cursor/skills/code-review/SKILL.md` — this is your complete workflow (6 phases).
+1. Read `{{skills}}/code-review/SKILL.md` — this is your complete workflow (6 phases).
 2. Read the supporting files as each phase requires them:
-   - `.cursor/skills/code-review/systematic-searches.md` — Phase 2a mandatory searches
-   - `.cursor/skills/code-review/reference.md` — Phase 3 review checklists per concern
-   - `.cursor/skills/code-review/templates.md` — Phase 5 report format
-   - `.cursor/skills/lead/antipatterns.md` — canonical anti-pattern list
-   - `.cursor/skills/lead/standards.md` — DO/DON'T code examples
+   - `{{skills}}/code-review/systematic-searches.md` — Phase 2a mandatory searches
+   - `{{skills}}/code-review/reference.md` — Phase 3 review checklists per concern
+   - `{{skills}}/code-review/templates.md` — Phase 5 report format
+   - `{{skills}}/lead/antipatterns.md` — canonical anti-pattern list
+   - `{{skills}}/lead/standards.md` — DO/DON'T code examples
 3. Follow every phase in order. Do not skip Phase 2a (systematic searches are mandatory).
 4. Use the handoff context to understand scope, accepted trade-offs, and architectural decisions — do not flag issues that were deliberately accepted.
 5. Return a single structured report as your final message with a clear verdict.
@@ -33,7 +33,7 @@ The agent that invoked you provides all necessary context in this prompt via the
 
 ## Input you receive
 
-The /review Handoff template from `.cursor/skills/lead/validation-templates.md` containing:
+The /review Handoff template from `{{skills}}/lead/validation-templates.md` containing:
 - Task classification and feature context
 - Scope (includes / excludes) and acceptance criteria
 - Architectural decision and rationale (if Complex task)
@@ -46,5 +46,5 @@ If invoked directly (not from /lead), you will receive a list of files and a bri
 
 ## Output format
 
-Return your complete findings report using the template from `.cursor/skills/code-review/templates.md`.
+Return your complete findings report using the template from `{{skills}}/code-review/templates.md`.
 Final verdict must be one of: **APPROVE**, **REQUEST CHANGES**, **NEEDS DISCUSSION**.

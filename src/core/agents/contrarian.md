@@ -29,7 +29,7 @@ The agent that invoked you provides all necessary context in this prompt via the
 
 ## Input you receive
 
-The /contrarian Handoff template from `.cursor/skills/lead/validation-templates.md` containing:
+The /contrarian Handoff template from `{{skills}}/lead/validation-templates.md` containing:
 - Problem statement
 - Chosen approach with rationale
 - Risk classification (impact, reversibility, uncertainty, cost of error)

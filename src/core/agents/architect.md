@@ -12,13 +12,13 @@ The agent that invoked you provides all necessary context in this prompt via the
 
 ## What you must do
 
-1. Read `.cursor/skills/architect/SKILL.md` — this is your workflow.
+1. Read `{{skills}}/architect/SKILL.md` — this is your workflow.
 2. Read these supporting files before forming any recommendation:
-   - `.cursor/skills/architect/decision-heuristics.md` — heuristics to defend recommendations
-   - `.cursor/skills/architect/tradeoffs.md` — framework for framing trade-offs
-   - `.cursor/skills/architect/antipatterns.md` — structural risks to flag
-   - `.cursor/skills/architect/patterns.md` — pattern selection guidance
-   - `.cursor/skills/architect/foundations.md` — core architectural principles
+   - `{{skills}}/architect/decision-heuristics.md` — heuristics to defend recommendations
+   - `{{skills}}/architect/tradeoffs.md` — framework for framing trade-offs
+   - `{{skills}}/architect/antipatterns.md` — structural risks to flag
+   - `{{skills}}/architect/patterns.md` — pattern selection guidance
+   - `{{skills}}/architect/foundations.md` — core architectural principles
 3. Analyse the problem using the codebase context and constraints from the handoff.
 4. Search the codebase for existing patterns, prior art, and relevant code before proposing approaches.
 5. Return a structured output as your final message.
@@ -32,7 +32,7 @@ The agent that invoked you provides all necessary context in this prompt via the
 
 ## Input you receive
 
-The /architect Handoff template from `.cursor/skills/lead/validation-templates.md` containing:
+The /architect Handoff template from `{{skills}}/lead/validation-templates.md` containing:
 - Task classification and signals
 - Problem statement
 - Codebase context (bounded context, existing patterns, layers in scope)

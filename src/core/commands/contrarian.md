@@ -1,5 +1,30 @@
-# Contrarian
+---
+description: "Adversarial review of a chosen approach. Challenges the decision from a clean context — counter-argument, alternatives, failure signals, and a Go/Go with conditions/Stop verdict. Invoke before high-impact implementation begins."
+---
 
-Read and follow the skill at `.cursor/skills/contrarian/SKILL.md`.
+Complete the /contrarian Handoff template below and pass it to the `contrarian` agent.
 
-Challenge the chosen approach from an adversarial perspective. Produce a counter-argument, at least one viable alternative, failure signals, and a Go / Go with conditions / Stop verdict. Do not produce a verdict without first searching the codebase for relevant evidence.
+## /contrarian Handoff
+
+### Problem Statement
+[What needs to be decided or built — one clear paragraph]
+
+### Chosen Approach
+[Name of the selected approach + one paragraph rationale for why it was chosen over alternatives]
+
+### Risk Classification
+- **Impact**: low / medium / high
+- **Reversibility**: reversible / hard-to-reverse / irreversible
+- **Uncertainty**: low / medium / high
+- **Cost of error**: low / medium / high
+
+### Alternatives Already Considered
+| Option | Why it was not selected |
+|--------|------------------------|
+| [Name] | [Reason] |
+| [Name] | [Reason] |
+
+### Constraints
+- [Technical constraints — existing schema, external contracts, shared infrastructure]
+- [Team or timeline constraints]
+- [Business or backward-compatibility constraints]

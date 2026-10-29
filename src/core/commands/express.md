@@ -1,6 +1,10 @@
+---
+description: "Minimal-friction implementation for small, well-scoped changes."
+---
+
 # Express
 
-Read and follow the skill at `.cursor/skills/express/SKILL.md`.
+Read and follow the skill at `{{skills}}/express/SKILL.md`.
 
 Minimal-friction implementation for well-scoped tasks. Five phases, no approval gates except escalation signal confirmation in Phase 0.
 

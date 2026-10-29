@@ -39,6 +39,8 @@ const CASES: SmokeCase[] = [
       '.cursor/skills/council/SKILL.md',
       '.cursor/skills/code-review/SKILL.md',
       '.cursor/skills/code-review/templates.md',
+      '.cursor/skills/shared/verdict-block.md',
+      '.cursor/skills/shared/artifact-writing-contract.md',
       '.cursor/rules/engineering-principles.mdc',
       '.cursor/rules/engineering-security.mdc',
       '.cursor/rules/testing.mdc',

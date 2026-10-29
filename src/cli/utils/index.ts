@@ -35,6 +35,8 @@ const LITE_CORE_SKILLS = new Set([
   'safety-check',
   'code-review',
   'council',
+  // Policies and schemas the lite skills above link to.
+  'shared',
 ]);
 const LITE_CORE_RULES = new Set(['engineering-principles.mdc', 'engineering-security.mdc', 'testing.mdc']);
 

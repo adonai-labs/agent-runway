@@ -6,20 +6,44 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Version
 
 ---
 
-## [Unreleased]
+## [1.7.0] - Unreleased
 
-### Fixed
+### Breaking changes
 
-- `agent-runway update` and `upgrade` now record the running CLI version in the project config, so `status` no longer reports version drift right after an update.
-- `agent-runway update` restores stack spec templates under `.agent-runway/config/spec-templates/`.
-- `agent-runway init` rejects unknown `--stacks` and `--target` values instead of saving typos or silently falling back to Cursor.
-- Vibe/Lite installs `skills/shared/`, the policies and schemas that the lite skills (`code-review`, `checkpoint`, `learning`, `council`) link to.
-- TypeScript and React code-review searches used `--type tsx`, which ripgrep does not recognize, so every one of them failed. They now use `--type ts`, which already covers `.tsx`.
-- `code-convention.mdc` (ESLint/JS/TS conventions) moved from the .NET stack to the TypeScript stack, and `advanced-patterns.mdc` (Electron patterns) moved from the TypeScript stack to the Electron stack, so each preset installs rules for its own language.
+- Node.js 22.12 or newer is required (the CLI loads ES-module-only dependencies through `require()`).
+- Removed commands `/dry-check`, `/self-review`, `/security-scan`, `/fast-lead`, `/dotnet`, and the deprecated `/spec` and `/ticket` wrappers (announced as removed in 1.5.0 but still shipped). Use `/lead`, `/review`, `/spec-creator`, `/ticket-creator`, and the `dotnet-core` skill.
+- Claude Code skills now install natively to `.claude/skills/` instead of `.agent-runway/skills/`. Every workflow is invocable as `/<skill>`; `.claude/commands/` keeps only the `/review` and `/validate` aliases. `agent-runway update` migrates existing projects.
+- The project config file always lives at `.agent-runway/agent-runway.json`, and editable workflow config at `.agent-runway/config/` for every target (previously `.cursor/config/`, and missing for Claude Code and VS Code). `update` migrates both and keeps edited files.
+
+### Added
+
+- Installed-output link check (`dist/installed-links.js`, part of `npm test` and CI): installs every target x mode x stack combination, plus global Cursor, and fails on broken links, missing referenced paths, or unresolved placeholders.
+- Managed-entry manifests (`.agent-runway-managed.json`) so updates replace only what Agent Runway installed. User-authored skills, rules, commands, and agents are no longer deleted.
+- `agent-runway metrics` reads verdicts from `.agent-runway/logs/` (reviews, council) as well as specs, shows monthly pass-rate trends, and supports `--json`. New gates: `council` and `safety-check`.
+- `agent-runway ci-check --format markdown`, automatic GitHub step summary, and a reusable GitHub Action (`action.yml`).
+- Electron stack skill (`electron-core`); spec templates for Go, Python, Node.js, and TypeScript; `developer-profiles.md` and `spec-creator.config.md` config templates.
 
 ### Changed
 
-- Minimum Node.js version is now 22.12, the first 22.x release that loads the CLI's ES module dependencies without a flag. CI tests 22.12 explicitly.
+- Commands and agents have a single source with `{{skills}}`, `{{rules}}`, and `{{config}}` placeholders resolved per target, fixing global Cursor installs whose commands pointed at project paths.
+- The core is stack-agnostic: .NET-only review searches and checks moved to the dotnet stack; `lead`, `refactor`, `start`, `express`, and `iac` are language- and cloud-neutral.
+- Lite skills detect Lite mode and route only to installed workflows, suggesting `agent-runway upgrade` when a Structured workflow is needed. Lite also installs the shared policies its skills link to.
+- Context diet: always-on rules shrink from ~530 to ~145 lines; `lead/SKILL.md` from 590 to 271 lines; every core skill is at most 300 lines.
+- Rules updated to OWASP Top 10:2025 and the OWASP Top 10 for LLM Applications 2025 (no longer always-on); security rules deduplicated.
+- Stack guidance updated: React 19, .NET 10, Express 5, ESLint flat config, Vitest, Python with ruff and uv, Rust 2024 with axum 0.8, Go 1.25, Electron security defaults.
+- `.github/copilot-instructions.md` keeps user content outside an Agent Runway marked block.
+- CLI internals split into focused modules; `init`, `update`, `add`, `remove`, and `upgrade` share one installer.
+- `update-notifier` replaced with a small built-in check (clears 4 moderate npm advisories). `package-lock.json` is committed and CI uses `npm ci`.
+
+### Fixed
+
+- `update` and `upgrade` record the running CLI version, so `status` no longer reports drift right after updating; `update` restores stack spec templates.
+- `init` rejects unknown `--stacks` and `--target` values, and `--yes` never prompts.
+- TypeScript and React review searches used `--type tsx`, which ripgrep rejects, so all of them failed.
+- `code-convention.mdc` (ESLint) moved from the .NET stack to TypeScript; `advanced-patterns.mdc` (Electron) moved from TypeScript to Electron.
+- Code review verdicts saved under `logs/reviews/` are now counted by `metrics`.
+- Many broken cross-references in skills (config paths, `ticket-eval`, `repeated-errors.md`, phase numbers, spec layout).
+- The changelog intro now sits above the release entries.
 
 ---
 

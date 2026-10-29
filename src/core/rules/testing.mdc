@@ -6,23 +6,14 @@ alwaysApply: false
 
 # Testing Strategies and Quality Assurance
 
-Directives for writing and reviewing tests. Use Australian English spelling throughout.
+Directives for writing and reviewing tests. Tool names are examples; use your stack's equivalent.
 
 ---
 
 ## Testing Pyramid
 
-- Structure the test suite as a pyramid: many unit tests at the base, fewer integration tests in the middle, few E2E tests at the top.
-- Prefer fast, cheap, reliable tests at the bottom; accept slower, more brittle tests only where necessary at the top.
-
-```
-     /\       E2E (few) — slow, expensive, brittle
-    /  \
-   /____\     Integration (some) — medium speed, more stable
-  /      \
- /        \   Unit (many) — fast, cheap, reliable
-/__________\
-```
+- Many fast unit tests, fewer integration tests, few E2E tests on critical flows.
+- Prefer fast, cheap, reliable tests; accept slower, more brittle tests only where they buy confidence nothing else can.
 
 ---
 
@@ -40,18 +31,18 @@ Directives for writing and reviewing tests. Use Australian English spelling thro
 ## Integration Testing
 
 - Test interactions between components, services, or modules.
-- Mock external services (third-party APIs, payment gateways) but use real or in-memory databases where appropriate.
+- Mock external services (third-party APIs, payment gateways) but prefer real databases in disposable containers (e.g. Testcontainers) over in-memory fakes.
 - Test database connections, queries, and transactions; use test fixtures and clean up after each run.
 - Verify API contracts, request/response shapes, and error handling.
-- Prefer bottom-up or sandwich approaches over big-bang integration.
+- Use consumer-driven contract tests (e.g. Pact) between independently deployed services.
 
 ---
 
 ## End-to-End Testing
 
 - Test complete user flows (e.g. login → create item → checkout).
-- Use `data-testid` attributes for stable selectors; avoid CSS classes or XPath that change with styling.
-- Prefer Cypress or Playwright for web E2E; avoid brittle, implementation-coupled selectors.
+- Prefer accessible, user-facing locators (role, label, text), then `data-testid`; avoid CSS classes or XPath that change with styling.
+- Use a modern E2E runner (e.g. Playwright, Cypress) with auto-waiting; never use fixed sleeps.
 - Keep E2E suites small and focused on critical paths; they are slow and costly to maintain.
 - Run E2E against a dedicated test environment; avoid production data.
 
@@ -63,7 +54,7 @@ Directives for writing and reviewing tests. Use Australian English spelling thro
 - **Stress testing**: Identify breaking points and recovery behaviour beyond normal capacity.
 - **Endurance testing**: Run sustained load to detect memory leaks and resource exhaustion.
 - Track: response time (p50, p95, p99), requests per second, CPU/memory usage, error rate.
-- Use tools such as k6, Artillery, or JMeter; avoid ad-hoc scripts for production load tests.
+- Use tools such as k6, Gatling, Locust, or JMeter; avoid ad-hoc scripts for production load tests.
 
 ---
 
@@ -106,7 +97,7 @@ Relax strict test-first only for exploratory spikes, trivial wiring, generated c
 - Use Given–When–Then for scenarios: Given preconditions, When an action occurs, Then expected outcome.
 - Use BDD when requirements need to be readable by non-developers or when acceptance criteria drive tests.
 - Keep step definitions thin; delegate to helper functions or services.
-- Prefer Cucumber, SpecFlow, or similar when BDD is adopted; avoid mixing BDD syntax with ad-hoc test structure.
+- Use a BDD framework (e.g. Cucumber, Reqnroll, behave) when adopted; avoid mixing BDD syntax with ad-hoc test structure.
 
 ---
 
@@ -143,7 +134,7 @@ Relax strict test-first only for exploratory spikes, trivial wiring, generated c
 
 - [ ] Unit tests use Arrange–Act–Assert and test one behaviour each
 - [ ] Integration tests cover component interactions and external service contracts
-- [ ] E2E tests use `data-testid` and cover critical user flows
+- [ ] E2E tests use stable, user-facing locators and cover critical user flows
 - [ ] Dependencies are mocked; tests are isolated and repeatable
 - [ ] Behaviour changes have an evidence plan before implementation
 - [ ] New behaviour or bug fixes use test-first when feasible
@@ -152,5 +143,4 @@ Relax strict test-first only for exploratory spikes, trivial wiring, generated c
 - [ ] Coverage thresholds are enforced for critical paths
 - [ ] No flaky tests in the main branch
 - [ ] Security tests include injection and auth scenarios
-- [ ] Electron/React tests mock main/renderer APIs appropriately
 - [ ] CI runs tests and blocks merge on failure

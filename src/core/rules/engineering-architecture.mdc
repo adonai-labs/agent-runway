@@ -1,12 +1,12 @@
 ---
-description: Universal architecture and design principles — stack-agnostic. Applied when making structural decisions, reviewing design proposals, choosing patterns, or reasoning about system boundaries and evolution.
-globs: "**/*"
-alwaysApply: true
+description: Architecture and system-design principles — stack-agnostic. Apply when adding modules, services, or layers; defining module/service boundaries or public contracts; choosing patterns; deciding on distribution (microservices vs modular monolith); or reviewing design proposals and ADRs.
+globs: "**"
+alwaysApply: false
 ---
 
 # Engineering Architecture
 
-Universal architecture principles applied when making structural decisions, reviewing proposals, or designing systems.
+Structural guidance for designing systems. Code-level principles (SOLID, size limits, testability) live in the `engineering-principles` rule.
 
 ---
 
@@ -51,14 +51,6 @@ Universal architecture principles applied when making structural decisions, revi
 
 ---
 
-## Testability is structural, not incidental
-
-- If important behaviour cannot be tested without infrastructure, it is in the wrong place
-- Each important layer should be independently testable
-- Prefer pure functions and injectable ports for business-critical logic
-
----
-
 ## Distribution requires justification
 
 - Distributing a system introduces latency, partial failure, operational complexity, and coordination cost
@@ -69,8 +61,8 @@ Universal architecture principles applied when making structural decisions, revi
 
 ## Observability must be designed alongside behaviour
 
-- Log important events, state transitions, and failures with structured fields
-- Propagate correlation IDs through async and cross-service flows
+- Log important events, state transitions, and failures with structured fields (never sensitive data)
+- Propagate correlation IDs / trace context (e.g. OpenTelemetry) through async and cross-service flows
 - Define health checks for all critical dependencies
 - Tracing, metrics, and alerting are operational requirements, not optional extras
 

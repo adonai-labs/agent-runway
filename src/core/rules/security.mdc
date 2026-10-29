@@ -1,165 +1,128 @@
 ---
-description: Security guidelines — OWASP Top 10 mitigations, authentication, authorisation, encryption, input validation, and secure coding practices. Applied when writing or reviewing code that handles input, identity, secrets, or sensitive data.
-globs: "**/*.ts,**/*.tsx,**/*.js,**/*.jsx,**/*.cs,**/*.py,**/*.rs,**/*.go,**/*.java"
+description: Detailed security checklist — stack-agnostic controls for input validation, authentication, authorisation, data protection, XSS/CSRF/SSRF, headers, logging, and supply chain, mapped to the OWASP Top 10:2025. Apply when writing or reviewing code that handles input, identity, sessions, secrets, files, outbound requests, or sensitive data.
+globs: "**/*.ts,**/*.tsx,**/*.js,**/*.jsx,**/*.mjs,**/*.cs,**/*.py,**/*.rs,**/*.go,**/*.java,**/*.kt,**/*.rb,**/*.php"
 alwaysApply: false
 ---
 
-# Security Guidelines
+# Security Checklist
 
-Directives for secure coding. Apply when handling input, identity, secrets, or sensitive data.
+Detailed controls that extend the always-on `engineering-security` principles. Library names are examples; use your stack's equivalent.
 
----
+## Input validation
 
-## Input Validation
+- Validate structured input with a schema library (e.g. Zod, Pydantic, JSON Schema, FluentValidation, validator crates)
+- Enforce length and size limits on every field, body, and upload
+- Uploads: allowlist types, check content (magic bytes) not just extension, cap size, store outside the web root with generated names
+- Prevent path traversal: resolve and verify paths stay inside an allowed base directory
+- Avoid unsafe deserialisation of untrusted data (native object formats, YAML with tags, `pickle`)
 
-- Validate all caller-supplied data at the boundary — type, format, range, and length
-- Reject invalid input explicitly; do not sanitise and proceed
-- Use schema validation (e.g. Zod, FluentValidation) for structured input
-- Enforce length limits to prevent buffer overflow and DoS
-- Validate file uploads: type allowlist, size limits, and content inspection
-- Validate URLs before use: allowlist scheme and host; reject `file://`, `localhost`, internal IPs
-
-**Parameterised queries only:**
 ```sql
 -- Good: parameterised
 SELECT * FROM users WHERE id = $1
--- Bad: string concatenation
+-- Bad: concatenation
 SELECT * FROM users WHERE id = '${id}'
 ```
 
----
+Same rule for shell commands (argument arrays, no shell interpolation), LDAP, XPath, and template engines.
 
 ## Authentication
 
-- Verify identity before checking permissions; never allow partial or anonymous access to sensitive operations
-- Hash passwords with bcrypt (salt rounds ≥ 12) or Argon2; never store plaintext
-- JWT: use short expiry (≤ 15 min for access tokens); validate issuer, audience, and expiry; use strong secret
-- Prefer refresh tokens for session extension; store securely (httpOnly, secure, SameSite)
-- Enable MFA for privileged or sensitive operations
-- Implement rate limiting on login and password-reset endpoints
-- Use constant-time comparison for tokens and secrets
-
----
+- Prefer a proven identity provider or framework (OIDC/OAuth 2.x) over hand-rolled auth
+- Passwords: Argon2id (or scrypt/bcrypt with a strong work factor); check against breached-password lists
+- Offer MFA and passkeys/WebAuthn; require MFA for privileged operations
+- Access tokens short-lived (≈ 15 min); validate signature, algorithm, issuer, audience, and expiry; reject `alg: none`
+- Session/refresh cookies: `HttpOnly`, `Secure`, `SameSite`; rotate session ID on login and privilege change
+- Rate limit and lock out progressively on login, reset, and OTP endpoints; use constant-time comparison for secrets
+- Generic responses for login/reset to avoid account enumeration
 
 ## Authorisation
 
-- Authorise at the resource level; verify the authenticated user may access the specific resource requested
-- Do not rely only on role checks; verify resource ownership in business logic
-- Default to deny; require explicit grant for elevated access
-- Missing authorisation on one endpoint is an access control failure
-- Implement RBAC with least privilege; map roles to permissions explicitly
+- Enforce on the server for every request; never rely on hidden UI or client checks
+- Check ownership/tenant of the specific resource (prevents IDOR); default deny
+- Map roles/attributes to explicit permissions; centralise policy checks
+- Re-check authorisation on background jobs and webhooks acting on behalf of users
 
----
+## Data protection
 
-## Data Protection
+- Encrypt sensitive data at rest (e.g. AES-256-GCM via platform/KMS) and in transit (TLS 1.2+, prefer 1.3; HSTS for web)
+- Keys in a KMS/secrets manager; rotate; separate per environment
+- Use a CSPRNG for tokens, IDs, and nonces
+- Minimise collection and retention; define deletion paths for personal data
 
-- Encrypt sensitive data at rest (AES-256-GCM) and in transit (TLS 1.2+)
-- Use platform-provided crypto; never implement custom algorithms
-- Never use MD5 or SHA-1 for security purposes; use SHA-256 or higher
-- Store keys in a secrets manager; inject at runtime; rotate on compromise
-- Enforce HSTS for web applications
-- Use secure defaults: restrict CORS, disable debug in production
+## XSS
 
----
+- Rely on framework auto-escaping; encode for the exact output context (HTML, attribute, JS, URL)
+- Sanitise any user HTML with a maintained sanitiser (e.g. DOMPurify); never pass raw user content to `innerHTML`-style sinks
+- Reject `javascript:` and `data:` URLs from user input
+- Set a strict `Content-Security-Policy` (nonces/hashes, no `unsafe-inline`)
 
-## XSS Prevention
+## CSRF
 
-- Escape output in rendering contexts; do not trust stored data as safe
-- Use framework escaping (e.g. React’s default) or a sanitiser (e.g. DOMPurify) for HTML
-- Forbid `dangerouslySetInnerHTML` / `innerHTML` with user content unless sanitised
-- Set `Content-Security-Policy` to restrict script sources
-- Disallow `javascript:` URLs and event handlers in user input
+- `SameSite=Lax` or `Strict` cookies as baseline
+- Anti-CSRF tokens (or verified `Origin`/`Sec-Fetch-Site`) for state-changing requests with cookie auth
+- Never change state on `GET`
 
----
+## SSRF
 
-## CSRF Prevention
+- Allowlist outbound destinations (scheme `https`, host, port)
+- Resolve DNS and block private, loopback, link-local, and cloud metadata addresses (e.g. `169.254.169.254`); re-check after redirects
+- Route user-influenced fetches through an egress proxy with network policy
 
-- Use CSRF tokens for state-changing operations (POST, PUT, DELETE)
-- Validate token on server; use constant-time comparison
-- Set `SameSite=Strict` or `Lax` on cookies
-- Prefer SameSite cookies over custom tokens where sufficient
-
----
-
-## SSRF Prevention
-
-- Allowlist outbound URLs; validate scheme (https only) and host
-- Block `localhost`, internal IPs, and cloud metadata endpoints
-- Do not fetch user-supplied URLs without validation
-- Use a proxy or allowlist for external requests
-
----
-
-## Security Headers
-
-Set these HTTP headers:
+## Security headers
 
 | Header | Value |
 |--------|-------|
-| `X-Content-Type-Options` | `nosniff` |
-| `X-Frame-Options` | `DENY` or `SAMEORIGIN` |
-| `X-XSS-Protection` | `1; mode=block` |
+| `Content-Security-Policy` | Restrict script, style, connect, frame-ancestors |
 | `Strict-Transport-Security` | `max-age=31536000; includeSubDomains` |
-| `Content-Security-Policy` | Restrict script, style, and connect sources |
+| `X-Content-Type-Options` | `nosniff` |
 | `Referrer-Policy` | `strict-origin-when-cross-origin` |
+| `Permissions-Policy` | Disable unused features (camera, geolocation, …) |
+| `X-Frame-Options` | `DENY` (or CSP `frame-ancestors 'none'`) |
 
----
+Do not rely on the deprecated `X-XSS-Protection`. Restrict CORS to known origins; never reflect arbitrary `Origin` with credentials.
 
-## Error Responses
+## Errors and exceptional conditions
 
-- Return generic messages to unauthenticated or unauthorised callers
-- Do not expose stack traces, database errors, or internal paths in API responses
-- Log detailed errors server-side; return minimal details client-side
-- Use consistent error format (e.g. `{ "error": "code", "message": "..." }`)
+- Consistent error envelope (e.g. RFC 9457 Problem Details) with no stack traces or internals
+- Catch at the right level; fail closed; roll back partial transactions
+- Handle timeouts, resource exhaustion, and malformed input without crashing or leaking state
 
----
+## Logging and alerting
 
-## Logging
+- Log security events: login success/failure, access denied, privilege and credential changes, admin actions
+- Structured logs with correlation IDs; mask sensitive fields at the sink; protect logs from tampering
+- Alert on anomalies (brute force, spikes in denials, impossible travel) — logs nobody watches do not count
 
-- Never log: passwords, tokens, API keys, full PAN/CVV, national IDs, or PII combinations
-- Log security events: auth failures, access denied, privilege changes
-- Use structured logging; mask or exclude sensitive fields at the log sink
-- Alert on auth anomalies and repeated failures
+## Supply chain and integrity
 
----
+- Lockfiles committed; versions pinned; run `npm audit` / `pip-audit` / `cargo audit` / `dotnet list package --vulnerable` / OSV-Scanner in CI
+- Generate an SBOM; prefer packages with provenance/signatures; watch for typosquats
+- Pin CI actions to commit SHAs; least-privilege CI tokens; protect release branches
+- Verify integrity of updates, plugins, and deserialised data (signatures, checksums, SRI for CDN scripts)
 
-## Dependency Hygiene
+## OWASP Top 10:2025 map
 
-- Run `npm audit` / `pip audit` / equivalent in CI; fail on high/critical
-- Update dependencies regularly; remove unused packages
-- Prefer signed packages and verified sources
-- Pin versions; review changelogs before upgrades
+| Risk | Key mitigations |
+|------|-----------------|
+| A01 Broken Access Control (incl. SSRF) | Server-side, resource-level checks; default deny; egress allowlist |
+| A02 Security Misconfiguration | Hardened defaults; no debug in prod; strict CORS and headers |
+| A03 Software Supply Chain Failures | Lockfiles, scanning, SBOM, pinned CI actions, provenance |
+| A04 Cryptographic Failures | Platform crypto, TLS, KMS-managed keys, no MD5/SHA-1 |
+| A05 Injection | Parameterised queries, argument arrays, output encoding |
+| A06 Insecure Design | Threat modelling, abuse cases, rate limits on business flows |
+| A07 Authentication Failures | MFA/passkeys, strong hashing, token validation, rate limiting |
+| A08 Software or Data Integrity Failures | Signed artifacts, safe deserialisation, integrity checks |
+| A09 Security Logging and Alerting Failures | Security event logs, tamper protection, actionable alerts |
+| A10 Mishandling of Exceptional Conditions | Fail closed, safe error responses, resource limits |
 
----
+## Review checklist
 
-## OWASP Top 10 Quick Reference
-
-| Risk | Mitigation |
-|------|------------|
-| A01 Broken access control | Authorise at boundary and resource level |
-| A02 Cryptographic failures | Use standard libraries; enforce TLS; no MD5/SHA-1 |
-| A03 Injection | Parameterise all queries; validate all inputs |
-| A04 Insecure design | Threat model; architecture review |
-| A05 Security misconfiguration | Remove defaults; restrict CORS; disable debug in prod |
-| A06 Vulnerable components | Automated scanning; regular updates |
-| A07 Auth and session failures | Short token TTL; validate JWT claims; MFA for sensitive ops |
-| A08 Software and data integrity | Signed packages; secure CI/CD |
-| A09 Logging and monitoring failures | Structured logs; alert on auth anomalies |
-| A10 SSRF | Allowlist outbound URLs; validate scheme and host |
-
----
-
-## Security Checklist
-
-- [ ] All inputs validated at the boundary
-- [ ] Parameterised queries or ORM for all DB access
-- [ ] No secrets in code or committed config
-- [ ] Endpoints require auth unless explicitly public
-- [ ] Resource ownership verified in handlers
-- [ ] No sensitive data in logs
-- [ ] Dependencies current; no high/critical CVEs
-- [ ] Error responses do not reveal internals
-- [ ] TLS enforced; HSTS configured for web apps
-- [ ] Security headers set
-- [ ] CSRF protection for state-changing operations
-- [ ] Rate limiting on auth endpoints
+- [ ] Schema validation and size limits at every entry point
+- [ ] No concatenated SQL/shell/template input
+- [ ] AuthN on non-public routes; resource-level AuthZ (no IDOR)
+- [ ] Tokens/cookies configured securely; auth endpoints rate-limited
+- [ ] Outbound fetches allowlisted; metadata/private IPs blocked
+- [ ] Security headers and CSP set; CORS restricted
+- [ ] Errors fail closed and reveal nothing internal
+- [ ] Security events logged and alertable; no sensitive data logged
+- [ ] Dependencies locked and scanned; CI actions pinned

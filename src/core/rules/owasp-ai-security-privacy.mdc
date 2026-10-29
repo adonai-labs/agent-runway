@@ -1,51 +1,43 @@
 ---
-id: "702"
-category: "security"
-description: OWASP AI Security & Privacy Guide – PR rules emphasizing data protection, governance, and safety.
-globs: *.py,*.ts,*.tsx,*.js,*.cs,*.java,*.go,*.rb,*.ps1,*.yml,*.yaml,*.json
+description: OWASP AI Security & Privacy — data governance, privacy by design, model lifecycle, monitoring, and auditability for AI/ML systems. Apply when designing AI features, handling training or user data for models, configuring AI providers, or defining AI operational policies. Complements the `owasp-llm-top10` rule (application-level attack checks).
+globs: "**/*llm*,**/*prompt*,**/*agent*,**/*model*,**/ai/**,**/ml/**,**/llm/**,**/datasets/**,**/training/**"
 alwaysApply: false
 ---
 
-# OWASP AI Security & Privacy – PR Review Rules
+# OWASP AI Security & Privacy
 
-## Data Governance
-- Classify inputs/outputs; prohibit uncontrolled ingestion of sensitive categories (PII, PHI, credentials).
-- Minimize retention; delete intermediates; avoid storing raw prompts/outputs unless justified.
-- Document data sources and consent; prefer data references over raw payloads.
+Lifecycle, governance, and privacy controls. Prompt injection, output handling, agency, and consumption limits are in the `owasp-llm-top10` rule — do not duplicate them here.
 
-## Privacy by Design
-- Redact data before prompts; support field-level masking and hashing.
-- Provide opt-out and data deletion pathways where applicable.
-- Disable training/fine-tuning on user data by default in production.
+## Data governance
+- Classify data entering and leaving AI components (PII, PHI, credentials, confidential)
+- Document data sources, legal basis/consent, and allowed purposes; prefer references over raw payloads
+- Minimise retention of prompts, completions, and intermediates; justify and time-box any storage
 
-## Access Control and Secrets
-- Secrets in secure variables/key vault; rotate regularly; scope by environment.
-- Principle of least privilege for service principals and tokens used by tools.
+## Privacy by design
+- Support data-subject rights: access, deletion, and opt-out — including from logs, caches, vector stores, and fine-tuning sets
+- Pseudonymise or aggregate data used for evaluation and analytics
+- Assess privacy impact for new AI features that process personal data (e.g. DPIA where regulation requires)
+- Be transparent with users when they interact with AI or when AI makes decisions about them
 
-## Monitoring & Incident Response
-- Capture minimal operational telemetry (latency, tokens, errors) without sensitive content.
-- Threshold alerts for spikes, cost anomalies, and failure patterns.
-- Provide runbooks for key incident types (leak, poisoning, abuse, drift).
+## Model lifecycle
+- Version prompts, tool definitions, safety policies, and model configuration as code
+- Evaluate model or prompt changes in staging with regression and safety eval suites before rollout
+- Document intended use, known limitations, and evaluation results (model/system cards)
+- Keep an inventory (AI-BOM) of models, providers, and datasets in use
 
-## Safety & Abuse Prevention
-- Add content/abuse filters for inputs/outputs appropriate to domain.
-- Restrict high-risk actions (code exec, network, file writes) behind approvals.
-- Sandbox tool execution; apply egress allowlists and filesystem quotas.
+## Monitoring and incident response
+- Capture operational telemetry (latency, tokens, cost, error and refusal rates) without sensitive content
+- Monitor for drift, abuse patterns, and quality regressions
+- Maintain runbooks for data leakage, poisoning, abuse, and provider outage; have a kill switch for AI features
 
-## Model & Supply Chain Risk
-- Track model/SDK versions; maintain SBOM; verify signatures/hashes when available.
-- Evaluate model updates in a staging environment; document behavior changes.
+## Auditability and compliance
+- Record rationale and inputs (by reference) for automated decisions that affect users
+- Keep human oversight for high-impact decisions and a path for users to contest them
+- Track applicable regulation (e.g. EU AI Act risk classification, sector rules)
 
-## Compliance & Auditability
-- Log decision rationale for automated actions (without sensitive content).
-- Keep configuration-as-code for prompts, tools, and safety policies.
-
-## PR Reviewer Checklist
-- [ ] Sensitive data is redacted/masked; no raw secrets in code or logs.
-- [ ] No long-term storage of prompts/outputs without a clear purpose.
-- [ ] Access tokens scoped and stored securely; least privilege enforced.
-- [ ] Telemetry avoids sensitive content; alerts configured for anomalies.
-- [ ] Risky capabilities gated; sandboxing and allowlists in place.
-- [ ] Dependencies/models pinned; update process documented.
-- [ ] Policies and prompts are versioned and reviewable.
-
+## Reviewer checklist
+- [ ] Data classified; sources and purposes documented
+- [ ] Retention minimised; deletion covers logs, caches, vector stores
+- [ ] Prompts, tools, and policies versioned and evaluated before rollout
+- [ ] Telemetry free of sensitive content; drift/abuse/cost alerts exist
+- [ ] Automated decisions auditable with human oversight where impactful

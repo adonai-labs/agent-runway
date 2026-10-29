@@ -6,7 +6,7 @@ alwaysApply: false
 
 # API Design Guidelines
 
-Directives for designing and reviewing APIs. For detailed security patterns, defer to `security.mdc` and `engineering-security.mdc`.
+Directives for designing and reviewing APIs. For detailed security controls, see the `security` rule.
 
 ---
 
@@ -34,7 +34,8 @@ Directives for designing and reviewing APIs. For detailed security patterns, def
 | 200 | Success with body |
 | 201 | Created; include `Location` header |
 | 204 | Success, no body |
-| 400 | Validation error, bad request |
+| 400 | Malformed request |
+| 422 | Well-formed but semantically invalid (optional; be consistent) |
 | 401 | Unauthenticated |
 | 403 | Unauthorised (authenticated but forbidden) |
 | 404 | Resource not found |
@@ -52,9 +53,8 @@ Directives for designing and reviewing APIs. For detailed security patterns, def
 - Exclude internal fields (e.g. `passwordHash`) from response DTOs
 - Use ISO 8601 for dates in JSON
 
-**Success envelope:** `{ data: T, message?: string, timestamp: string }`
-
-**Error envelope:** `{ error: { code: string, message: string, details?: object }, timestamp: string }`
+- Pick one success shape (bare resource or `{ data: T }`) and use it everywhere
+- Errors: prefer RFC 9457 Problem Details (`application/problem+json`: `type`, `title`, `status`, `detail`, `instance`, plus a machine-readable `code` and field `errors`)
 
 ---
 
@@ -65,10 +65,11 @@ Directives for designing and reviewing APIs. For detailed security patterns, def
 | URL | Public APIs, breaking changes | `/api/v1/users`, `/api/v2/users` |
 | Header | Content negotiation, same URL | `Accept: application/vnd.company.api-v1+json` |
 | Query | Internal APIs, optional version | `/api/users?version=1` |
+| Date-based | Evolving public APIs | `API-Version: 2026-10-01` |
 
 - Prefer URL versioning for public APIs; it is explicit and cache-friendly
 - Do not version by default; version only when the resource contract changes meaningfully
-- Support at least one previous version during deprecation; document sunset dates
+- Support at least one previous version during deprecation; announce with `Deprecation` and `Sunset` headers and document dates
 
 ---
 
@@ -88,18 +89,13 @@ Directives for designing and reviewing APIs. For detailed security patterns, def
 - Support search: `?search=term`; document behaviour (exact match, partial, etc.)
 - Whitelist filterable fields; reject unknown params or document them
 
-### Response shape
-
-- Offset-based: `{ data: T[], pagination: { page, limit, total, totalPages, hasNext, hasPrev } }`
-- Cursor-based: `{ data: T[], nextCursor?: string, hasMore: boolean }`
+Response shapes: offset `{ data: T[], pagination: { page, limit, total, hasNext } }`; cursor `{ data: T[], nextCursor?: string, hasMore: boolean }`.
 
 ---
 
 ## Error Handling
 
-- Use a base `ApiException` with `statusCode`, `code`, `message`, and optional `details`
-- Derive specific exceptions: `ValidationException` (400), `NotFoundException` (404), `UnauthorisedException` (401)
-- Apply a global exception filter so all errors return the same envelope shape
+- Map domain errors to HTTP status codes in one place (global error handler/middleware/filter) so every error has the same shape
 - Do not expose stack traces, DB errors, or internal paths to clients
 - Log full error context server-side; return minimal, safe messages to clients
 - Use machine-readable `code` values (e.g. `VALIDATION_ERROR`, `NOT_FOUND`) for client handling
@@ -133,11 +129,7 @@ Directives for designing and reviewing APIs. For detailed security patterns, def
 - Validate and sanitise inputs in resolvers; do not trust client data
 - Return `null` for missing optional data; use errors for exceptional cases
 
-### N+1 prevention
-
-- Batch database queries by parent ID in list resolvers
-- Use DataLoader or similar batching/caching for foreign-key lookups
-- Avoid per-item queries in list resolvers; prefer bulk fetches
+- Limit query depth and complexity; disable introspection in production for private APIs; use persisted queries where possible
 
 ---
 
@@ -147,8 +139,9 @@ Directives for designing and reviewing APIs. For detailed security patterns, def
 - Validate JWT (or equivalent) on protected routes; reject invalid or expired tokens
 - Enforce RBAC or resource-level checks; verify the caller can access the requested resource
 - Apply rate limiting per client/IP; use stricter limits for auth and write endpoints
-- Use HTTPS only; set security headers (HSTS, X-Content-Type-Options, etc.)
-- For detailed patterns, see `security.mdc` and `engineering-security.mdc`
+- Use HTTPS only; set security headers; restrict CORS to known origins
+- Support `Idempotency-Key` on non-idempotent operations clients may retry (payments, orders)
+- Check object-level and property-level authorisation (OWASP API Security Top 10: BOLA, BOPLA)
 
 ---
 
@@ -157,9 +150,8 @@ Directives for designing and reviewing APIs. For detailed security patterns, def
 - Cache GET responses where data is stable and idempotent; avoid caching user-specific or volatile data without care
 - Use `Cache-Control` headers: `max-age`, `private`/`public`, `no-store` where appropriate
 - Support `If-None-Match` (ETag) or `If-Modified-Since` for conditional requests; return 304 when unchanged
-- Use Redis (or similar) for shared cache when running multiple instances; define TTLs per resource type
+- Use a shared cache (e.g. Redis) when running multiple instances; define TTLs per resource type
 - Invalidate or version cache keys when data changes; avoid stale reads for critical data
-- Do not cache responses that include sensitive or user-specific data without proper scoping
 
 ---
 
@@ -168,7 +160,7 @@ Directives for designing and reviewing APIs. For detailed security patterns, def
 - Write integration tests that hit real HTTP endpoints (or equivalent); mock external services only
 - Test success paths and expected error paths (400, 401, 403, 404)
 - Test validation: required fields, formats, ranges; assert error codes and messages
-- Use a test client (e.g. `supertest`, `WebApplicationFactory`) rather than unit-testing controllers in isolation
+- Use an in-process HTTP test client (e.g. `supertest`, FastAPI `TestClient`, `httptest`, `WebApplicationFactory`) rather than unit-testing controllers in isolation
 - Mock or stub databases/external APIs to keep tests fast and deterministic
 - Assert response shape, status codes, and critical fields; avoid overspecifying implementation details
 
@@ -180,7 +172,7 @@ Directives for designing and reviewing APIs. For detailed security patterns, def
 - [ ] Request/response DTOs defined; no internal fields in responses
 - [ ] Versioning strategy chosen and applied consistently
 - [ ] Pagination and filtering supported; limits enforced
-- [ ] Standardised error envelope; global exception handling
+- [ ] Standardised error format (e.g. Problem Details); central error handling
 - [ ] OpenAPI/Swagger (or equivalent) documented and up to date
 - [ ] GraphQL: schema published; N+1 avoided via batching
 - [ ] Authentication and authorisation enforced; rate limiting applied

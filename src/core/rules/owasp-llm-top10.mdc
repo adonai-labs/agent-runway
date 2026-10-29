@@ -1,73 +1,63 @@
 ---
-id: "701"
-category: "security"
-description: OWASP Top 10 for LLM Applications – actionable PR rules for AI features and agent tools.
-globs: *.py,*.ts,*.tsx,*.js,*.cs,*.java,*.go,*.rb,*.ps1,*.yml,*.yaml,*.json
-alwaysApply: true
+description: OWASP Top 10 for LLM Applications (2025) — actionable checks for code that calls LLMs, builds prompts, defines agent tools or MCP servers, runs RAG/embeddings pipelines, or executes model output. Apply whenever a change touches LLM, agent, prompt, or AI feature code, even outside the matched paths.
+globs: "**/*llm*,**/*prompt*,**/*agent*,**/*rag*,**/*embedding*,**/*mcp*,**/ai/**,**/llm/**,**/agents/**,**/prompts/**"
+alwaysApply: false
 ---
 
-# OWASP LLM Top 10 – PR Review Rules
+# OWASP Top 10 for LLM Applications (2025)
 
-These rules translate the OWASP Top 10 for LLM Applications into concise checks for code reviews.
+Treat the model as an untrusted, steerable component. Governance, privacy, and operations for AI systems are covered in the `owasp-ai-security-privacy` rule.
 
-## LLM01 – Prompt Injection
-- Treat all user/model-bound input as untrusted; validate and escape dynamic prompt parts.
-- Isolate system, developer, and user messages; never allow user input to modify system policies.
-- Block prompt string concatenation that mixes policy with user content; prefer templating with explicit placeholders and escaping.
+## LLM01 Prompt Injection
+- Anything the model reads (user input, web pages, files, emails, tool results, retrieved docs) can carry instructions
+- Keep system/developer instructions separate from untrusted content; mark untrusted content clearly; never let it change policy
+- Enforce security in code, not in the prompt: authorisation and allowlists must hold even if the model is fully hijacked
 
-## LLM02 – Insecure Output Handling
-- Never execute model output directly (shell/SQL/http/file ops) without explicit allowlists and parsing.
-- Enforce strict schemas for tool outputs; use robust parsing with rejection on violations.
-- Sanitize URLs, file paths, and commands; disable dangerous flags by default.
+## LLM02 Sensitive Information Disclosure
+- Send the minimum data needed; redact secrets and PII before prompts, logs, and traces
+- Scope retrieval and memory to the caller's permissions and tenant
+- Check provider data-retention/training settings; disable training on user data by default
 
-## LLM03 – Training Data Poisoning
-- Verify provenance for any PR-introduced datasets/prompts/examples; require source docs and checksums.
-- Disallow auto-learning from user content in production unless gated and audited.
+## LLM03 Supply Chain
+- Pin model versions, SDKs, MCP servers, and plugins; review before upgrading
+- Load models/weights only from trusted sources with verified hashes/signatures; prefer safe formats (e.g. safetensors over pickle)
+- No dynamic loading of unreviewed tools or MCP servers
 
-## LLM04 – Model DoS
-- Enforce token/size limits, timeouts, and exponential backoff with max retries.
-- Apply rate limiting and budget accounting per user/key.
+## LLM04 Data and Model Poisoning
+- Track provenance for training, fine-tuning, and RAG data; validate before ingestion
+- Do not auto-learn or auto-index from user content without review gates
 
-## LLM05 – Supply Chain
-- Pin SDK/model/tool versions; verify model/weights origin (hash or publisher signature when available).
-- Disallow unreviewed dynamic plugin/tool loading.
+## LLM05 Improper Output Handling
+- Never pass model output directly to shell, SQL, `eval`, file paths, HTTP calls, or HTML
+- Require structured output; validate against a strict schema; reject on violation (fail closed)
+- Encode output for its destination context (HTML, Markdown links/images, URLs)
 
-## LLM06 – Sensitive Information Disclosure
-- Mask secrets/PII in logs and prompts; prohibit printing keys/tokens.
-- Minimize data in prompts; prefer identifiers to raw payloads; redact before send.
+## LLM06 Excessive Agency
+- Give agents the fewest tools, narrowest scopes, and read-only access by default
+- Tools act with the end user's permissions, not a broad service identity
+- Require human approval for destructive, financial, external-communication, or privileged actions
+- Sandbox code execution; restrict filesystem and network egress with allowlists
 
-## LLM07 – Insecure Plugin/Tool Design
-- Validate and type-check all tool parameters; reject on validation failure.
-- Enforce authZ and least privilege for tools (scoped tokens, read-only by default).
-- Restrict filesystem/network via allowlists; block wildcard writes and arbitrary hosts.
+## LLM07 System Prompt Leakage
+- Assume system prompts will be disclosed: no secrets, credentials, internal URLs, or authorisation logic in them
 
-## LLM08 – Excessive Agency
-- Require human-in-the-loop for high-risk actions (writes, network posts, privileged ops).
-- Default to disabled for destructive tools; require explicit enabling per environment.
+## LLM08 Vector and Embedding Weaknesses
+- Enforce access control on vector stores per tenant/user at query time, not just at ingestion
+- Validate and sanitise documents before embedding; record source for every chunk
 
-## LLM09 – Overreliance on LLM
-- Treat LLM output as untrusted; add deterministic validators/business-rule checks.
-- Require tests for safety-critical decisions; fail closed on parsing/validation errors.
+## LLM09 Misinformation
+- Ground answers in retrieved sources and cite them; validate facts that drive decisions with deterministic checks
+- Communicate uncertainty in UX; never auto-apply model suggestions (e.g. generated code, package names) without verification
 
-## LLM10 – Model Theft
-- Do not expose private endpoints/weights; rate-limit requests and responses.
-- Disable unrestricted export/debug dumps; scrub sensitive traces.
+## LLM10 Unbounded Consumption
+- Cap input/output tokens, tool-call loops, recursion depth, and wall-clock time
+- Rate limit and budget per user/key; bounded retries with backoff; alert on cost spikes
 
-## Logging & Telemetry (Cross-cutting)
-- Log minimal, non-sensitive metadata (durations, token counts, status) only.
-- Separate prompt traces; guard behind feature flag and secret redaction.
-
-## Deployment & Config
-- Keep secrets in secure variables/key vault; never hardcode keys.
-- Provide env toggles: LOG_PROMPTS, DRY_RUN, RATE_LIMITS, MAX_TOKENS, TIMEOUT_MS.
-
-## PR Reviewer Checklist
-- [ ] No execution of raw model output; strict parsing with allowlists.
-- [ ] Prompt assembly uses templates with escaping; system prompts cannot be user-edited.
-- [ ] Secrets/PII redacted from logs and prompts; no keys in code.
-- [ ] Rate limits/timeouts/token caps implemented; retries bounded.
-- [ ] Tools enforce authZ, validation, and allowlists for FS/network.
-- [ ] Dangerous capabilities gated behind approvals/human-in-the-loop.
-- [ ] Dependencies pinned; no dynamic unvetted plugin loading.
-- [ ] Tests cover parsing/validation and failure paths for safety-critical flows.
-
+## Reviewer checklist
+- [ ] Untrusted content separated from instructions; security enforced outside the prompt
+- [ ] Model output schema-validated and never executed or rendered raw
+- [ ] Tools least-privilege, user-scoped; risky actions need human approval
+- [ ] No secrets in prompts; PII redacted from prompts and logs
+- [ ] RAG/vector queries filtered by caller permissions
+- [ ] Models, SDKs, MCP servers, and plugins pinned and vetted
+- [ ] Token, loop, time, rate, and cost limits in place

@@ -6,7 +6,7 @@ Reference material for `spec-creator`. This is intentionally aligned with `ticke
 
 ## Context Discovery
 
-Use configured doc paths from `docs.*` in `.cursor/config/spec-creator.config.md`.
+Use configured doc paths from `docs.*` in `{{config}}/spec-creator.config.md` (the template lists the defaults below).
 
 Suggested sources:
 - `.agent-runway/docs/business/entities.md` -> domain entities, lifecycle, constraints
@@ -30,9 +30,9 @@ Suggested sources:
 
 Use only when `codebase_scanning.enabled: true`.
 
-Default exploration patterns:
-- Types/interfaces: `src/**/types/**/*.ts`, `src/**/interfaces/**/*.ts`
-- API/contracts: `src/**/api/**/*.ts`, calls to `fetch(` or `axios`
+Default exploration patterns (adapt extensions to `codebase_scanning.stack`; TypeScript shown):
+- Types/interfaces: `src/**/types/**/*.ts`, `src/**/interfaces/**/*.ts` (Python models, Go structs, C# records, Rust types)
+- API/contracts: `src/**/api/**/*.ts`, HTTP client calls, route/controller/handler definitions
 - Data layer: `src/**/migrations/**/*`, repository/data access files
 - UI/flow clues: `src/**/components/**/*.tsx`, `src/**/hooks/**/*.ts`
 

@@ -1,5 +1,7 @@
 # Reference — Code Smells & Refactoring Patterns
 
+> The before/after pattern examples below are written in C# for compactness; each refactoring is language-agnostic. Translate to the project's language and idioms (and to `../<stack>-core/patterns.md` when the stack skill is installed). Keep behaviour identical and tests green at every step.
+
 ---
 
 ## Code Smell Table

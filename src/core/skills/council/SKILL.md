@@ -25,7 +25,7 @@ This skill is preview. Keep the output useful and compact; expect the exact form
 
 Runs a lightweight multi-perspective review before the work becomes a spec, ticket, ADR, or implementation.
 
-Use it to decide whether to pursue, refine, pause, or reject an idea. Do not use it as a replacement for `@code-review`, `@architect`, `@spec-creator`, or `@lead`.
+Use it to decide whether to pursue, refine, pause, or reject an idea. Do not use it as a replacement for the `code-review`, `architect`, `spec-creator`, or `lead` skills.
 
 ---
 
@@ -90,9 +90,9 @@ If the developer asks to save, persist, document, or log the council review, wri
 
 `.agent-runway/logs/council/YYYY-MM-DD-<slug>.md`
 
-Use the artifact contract in [../shared/artifact-writing-contract.md](../shared/artifact-writing-contract.md).
+Use the artifact contract in [../shared/artifact-writing-contract.md](../shared/artifact-writing-contract.md). The saved file must end with the verdict block below.
 
-Do not write to memory automatically. If the review produced a durable lesson, suggest `@learning`.
+Do not write to memory automatically ([../shared/memory-policy.md](../shared/memory-policy.md)). If the review produced a durable lesson, suggest the `learning` skill.
 
 ---
 
@@ -138,14 +138,31 @@ Confidence: Low | Medium | High
 - <Check, user signal, test, or artifact needed before implementation>
 ```
 
+Always end the output with this block, filled in (schema: [../shared/verdict-block.md](../shared/verdict-block.md)):
+
+```yaml
+# agent-runway:verdict
+gate: council
+status: [pursue | refine | pause | reject]
+blocking: [0 when pursue; otherwise the number of "Before You Build" items that must resolve first, minimum 1]
+date: [YYYY-MM-DD]
+artifact: [idea slug, or the spec/ticket path the idea relates to]
+```
+
 ---
 
 ## Routing
 
-- If the verdict is **Pursue** and the change is small, continue with `@express`.
-- If the verdict is **Pursue** but the change is multi-step, create a spec with `@spec-creator` or use `@lead`.
-- If the core issue is design trade-off, use `@architect`.
-- If the idea should become durable project knowledge, ask whether to save it with `@learning`.
-- If the work is already implemented, use `@code-review` instead.
+Invoke skills as `/<skill>` (Claude Code, slash commands) or `@<skill>` (Cursor / VS Code skill mentions).
+
+**Mode check:** `spec-creator`, `lead`, and `architect` exist only in Structured mode. Before routing to one, check whether its folder is installed next to this skill (`../<skill>/SKILL.md`). If it is not, the project is in Lite mode — use the Lite route, or suggest `npx agent-runway upgrade --to structured`.
+
+| Situation | Structured route | Lite route |
+|---|---|---|
+| **Pursue**, small change | `express` | `express` |
+| **Pursue**, multi-step change | `spec-creator`, then `lead` | `express` in small slices with `safety-check` before risky steps, or upgrade |
+| Core issue is a design trade-off | `architect` | Run `council` again with the competing options as the proposition, or upgrade |
+| Durable project knowledge | `learning` (ask first) | `learning` (ask first) |
+| Work already implemented | `code-review` | `code-review` |
 
 Keep the review direct. The council should improve judgment, not create ceremony.

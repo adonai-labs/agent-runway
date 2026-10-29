@@ -114,7 +114,7 @@ Domain ← Application ← Presentation
 
 **Anti-force** — trivial applications where mediator adds indirection without eliminating meaningful coupling; small systems where direct calls are clearer and faster to trace.
 
-**Common implementation** — MediatR in .NET applications.
+**Common implementation** — a mediator or command bus (e.g. MediatR in .NET, NestJS CQRS in Node, plain handler maps in Go or Python).
 
 ---
 

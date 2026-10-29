@@ -47,8 +47,8 @@ const CASES: SmokeCase[] = [
       '.agent-runway/config/review-config.md',
     ],
     forbiddenPaths: [
-      '.cursor/commands/start.md',
-      '.cursor/agents/review.md',
+      '.cursor/commands',
+      '.cursor/agents',
       '.cursor/skills/lead/SKILL.md',
       '.cursor/rules/api-design.mdc',
     ],

@@ -14,7 +14,7 @@ Apply shared policy: [../shared/caveman-skill-engineering.md](../shared/caveman-
 [paste /contrarian Handoff]
 ```
 
-Complete the handoff template from `.agent-runway/skills/lead/validation-templates.md` and pass it as context.
+Complete the `/contrarian Handoff` template from [../lead/validation-templates.md](../lead/validation-templates.md) and pass it as context.
 
 ## Purpose
 

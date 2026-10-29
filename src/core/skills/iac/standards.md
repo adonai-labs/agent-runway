@@ -1,8 +1,23 @@
 # IaC Standards
 
+Provider-neutral principles first. Code examples show Azure/Bicep and AWS or GCP/Terraform as options; apply the equivalent for the provider and tool in the repository.
+
+## Principles (all providers)
+
+- Everything environment-specific is a parameter/variable; no hardcoded SKUs, regions, or names.
+- Every resource is tagged/labelled with `environment`, `application`, `owner`, `cost-centre`, `managed-by`.
+- Secrets live in the provider's secret store and are referenced at deploy/run time — never in parameter files or state in plaintext.
+- Workloads authenticate with workload identity (managed identity, IAM role, service account), not long-lived keys.
+- Data services use private networking in production; public exposure is explicit and justified.
+- Logs and metrics flow to the central monitoring workspace.
+- Every change is previewed (plan / what-if / change set / preview) and reviewed before apply.
+- Remote, locked, encrypted state for Terraform/Pulumi.
+
 ---
 
 ## Folder Structure
+
+Bicep (Azure option):
 
 ```
 infra/
@@ -22,7 +37,7 @@ infra/
     what-if.ps1
 ```
 
-Terraform equivalent:
+Terraform (any provider):
 
 ```
 infra/
@@ -44,7 +59,7 @@ infra/
 
 ## Naming Convention
 
-Pattern: `{resourceAbbreviation}-{appName}-{environment}`
+Pattern: `{resourceAbbreviation}-{appName}-{environment}`. Use the provider's documented abbreviations and length/character limits; the Azure abbreviations below are one example.
 
 | Resource | Abbreviation | Example |
 |----------|-------------|---------|
@@ -91,7 +106,24 @@ var skuName = 'P1v3'
 
 ## Mandatory Resource Tagging
 
-Every resource must have these tags:
+Every resource must have these tags (labels on GCP):
+
+```hcl
+# Terraform (AWS option) — provider-level default tags
+provider "aws" {
+  default_tags {
+    tags = {
+      environment = var.environment
+      application = var.application
+      owner       = var.owner
+      cost-centre = var.cost_centre
+      managed-by  = "terraform"
+    }
+  }
+}
+```
+
+Bicep (Azure option):
 
 ```bicep
 var commonTags = {
@@ -114,9 +146,17 @@ resource appService 'Microsoft.Web/sites@2022-03-01' = {
 
 ---
 
-## Secrets — Key Vault References
+## Secrets — Secret Store References
+
+```hcl
+# Terraform (AWS option) — read at deploy time, never commit the value
+data "aws_secretsmanager_secret_version" "db" {
+  secret_id = "orders/${var.environment}/db"
+}
+```
 
 ```bicep
+// Bicep (Azure option)
 // ✅ Reference Key Vault at deploy time — never hardcode
 resource keyVault 'Microsoft.KeyVault/vaults@2022-07-01' existing = {
   name: keyVaultName
@@ -141,9 +181,12 @@ resource appService 'Microsoft.Web/sites@2022-03-01' = {
 
 ---
 
-## Managed Identity
+## Workload Identity
+
+Grant the workload an identity and least-privilege access to exactly the secrets/resources it needs (AWS: IAM role + policy; GCP: service account + IAM binding; Azure: managed identity + role assignment or access policy).
 
 ```bicep
+// Bicep (Azure option)
 // ✅ System-assigned managed identity
 resource appService 'Microsoft.Web/sites@2022-03-01' = {
   identity: {
@@ -168,9 +211,12 @@ resource kvAccessPolicy 'Microsoft.KeyVault/vaults/accessPolicies@2022-07-01' = 
 
 ---
 
-## Diagnostic Settings (All Resources)
+## Diagnostics and Monitoring (All Resources)
+
+Ship resource logs and metrics to the central workspace (Azure diagnostic settings → Log Analytics; AWS CloudWatch log groups/metrics; GCP Cloud Logging sinks).
 
 ```bicep
+// Bicep (Azure option)
 resource diagnostics 'Microsoft.Insights/diagnosticSettings@2021-05-01-preview' = {
   name: 'diag-${appServiceName}'
   scope: appService
@@ -186,7 +232,17 @@ resource diagnostics 'Microsoft.Insights/diagnosticSettings@2021-05-01-preview' 
 
 ## Security Posture
 
+```hcl
+# Terraform (AWS option)
+resource "aws_db_instance" "orders" {
+  publicly_accessible = false
+  storage_encrypted   = true
+  # ...
+}
+```
+
 ```bicep
+// Bicep (Azure option)
 // ✅ Disable public network access on SQL in production
 resource sqlServer 'Microsoft.Sql/servers@2022-05-01-preview' = {
   properties: {
@@ -204,6 +260,8 @@ resource privateEndpoint 'Microsoft.Network/privateEndpoints@2022-07-01' = if (e
 ---
 
 ## Module Pattern
+
+Small, single-purpose modules with typed inputs, documented outputs, and tags passed in. Example (Bicep, Azure option):
 
 ```bicep
 // modules/app-service.bicep

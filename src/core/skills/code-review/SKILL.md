@@ -30,45 +30,28 @@ A complete review examines code through three lenses. Each has a distinct focus 
 | **Security** | OWASP Top 10, threat model for sensitive flows, input/auth/crypto/data handling | Security Checklist (OWASP) in [reference.md](reference.md) |
 | **Performance** | Algorithmic complexity, N+1 access, resource usage, scalability under load | Phase 3 "Performance & complexity" criterion |
 
+### Review sources
+
+| Label | Source | Focus |
+|-------|--------|-------|
+| `CR` | Standard review | Correctness, maintainability, DRY, SOLID, Clean Code, tests |
+| `SEC` | Security review | Auth, input validation, data exposure, secrets, injection, dependency and configuration risk |
+| `SNR` | Senior review | Architecture boundaries, operational risk, coupling, API contracts, long-term maintainability |
+
 ### Review modes
 
-Developers choose the review mode based on PR risk and context budget.
+Choose the mode by PR risk and context budget. `Lens:` scopes a focused pass; `Mode:` decides whether sources run as one pass or isolated passes.
 
-#### Compact mode (default)
-
-Use compact mode for ordinary PRs, small-to-medium diffs, and CI comments where speed and low context usage matter.
-
-- Run one consolidated review over the diff.
-- Use `CR`, `SEC`, and `SNR` as source labels for classification, not as separate loaded workflows.
-- Keep the prompt and loaded references minimal: core review instructions, relevant stack search/command files, and the output template.
-- Do not load deep architecture, security, or contrarian references unless the diff creates a concrete need.
-
-#### Isolated mode
-
-Use isolated mode for high-risk PRs: security surfaces, auth, PII, audit/compliance, public contracts, data migrations, IaC, concurrency, large cross-layer changes, or changes where the first compact review found serious issues.
-
-- Run focused passes over the same diff with isolated attention:
-  - `CR` - standard review: correctness, maintainability, DRY, SOLID, Clean Code, and tests.
-  - `SEC` - security review: auth, input validation, data exposure, secrets, injection, dependency, and configuration risk.
-  - `SNR` - senior review: architecture boundaries, operational risk, coupling, API contracts, and long-term maintainability.
-- Consolidate the pass outputs into one report.
-- De-duplicate by issue, not just by exact line. When two passes flag the same issue, keep one finding, use the highest severity, and list all source labels.
-- Report line numbers against the current file, not against diff hunk offsets.
-
-The `Lens:` value scopes a focused pass. The `Mode:` value controls whether the review is one compact consolidated pass or isolated passes followed by consolidation.
+- **Compact (default)** — ordinary PRs, small-to-medium diffs, CI comments. Run one consolidated pass; use `CR`/`SEC`/`SNR` as classification labels, not separate workflows. Load only the core instructions, the relevant stack search/command files, and the output template. Do not load deep architecture, security, or contrarian references unless the diff creates a concrete need.
+- **Isolated** — high-risk PRs: security surfaces, auth, PII, audit/compliance, public contracts, data migrations, IaC, concurrency, large cross-layer changes, or when a compact review found serious issues. Run `CR`, `SEC`, and `SNR` as separate focused passes over the same diff, then consolidate.
 
 ### PR review contract
 
 When reviewing a PR, branch, or CI-provided diff:
 
-- Review only the introduced change. Do not report pre-existing issues in unchanged code unless the changed line makes the issue reachable or materially worse.
+- Review only the introduced change. Do not report pre-existing issues in unchanged code unless the changed line makes them reachable or materially worse.
 - Report line numbers against the current file, not against diff hunk offsets.
-- In compact mode, treat `Lens: all` as one consolidated review with three logical sources:
-  - `CR` - standard review: correctness, maintainability, DRY, SOLID, Clean Code, and tests.
-  - `SEC` - security review: auth, input validation, data exposure, secrets, injection, dependency, and configuration risk.
-  - `SNR` - senior review: architecture boundaries, operational risk, coupling, API contracts, and long-term maintainability.
-- In isolated mode, run those sources as separate focused passes and then consolidate.
-- Consolidate findings across sources. If the same issue appears in more than one source, keep one finding and list all relevant source labels.
+- De-duplicate by issue, not just by exact line: when several sources flag the same issue, keep one finding, use the highest severity, and list every source label.
 - Keep broad technical debt separate in the final summary. Do not turn debt themes into findings unless they are tied to a concrete changed line with actionable impact.
 
 ### Optional context provider
@@ -94,7 +77,7 @@ When used inside code review, contrarian is a skeptical source of findings, not 
 
 ---
 
-## Workflow — 6 Phases
+## Workflow — 7 Phases (0–6)
 
 ---
 
@@ -119,17 +102,11 @@ Classify each file in scope:
 
 Determine if build and test commands can be executed. If yes, run them before proceeding.
 
-**Stack-specific build & test commands:**
-
-Check `agent-runway.json` (or legacy `cursor-runway.json`) for installed stacks, then refer to the appropriate commands file:
+**Stack-specific build & test commands** — use the commands file for each installed stack (listed below at install time). If none is listed, use the project's own scripts (`package.json` scripts, `Makefile`, CI workflow, or README):
 
 <!-- ar:commands:start -->
-- **TypeScript/Node**: [commands-typescript.md](commands-typescript.md)
-- **.NET/C#**: [commands-dotnet.md](commands-dotnet.md)
-- **Rust**: [commands-rust.md](commands-rust.md)
+- (no stack selected - use the project's own build and test scripts)
 <!-- ar:commands:end -->
-
-Run the build and test commands for your project's stack(s).
 
 ---
 
@@ -137,21 +114,16 @@ Run the build and test commands for your project's stack(s).
 
 #### 2a — Run All Mandatory Searches
 
-Before executing searches, check whether `.cursor/config/review-config.md` exists. If it does, read it and skip any category marked as `disabled`.
+Before executing searches, check whether `{{config}}/review-config.md` exists. If it does, read it and skip any category marked as `disabled`.
 
 **Universal searches (all projects):**
 
-Execute every enabled search in [systematic-searches-base.md](systematic-searches-base.md). These are language-agnostic security and quality patterns.
+Execute every enabled search in [systematic-searches-base.md](systematic-searches-base.md). These are the mandatory, language-agnostic security and quality patterns.
 
-**Stack-specific searches:**
-
-Check `agent-runway.json` (or legacy `cursor-runway.json`) for installed stacks, then execute searches from:
+**Stack-specific searches** — execute the searches file for each installed stack (listed below at install time):
 
 <!-- ar:searches:start -->
-- **TypeScript**: [searches-typescript.md](searches-typescript.md)
-- **.NET/C#**: [searches-dotnet.md](searches-dotnet.md)
-- **React**: [searches-react.md](searches-react.md)
-- **Rust**: [searches-rust.md](searches-rust.md)
+- (no stack selected - universal searches only)
 <!-- ar:searches:end -->
 
 Document results: pattern, count, file locations.
@@ -164,7 +136,7 @@ For each finding from 2a, perform semantic analysis:
 
 - Is the pattern contextually acceptable (e.g., a test double intentionally catching all exceptions)?
 - Does data flow correctly across service boundaries?
-- Are EF Core relationships and lazy loading configured safely?
+- Are ORM relationships, lazy loading, and query materialisation safe (no N+1, no unbounded reads)?
 - Do migrations preserve backward compatibility?
 - Are event handlers idempotent?
 
@@ -172,11 +144,7 @@ For each finding from 2a, perform semantic analysis:
 
 Run the checks not already covered by Phase 1 (which established the build+test baseline).
 
-Refer to your stack's commands file for format and vulnerability checks:
-
-- **TypeScript/Node**: `npm run lint`, `npm audit`
-- **.NET/C#**: `dotnet format --verify-no-changes`, `dotnet list package --vulnerable`
-- **Rust**: `cargo fmt -- --check`, `cargo audit`
+Use the format/lint and dependency-vulnerability commands from your stack's commands file (Phase 1), or the project's equivalents (for example a lint script and the package manager's audit command).
 
 All must pass. Document any failures as Critical findings.
 
@@ -203,7 +171,7 @@ Review each file against the relevant checklist from [reference.md](reference.md
 - Structured logging
 - Performance & complexity — algorithmic cost, N+1 access, unbounded allocations, avoidable work in hot paths
 
-> The layer checklists below describe clean-architecture concerns and are stack-neutral. Stack-specific deep checklists (e.g. the .NET examples in [reference.md](reference.md)) apply when that stack is installed.
+> The layer checklists below are stack-neutral. For stack-specific deep checks, use the installed stack skill (`../<stack>-core/SKILL.md`) when it exists.
 
 **Domain / core layer:**
 - No framework or infrastructure dependencies
@@ -230,9 +198,9 @@ Review each file against the relevant checklist from [reference.md](reference.md
 
 **IaC files:**
 - All resources parameterised
-- Secrets via Key Vault references
+- Secrets via the cloud provider's secret store (Key Vault, Secrets Manager, Secret Manager)
 - Resources tagged
-- What-if run before applying
+- Plan / what-if / change-set preview run before applying
 
 #### 3b - Contrarian check for high-impact changes
 
@@ -296,13 +264,7 @@ The saved report must include the machine-readable verdict block from [templates
 
 ### Phase 6 — Verification Contract
 
-Final automated check — run the build, test, and format/lint commands for the project's stack(s) (see the commands file referenced in Phase 1):
-
-| Stack | Commands |
-|-------|----------|
-| .NET | `dotnet build --no-incremental && dotnet test && dotnet format --verify-no-changes` |
-| Node.js | `npm run build && npm test && npm run lint` |
-| Other | the project's equivalent build, test, and format/lint commands |
+Final automated check — run the build, test, and format/lint commands for the project's stack(s) from the commands file referenced in Phase 1 (or the project's own scripts). Record pass/fail for each.
 
 Deliver final verdict:
 
@@ -310,11 +272,13 @@ Deliver final verdict:
 - **REQUEST CHANGES** — blockers or unresolved high findings present
 - **NEEDS DISCUSSION** — architectural concerns requiring team decision
 
+End the report with the machine-readable verdict block from [templates.md](templates.md).
+
 ---
 
 ## Supporting Files
 
-- [systematic-searches.md](systematic-searches.md) — 21 mandatory search patterns
+- [systematic-searches-base.md](systematic-searches-base.md) — mandatory universal search categories (stack files are injected in Phase 2a)
 - [templates.md](templates.md) — report output templates
 - [reference.md](reference.md) — review checklists per concern
 - [../shared/artifact-writing-contract.md](../shared/artifact-writing-contract.md) - artifact write locations
@@ -331,4 +295,4 @@ Use the following skills for deeper reasoning when needed:
 | Apply architectural review lenses (boundaries, complexity, contracts) | Use `architect` if installed |
 | Identify architectural antipatterns beyond the local checklist | Use `architect` if installed |
 | Evaluate whether a design trade-off is well-reasoned | Use `architect` if installed |
-| Deep stack-specific review | Use the installed stack skill, such as `dotnet-core`, `typescript-core`, `node-core`, or `react-core` |
+| Deep stack-specific review | Use the installed stack skill (`<stack>-core`, e.g. `typescript-core`, `python-core`, `dotnet-core`) if installed |

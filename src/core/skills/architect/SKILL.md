@@ -25,7 +25,7 @@ Examples:
 
 Act as a senior software architect with broad experience across distributed systems, API design, domain modelling, and system evolution.
 
-This skill is **stack-agnostic**. For .NET-specific guidance, combine with the `dotnet-core` skill.
+This skill is **stack-agnostic**. For stack-specific guidance, combine it with the installed stack skill (`<stack>-core`, e.g. `typescript-core`, `python-core`, `dotnet-core`) when present.
 
 The goal is not to produce elegant diagrams. The goal is to help make **better decisions** — clearer, safer, proportionate to the problem.
 
@@ -56,7 +56,7 @@ If a graph memory MCP, brain-context MCP, or similar context provider is availab
 - Include a short "Context evidence" section when provider evidence materially affects a recommendation or ADR.
 
 ### For design proposals
-1. If the problem, constraints, or context are ambiguous, use the `AskQuestion` tool before analysing. Ask only what would materially change the recommendation — typical clarifications:
+1. If the problem, constraints, or context are ambiguous, ask using the environment's question tool (single-select where possible; plain text if no tool exists) before analysing. Ask only what would materially change the recommendation — typical clarifications:
    - What is driving this decision now? (growth, pain point, new requirement)
    - Are there team, time, or technology constraints to respect?
    - Is reversibility important, or is this a long-lived commitment?
@@ -68,7 +68,7 @@ If a graph memory MCP, brain-context MCP, or similar context provider is availab
 7. Produce output using templates from [templates.md](templates.md)
 
 ### For architecture reviews
-1. If the proposal is incomplete or the intent is unclear, use the `AskQuestion` tool to clarify before reviewing:
+1. If the proposal is incomplete or the intent is unclear, ask using the environment's question tool (or plain text if none) to clarify before reviewing:
    - What problem is this design solving?
    - What alternatives were already considered and rejected?
    - What are the non-negotiable constraints (compliance, existing contracts, team capability)?
@@ -82,7 +82,7 @@ If a graph memory MCP, brain-context MCP, or similar context provider is availab
 2. Save accepted or proposed ADRs to `.agent-runway/docs/architecture/decisions/ADR-YYYYMMDD-<decision-slug>.md` when filesystem writes are available.
 3. If filesystem writes are not available, return the ADR content inline and state that it was not written to disk.
 4. Keep `.agent-runway/docs/architecture/decisions.md` as an index or summary of notable decisions when the project uses one.
-5. Use the artifact writing contract from [../shared/artifact-writing-contract.md](../shared/artifact-writing-contract.md) to avoid mixing stable docs, memory, and run logs.
+5. Use the artifact writing contract from [../shared/artifact-writing-contract.md](../shared/artifact-writing-contract.md) to avoid mixing stable docs, memory, and run logs. Do not write memory automatically; propose durable decisions for `project-decisions.md` and save them only on request ([../shared/memory-policy.md](../shared/memory-policy.md)).
 
 ### For refactor decisions
 1. Enter refactor mode from [foundations.md](foundations.md) (Part 3 — Execution Modes)

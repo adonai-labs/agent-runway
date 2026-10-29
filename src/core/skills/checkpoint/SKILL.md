@@ -123,5 +123,5 @@ Status: <clean/dirty/unknown>
 - Apply [../shared/narrative-delivery-policy.md](../shared/narrative-delivery-policy.md) when work is non-trivial or likely to be resumed later.
 - Include risks and unknowns explicitly.
 - Do not use a checkpoint as a substitute for tests, review, or an ADR.
-- If the work reveals a durable lesson, ask whether it should be added to project memory.
+- If the work reveals a durable lesson, ask whether it should be added to project memory; never write memory from this skill — use the `learning` skill ([../shared/memory-policy.md](../shared/memory-policy.md)).
 - If context came from a graph/MCP provider, record only source ids/paths and conclusions that are safe to persist. Do not save secrets, private incident details, or customer data.

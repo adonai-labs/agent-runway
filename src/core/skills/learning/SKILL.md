@@ -31,7 +31,7 @@ Use it for reusable project knowledge, not for run history. If the information o
 
 ### 1. Classify the lesson
 
-Choose exactly one target file:
+Choose exactly one target file (one lesson, one file — see the canonical list and write rules in [../shared/memory-policy.md](../shared/memory-policy.md)):
 
 | Target | Use when |
 |---|---|

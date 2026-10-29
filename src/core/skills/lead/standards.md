@@ -1,130 +1,118 @@
 # Standards — DO / DON'T & Self-Review Checklist
 
+Stack-neutral standards. Examples use TypeScript and Python for brevity; the principle is what matters. When the stack skill is installed, its `../<stack>-core/patterns.md` shows the idiomatic form (for .NET, `dotnet-core` also provides C# examples in its delivery checks).
+
 ---
 
 ## Naming
 
 | DO | DON'T |
 |----|-------|
-| `CalculateOrderTotal()` | `Calc()`, `DoStuff()` |
+| `calculateOrderTotal()` | `calc()`, `doStuff()` |
 | `isOrderCancelled` | `flag`, `check`, `b` |
 | `userAccountBalance` | `x`, `val`, `temp` |
-| `IOrderRepository` | `IRepo`, `IData` |
-| `OrderCreatedEvent` | `Event1`, `OrderEvent` |
-| `CreateOrderCommandHandler` | `Handler`, `Processor` |
+| `OrderRepository` | `Repo`, `Data` |
+| `OrderCreated` (event) | `Event1`, `OrderEvent` |
+| `cancelOrder` (use case) | `handler`, `processor` |
 
 ---
 
 ## Dependency Injection
 
-```csharp
-// ✅ Constructor injection — always
-public class OrderService(
-    IOrderRepository repository,
-    IEmailSender emailSender,
-    ILogger<OrderService> logger)
-{ }
+```ts
+// DO — dependencies passed in (constructor, factory, or function parameters)
+export function createOrderService(repo: OrderRepository, mailer: Mailer, log: Logger) { /* ... */ }
 
-// ❌ Service locator — never
-public void Process() {
-    var repo = _serviceProvider.GetService<IOrderRepository>();
-}
-
-// ❌ Direct instantiation — never
-public void Process() {
-    var repo = new OrderRepository(_db);
+// DON'T — hidden construction or global lookup inside business logic
+function processOrder() {
+  const repo = new PostgresOrderRepository(globalPool); // untestable, tightly coupled
 }
 ```
 
 ---
 
-## Async / Await
+## Async / Concurrency
 
-```csharp
-// ✅ Async all the way down
-public async Task<Result<Order>> GetOrderAsync(Guid id, CancellationToken ct = default)
-{
-    var order = await _repository.FindAsync(id, ct);
-    return order is null ? Result.Failure<Order>("Not found") : Result.Success(order);
+```ts
+// DO — await all the way, propagate cancellation
+async function getOrder(id: string, signal?: AbortSignal): Promise<Result<Order>> {
+  const order = await repo.find(id, { signal });
+  return order ? ok(order) : err('not_found');
 }
 
-// ❌ Blocking — causes deadlocks
-var order = GetOrderAsync(id).Result;
-var order = GetOrderAsync(id).GetAwaiter().GetResult();
+// DON'T — fire-and-forget or blocking on async work
+repo.save(order);            // unawaited promise: errors vanish
 ```
+
+Equivalent rules: no `.Result`/`.Wait()` in C#, no `asyncio.run()` inside a running loop in Python, no `block_on` inside async Rust, always pass `context.Context` in Go.
 
 ---
 
 ## Error Handling
 
-```csharp
-// ✅ Explicit, logged, meaningful
-try
-{
-    await _repository.SaveAsync(order, ct);
-}
-catch (DbException ex)
-{
-    _logger.LogError(ex, "Failed to persist order {OrderId}", order.Id);
-    throw new OrderPersistenceException("Unable to save order", ex);
-}
+```python
+# DO — explicit, logged, meaningful
+try:
+    repo.save(order)
+except DatabaseError as exc:
+    log.error("failed to persist order", extra={"order_id": order.id})
+    raise OrderPersistenceError("unable to save order") from exc
 
-// ❌ Swallowed — dangerous
-try { await _repository.SaveAsync(order, ct); }
-catch { }
+# DON'T — swallowed
+try:
+    repo.save(order)
+except Exception:
+    pass
 ```
 
 ---
 
-## Result Pattern
+## Expected Failures as Values
 
-```csharp
-// ✅ Explicit outcomes — no exception for expected failures
-public async Task<Result<Order>> CancelOrderAsync(Guid id, CancellationToken ct)
-{
-    var order = await _repository.FindAsync(id, ct);
-    if (order is null) return Result.Failure<Order>("Order not found");
-    if (order.IsCancelled) return Result.Failure<Order>("Order already cancelled");
-
-    order.Cancel();
-    await _repository.SaveAsync(order, ct);
-    return Result.Success(order);
+```ts
+// DO — expected outcomes are explicit results, not exceptions
+async function cancelOrder(id: string): Promise<Result<Order>> {
+  const order = await repo.find(id);
+  if (!order) return err('order_not_found');
+  if (order.isCancelled) return err('already_cancelled');
+  order.cancel();
+  await repo.save(order);
+  return ok(order);
 }
 
-// ❌ Exception as control flow for expected outcomes
-if (order is null) throw new NotFoundException("Order not found");
+// DON'T — exceptions as control flow for expected paths
+if (!order) throw new NotFoundError('Order not found');
 ```
+
+Use the project's idiom: `Result<T>` types, `(value, error)` returns in Go, `Result<T, E>` in Rust, discriminated unions in TypeScript.
 
 ---
 
 ## Validation
 
-```csharp
-// ✅ FluentValidation at the application boundary
-public class CreateOrderCommandValidator : AbstractValidator<CreateOrderCommand>
-{
-    public CreateOrderCommandValidator()
-    {
-        RuleFor(x => x.CustomerId).NotEmpty();
-        RuleFor(x => x.Items).NotEmpty().ForEach(item =>
-            item.ChildRules(i => i.RuleFor(x => x.Quantity).GreaterThan(0)));
-    }
-}
+```python
+# DO — validate once, at the boundary, with a schema
+class CreateOrder(BaseModel):
+    customer_id: UUID
+    items: conlist(OrderItem, min_length=1)
 
-// ❌ Manual validation scattered across multiple layers
-if (command.CustomerId == Guid.Empty) throw new ArgumentException("...");
+# DON'T — ad-hoc checks scattered across layers
+if not command.customer_id:
+    raise ValueError("...")
 ```
+
+Typical tools: Zod/Valibot (TS), Pydantic (Python), FluentValidation/DataAnnotations (.NET), `validator` crates (Rust), struct tags + validator (Go).
 
 ---
 
 ## Structured Logging
 
-```csharp
-// ✅ Semantic properties — searchable in Application Insights / Seq
-_logger.LogInformation("Order {OrderId} created for customer {CustomerId}", order.Id, order.CustomerId);
+```ts
+// DO — semantic properties, queryable in the log backend
+log.info({ orderId: order.id, customerId: order.customerId }, 'order created');
 
-// ❌ String interpolation — not queryable
-_logger.LogInformation($"Order {order.Id} created for customer {order.CustomerId}");
+// DON'T — interpolated strings
+log.info(`Order ${order.id} created for customer ${order.customerId}`);
 ```
 
 ---
@@ -134,40 +122,40 @@ _logger.LogInformation($"Order {order.Id} created for customer {order.CustomerId
 Run before Phase 7 (Summary).
 
 ### Code Quality
-- [ ] All method names express intent clearly
-- [ ] No method longer than ~30 lines without justification
+- [ ] All function names express intent clearly
+- [ ] No function longer than ~30 lines without justification
 - [ ] No nesting deeper than 3 levels
 - [ ] No magic numbers or strings
 - [ ] No dead code committed
 
 ### SOLID
-- [ ] Each class has a single reason to change
-- [ ] Dependencies injected — no `new` for services
-- [ ] Interfaces are narrow and purposeful
+- [ ] Each module/class has a single reason to change
+- [ ] Dependencies passed in — no hidden construction of services
+- [ ] Interfaces/ports are narrow and purposeful
 - [ ] No copy-pasted logic — DRY applied
 
 ### Security
 - [ ] All inputs validated at the boundary
-- [ ] `[Authorize]` on all protected endpoints
+- [ ] Authorisation on all protected endpoints
 - [ ] No secrets in source
 - [ ] No sensitive data in logs
-- [ ] SQL injection impossible (parameterised or EF Core)
+- [ ] Injection impossible (parameterised queries, safe command execution)
 
 ### Architecture
-- [ ] Domain layer has no framework references
-- [ ] Application layer uses only interfaces for I/O
-- [ ] Correct feature folder placement
-- [ ] EF Core migrations included if schema changed
+- [ ] Domain/core has no framework references
+- [ ] Application layer reaches I/O only through abstractions
+- [ ] Correct feature/module placement
+- [ ] Migrations included if the schema changed
 
 ### Testing
-- [ ] Unit tests for domain logic and handlers
-- [ ] Edge cases covered (null, empty, boundary)
+- [ ] Unit tests for domain logic and use cases
+- [ ] Edge cases covered (null/empty, boundary values)
 - [ ] All tests pass
-- [ ] No flaky patterns (`Thread.Sleep`, random data without seed)
+- [ ] No flaky patterns (real sleeps, unseeded randomness, test-order dependence)
 
 ### Observability
 - [ ] Key operations logged with structured properties
-- [ ] Correlation IDs propagated
+- [ ] Correlation/trace IDs propagated
 - [ ] Health checks updated if new dependencies added
 
 ### Scope

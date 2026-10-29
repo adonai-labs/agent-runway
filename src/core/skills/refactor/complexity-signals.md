@@ -41,7 +41,7 @@ Refactor when the code creates **measurable friction** in one of these areas:
 | Method line count | > 30 lines | Manual review or static analysis |
 | Constructor parameters | > 5 injected dependencies | Search for constructors |
 | Nesting depth | > 3 levels | Indentation scan |
-| Cyclomatic complexity | > 10 per method | Static analysis tooling (`dotnet-counters`, SonarQube) |
+| Cyclomatic complexity | > 10 per method | Static analysis tooling (SonarQube, ESLint `complexity`, Radon/Ruff, gocyclo, Clippy, .NET code metrics) |
 | Fan-out (number of types used) | > 8 distinct types in one method | Manual review |
 | Number of public methods on a class | > 10 | Signal of multiple responsibilities |
 
@@ -70,9 +70,9 @@ Do not touch:     Smells in code scheduled for replacement
 
 ### The Hotspot Heuristic
 
-```powershell
+```bash
 # Find files changed most frequently (last 6 months)
-git log --since="6 months ago" --name-only --pretty=format: -- "*.cs" | Sort-Object | Group-Object | Sort-Object Count -Descending | Select-Object -First 20 Count, Name
+git log --since="6 months ago" --name-only --pretty=format: -- "<source glob, e.g. *.ts>" | sort | uniq -c | sort -rn | head -20
 ```
 
 Files that change frequently **and** have high complexity are the highest-value refactoring targets.

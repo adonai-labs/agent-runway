@@ -121,24 +121,24 @@ Use these templates when presenting gate output to the developer.
 ### New Files
 | File | Layer | Responsibility |
 |------|-------|----------------|
-| `Features/Orders/CancelOrder/CancelOrderCommand.cs` | Application | Command definition |
-| `Features/Orders/CancelOrder/CancelOrderHandler.cs` | Application | Handler |
+| `features/orders/cancel-order/<use-case file>` | Application | Use case / command |
+| `features/orders/cancel-order/<handler or route file>` | API | Endpoint |
 | ... | ... | ... |
 
 ### Modified Files
 | File | Change |
 |------|--------|
-| `Domain/Orders/Order.cs` | Add `Cancel()` method |
+| `domain/orders/<order entity file>` | Add `cancel()` behaviour |
 | ... | ... |
 
 ### Domain Changes
 [Entities, value objects, domain events affected]
 
 ### Infrastructure Changes
-[EF Core migrations, new repository methods, external integrations]
+[Migrations, new repository methods, external integrations]
 
 ### IaC Changes Required
-[New Azure resources, config entries, environment variables]
+[New cloud resources, config entries, environment variables]
 
 ### Anti-Patterns to Avoid
 [Reference to specific items in antipatterns.md]
@@ -179,13 +179,13 @@ Use these templates when presenting gate output to the developer.
 ### Files Changed
 | File | Action | Description |
 |------|--------|-------------|
-| `path/to/file.cs` | Created | [Purpose] |
-| `path/to/file.cs` | Modified | [What changed] |
+| `path/to/file` | Created | [Purpose] |
+| `path/to/file` | Modified | [What changed] |
 
 ### Decisions Made
 | Decision | Rationale |
 |----------|-----------|
-| [Used Result<T> pattern] | [Avoids exception-as-control-flow for expected failures] |
+| [Returned explicit results for expected failures] | [Avoids exception-as-control-flow] |
 
 ### Trade-offs Accepted
 - [Trade-off 1]
@@ -200,9 +200,9 @@ Use these templates when presenting gate output to the developer.
 - Evidence gaps: [none / list]
 
 ### Automated Verification
-- `dotnet build`: ✅
-- `dotnet test`: ✅
-- `dotnet format --verify-no-changes`: ✅
+- Build (`<build command>`): ✅ / ❌
+- Tests (`<test command>`): ✅ / ❌
+- Format/lint (`<lint command>`): ✅ / ❌
 ```
 
 ---
@@ -224,7 +224,7 @@ Pass this context block to the `architect` subagent when delegating a Complex ta
 
 ### Codebase Context
 - **Bounded context**: [Name, or "not documented"]
-- **Existing patterns in use**: [e.g. CQRS with MediatR, Result<T>, feature-first folders]
+- **Existing patterns in use**: [e.g. CQRS/mediator, result types, feature-first folders]
 - **Layers in scope**: [Domain / Application / Infrastructure / API / IaC]
 
 ### Existing Code Found
@@ -243,9 +243,6 @@ Pass this context block to the `architect` subagent when delegating a Complex ta
 2. A recommendation with rationale grounded in decision heuristics
 3. Open questions that need developer or PO input before proceeding
 ```
-
----
-
 
 ---
 
@@ -280,6 +277,8 @@ Pass this context block to the `contrarian` subagent when the contrarian trigger
 - [Business or backward-compatibility constraints]
 ```
 
+---
+
 ## Phase 9 — /review Handoff
 
 Pass this context block to the `review` subagent (or code-review skill) when delegating. This must be **self-contained** — the reviewer has no access to prior conversation history.
@@ -313,12 +312,12 @@ Each criterion lists its verifying test (`Verified by:`). A criterion still mark
 ### Files Changed
 | File | Action | Layer |
 |------|--------|-------|
-| `path/to/file.cs` | Created / Modified | Domain / Application / Infrastructure / API |
+| `path/to/file` | Created / Modified | Domain / Application / Infrastructure / API / IaC |
 
 ### Key Decisions Made
 | Decision | Rationale | Phase |
 |----------|-----------|-------|
-| [e.g. Used Result<T> instead of exceptions] | [Why] | Phase 0 / Phase 2 |
+| [e.g. Returned explicit results instead of exceptions] | [Why] | Phase 0 / Phase 2 |
 
 ### Self-Review Findings (Phase 4b / Phase 6)
 | Finding | Resolution |
@@ -341,7 +340,7 @@ If none: "No known risks beyond standard implementation."
 - Integration tests: [count] — covering [scenarios]
 
 ### Automated Verification
-- `dotnet build`: ✅ / ❌
-- `dotnet test`: ✅ / ❌
-- `dotnet format --verify-no-changes`: ✅ / ❌
+- Build (`<build command>`): ✅ / ❌
+- Tests (`<test command>`): ✅ / ❌
+- Format/lint (`<lint command>`): ✅ / ❌
 ```

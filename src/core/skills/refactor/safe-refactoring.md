@@ -17,20 +17,21 @@ If tests do **not** exist:
 - A characterisation test asserts what the code actually does, not what it should do.
 - These tests protect against unintentional behaviour changes during refactoring.
 
-```csharp
-// Characterisation test — captures existing behaviour
-[Fact]
-public async Task PlaceOrder_WithEmptyLines_ThrowsInvalidOperation()
-{
-    var handler = CreateHandler();
-    var command = new PlaceOrderCommand(Guid.NewGuid(), []);
-
-    var act = () => handler.HandleAsync(command, CancellationToken.None);
-
-    await act.Should().ThrowAsync<InvalidOperationException>()
-        .WithMessage("No items");
-}
+```ts
+// Characterisation test (TypeScript / Vitest) — captures existing behaviour, even if odd
+it('placeOrder with no lines throws "No items"', async () => {
+  await expect(placeOrder({ customerId: 'c-1', lines: [] })).rejects.toThrow('No items');
+});
 ```
+
+```python
+# Same idea in Python / pytest
+def test_place_order_with_no_lines_raises():
+    with pytest.raises(ValueError, match="No items"):
+        place_order(customer_id="c-1", lines=[])
+```
+
+Use the stack's test framework (`../<stack>-core/testing.md` when the stack skill is installed).
 
 ### 2. Assess Blast Radius
 
@@ -41,13 +42,15 @@ Before refactoring, understand the impact surface:
 - **Does it cross a layer boundary?** Refactoring a domain entity affects everything above it.
 - **Is this code deployed behind a contract?** APIs, events, and message schemas are not internal refactoring targets.
 
-```powershell
-# Find all callers of a type
-rg "OrderService" --type cs -l
+```bash
+# Find all callers of a type or function (add --type for the language)
+rg -l "\bOrderService\b"
 
-# Find all implementations of an interface
-rg ": IOrderRepository" --type cs
+# Find all implementations of an interface / trait / protocol
+rg "(implements|:|impl)\s+.*OrderRepository"
 ```
+
+Prefer the IDE/language server "find references" when available — it understands imports and aliases.
 
 ### 3. Define the Goal
 
@@ -96,11 +99,7 @@ If you find yourself saying "and", you are combining steps. Split them.
 
 ### Automated
 
-```powershell
-dotnet build --no-incremental
-dotnet test
-dotnet format --verify-no-changes
-```
+Run the project's build, test, and format/lint commands — from the stack's `../code-review/commands-<stack>.md` or the project's own scripts (for example `npm test && npm run lint`, `pytest && ruff check`, `go test ./... && go vet ./...`, `cargo test && cargo clippy`, `dotnet test && dotnet format --verify-no-changes`).
 
 ### Manual Checklist
 
@@ -121,11 +120,7 @@ If the refactoring exposed previously untestable logic (e.g., extracted a pure m
 
 ### Validate Layer Boundaries
 
-```powershell
-# Confirm no infrastructure leaked into domain/application
-rg "using.*Infrastructure" --type cs --glob "**/Domain/**"
-rg "using.*Infrastructure" --type cs --glob "**/Application/**"
-```
+Re-run the coupling search from [systematic-smells.md](systematic-smells.md) (section 12) to confirm no infrastructure leaked into domain/application code.
 
 ### Final Review
 

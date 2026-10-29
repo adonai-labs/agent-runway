@@ -68,6 +68,7 @@ export async function replaceManagedEntries(dir: string, write: () => Promise<st
   const written = [...new Set(await write())].sort();
   if (written.length === 0) {
     await fs.remove(manifestPath);
+    if ((await fs.readdir(dir)).length === 0) await fs.remove(dir);
     return;
   }
   await fs.writeJson(

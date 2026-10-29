@@ -19,7 +19,7 @@ artifact: .agent-runway/specs/<slug>/tickets/task-01.md
 
 | Field | Required | Meaning |
 |-------|----------|---------|
-| `gate` | yes | Which gate produced this: `ticket-eval` \| `po-eval` \| `review` \| `contrarian` |
+| `gate` | yes | Which gate produced this: `ticket-eval` \| `po-eval` \| `review` \| `contrarian` \| `council` \| `safety-check` |
 | `status` | yes | Normalised outcome token (see per-gate values below) |
 | `blocking` | yes | Count of blocking findings/criteria (integer; `0` means nothing blocks) |
 | `date` | yes | ISO date `YYYY-MM-DD` |
@@ -27,12 +27,14 @@ artifact: .agent-runway/specs/<slug>/tickets/task-01.md
 
 ## Status tokens per gate
 
-| Gate | Tokens |
-|------|--------|
-| `ticket-eval` | `yes` \| `conditional` \| `no` |
-| `po-eval` | `yes` \| `conditional` \| `no` |
-| `review` | `approve` \| `changes` \| `discuss` |
-| `contrarian` | `go` \| `go-conditional` \| `stop` |
+| Gate | Tokens | Passing token | Human verdict mapping |
+|------|--------|---------------|-----------------------|
+| `ticket-eval` | `yes` \| `conditional` \| `no` | `yes` | YES / CONDITIONALLY / NO |
+| `po-eval` | `yes` \| `conditional` \| `no` | `yes` | YES / CONDITIONALLY / NO |
+| `review` | `approve` \| `changes` \| `discuss` | `approve` | APPROVE / REQUEST CHANGES / NEEDS DISCUSSION |
+| `contrarian` | `go` \| `go-conditional` \| `stop` | `go` | Go / Go with conditions / Stop |
+| `council` | `pursue` \| `refine` \| `pause` \| `reject` | `pursue` | Pursue / Refine / Pause / Reject |
+| `safety-check` | `go` \| `caution` \| `stop` | `go` | Go / Go with caution / Stop |
 
 ## Rules
 

@@ -62,21 +62,11 @@ Execution mode:
 
 ## Required Artifacts
 
-Before code changes, create:
+Before code changes, create `.agent-runway/logs/autonomous-runs/<run-id>.md`, where `<run-id>` is UTC `YYYYMMDD-HHMM-<implementation-slug>` (starting point: `.agent-runway/docs/examples/autonomous-run-log-template.md`).
 
-- `.agent-runway/logs/autonomous-runs/<run-id>.md`
-- Recommended starting point: `.agent-runway/docs/examples/autonomous-run-log-template.md`
+When architectural impact is detected, also create `.agent-runway/docs/architecture/decisions/ADR-YYYYMMDD-<decision-slug>.md`.
 
-Where `<run-id>` is UTC-based:
-- `YYYYMMDD-HHMM-<implementation-slug>`
-
-When architectural impact is detected, also create:
-
-- `.agent-runway/docs/architecture/decisions/ADR-<YYYYMMDD>-<decision-slug>.md`
-
-Always append key final decisions to:
-
-- `.agent-runway/memory/project-decisions.md`
+Paths follow [../shared/artifact-writing-contract.md](../shared/artifact-writing-contract.md); memory writes follow the automatic-sync rule in [../shared/memory-policy.md](../shared/memory-policy.md) (Phase 5).
 
 ## Optional Context Providers
 
@@ -157,7 +147,7 @@ If execution mode is `Execution+contrarian`, run the mandatory contrarian gate b
 
 ### Phase 0.6 - Contrarian Gate (Mandatory for High Impact)
 
-Delegate to the `contrarian` agent via the `/contrarian Handoff` template from `.agent-runway/skills/lead/validation-templates.md`.
+Delegate to the `contrarian` agent via the `/contrarian Handoff` template from [../lead/validation-templates.md](../lead/validation-templates.md).
 
 Complete the handoff with:
 - problem statement
@@ -200,13 +190,11 @@ Use `lead` planning standards:
    - continue only if it stays inside stated outcome
    - otherwise stop and report blocker
 
-Implementation must follow `lead` standards and incremental checks from:
-- [../lead/standards.md](../lead/standards.md)
-- [../lead/incremental-checks.md](../lead/incremental-checks.md)
+Implementation follows [../lead/standards.md](../lead/standards.md) and [../lead/incremental-checks.md](../lead/incremental-checks.md), with stack detection and stack references as in [../lead/reference.md](../lead/reference.md).
 
 ### Phase 3 - Autonomous Quality Gates
 
-Run and log:
+Run and log (commands from the injected `../code-review/commands-<stack>.md` or the project's own scripts):
 
 - Build/lint status
 - Test status
@@ -242,13 +230,7 @@ Update run log with:
 - Known residual risks
 - Recommended follow-ups
 
-Append stable lessons to `.agent-runway/memory/project-decisions.md`.
-Append recurring operational patterns to `.agent-runway/memory/execution-memory.md` when observed.
-Append recurring reasoning lessons to `.agent-runway/memory/reasoning-memory.md` when observed.
-
-Apply the artifact writing contract and memory hygiene policy when writing:
-- [../shared/artifact-writing-contract.md](../shared/artifact-writing-contract.md)
-- [../shared/memory-policy.md](../shared/memory-policy.md) (consolidate duplicates, cap active entries, archive instead of delete)
+Memory sync (automatic-sync rule in [../shared/memory-policy.md](../shared/memory-policy.md)): write at most two entries per run, one lesson per file, and only for signals seen at least twice — a recurring decision → `project-decisions.md`, an operational pattern → `execution-memory.md`, or a reasoning lesson → `reasoning-memory.md`. One-off decisions stay in the run log and ADRs. List any memory writes in the run log.
 
 Finalise the run header: set `deviations` (count of departures from the planned implementation) and `memory_refs` (titles of memory entries that were applied during this run). This is what lets `agent-runway metrics` measure whether memory is actually used.
 

@@ -1,18 +1,18 @@
 # Anti-Patterns — Canonical List
 
-Shared between `lead` and `code-review` skills. This is the single source of truth.
+Shared between `lead`, `autonomous-lead`, `refactor`, and `code-review`. This is the single source of truth for stack-neutral anti-patterns. Stack-specific forms (for example C# `.Result`/`async void`, Node unhandled promises, Python mutable default arguments) live in the stack skill when it is installed: `../<stack>-core/patterns.md` or `../<stack>-core/delivery-checks.md`.
 
 ---
 
-## Async / Await
+## Async / Concurrency
 
 | Anti-pattern | Why it's harmful | Fix |
 |-------------|-----------------|-----|
-| `.Result` or `.Wait()` on a Task | Deadlocks in ASP.NET Core sync context | `await` the Task |
-| `async void` (outside event handlers) | Exceptions are uncatchable | Return `Task` |
-| `Thread.Sleep` in async code | Blocks the thread | `await Task.Delay(ms)` |
-| Not propagating `CancellationToken` | Requests can't be cancelled gracefully | Accept and pass `CancellationToken` through |
-| Missing `ConfigureAwait(false)` in library code | Context switching overhead | Add `ConfigureAwait(false)` in non-UI libraries |
+| Blocking on async work (sync-over-async) | Deadlocks, thread/event-loop starvation | Await all the way down |
+| Fire-and-forget without error handling | Failures silently lost | Await, attach error handling, or use a supervised background job |
+| Sleeping to wait for something | Slow and flaky | Await the event, poll with timeout, or use a fake clock in tests |
+| Not propagating cancellation | Work continues after the caller gave up | Accept and pass the cancellation token/context/signal |
+| Unprotected shared mutable state | Race conditions | Immutability, ownership, or explicit synchronisation |
 
 ---
 
@@ -20,9 +20,9 @@ Shared between `lead` and `code-review` skills. This is the single source of tru
 
 | Anti-pattern | Why it's harmful | Fix |
 |-------------|-----------------|-----|
-| `new ServiceClass()` inside a method | Tight coupling, untestable | Inject via constructor |
-| `new HttpClient()` directly | Socket exhaustion | Use `IHttpClientFactory` |
-| Service locator (`serviceProvider.GetService<T>()`) inside domain | Hides dependencies | Inject directly |
+| Constructing services inside business logic | Tight coupling, untestable | Pass dependencies in |
+| Creating a new HTTP/DB client per call | Socket/connection exhaustion | Reuse a pooled client or factory |
+| Service locator / global registry lookup in domain code | Hides dependencies | Inject directly |
 | Static state or mutable singletons | Race conditions, test pollution | Avoid shared mutable state |
 
 ---
@@ -31,10 +31,10 @@ Shared between `lead` and `code-review` skills. This is the single source of tru
 
 | Anti-pattern | Why it's harmful | Fix |
 |-------------|-----------------|-----|
-| `catch (Exception) { }` — swallowed exception | Failures silently ignored | Log and rethrow or return `Result.Failure` |
-| Exception as control flow for expected paths | Performance and clarity | Use `Result<T>` or `Option<T>` |
-| Returning `null` from service methods | Forces null checks everywhere | Return `Result<T>` or throw a domain exception |
-| Generic error messages to callers | Aids attackers; hides root cause | Log detail internally, expose safe message externally |
+| Swallowed error (empty catch, `except: pass`, ignored `err`) | Failures silently ignored | Log and propagate, or return an explicit error |
+| Exceptions as control flow for expected paths | Performance and clarity | Return result/option types |
+| Returning `null`/`None` from service functions for failures | Forces defensive checks everywhere | Return a result type or raise a domain error |
+| Leaking internal error detail to callers | Aids attackers | Log detail internally, return a safe message |
 
 ---
 
@@ -42,12 +42,12 @@ Shared between `lead` and `code-review` skills. This is the single source of tru
 
 | Anti-pattern | Why it's harmful | Fix |
 |-------------|-----------------|-----|
-| SQL string concatenation | SQL injection | Parameterised queries / EF Core |
-| Secrets in source code or `appsettings.json` | Leaked credentials | Azure Key Vault / user-secrets locally |
-| Missing `[Authorize]` on protected endpoints | Unauthenticated access | Explicit `[Authorize]` on every protected action |
+| String-built SQL/shell commands | Injection | Parameterised queries, safe exec APIs |
+| Secrets in source or committed config | Leaked credentials | Environment/secret manager; local secret store for dev |
+| Missing authorisation on protected endpoints | Unauthenticated access | Explicit authorisation on every protected route |
 | Logging sensitive data (passwords, tokens, PII) | Data breach via logs | Mask or exclude sensitive fields |
-| `BinaryFormatter` usage | Arbitrary code execution via deserialisation | Use `System.Text.Json` |
-| XSS via unencoded output | Cross-site scripting | `HtmlEncoder.Default.Encode()` |
+| Deserialising untrusted data with unsafe serializers | Remote code execution | Safe, schema-based serializers |
+| Unencoded output in HTML | XSS | Framework auto-escaping / explicit encoding |
 
 ---
 
@@ -55,10 +55,10 @@ Shared between `lead` and `code-review` skills. This is the single source of tru
 
 | Anti-pattern | Why it's harmful | Fix |
 |-------------|-----------------|-----|
-| N+1 queries (missing `.Include()`) | Exponential DB calls | Eager load with `.Include()` |
-| Loading entire table then filtering in memory | Memory and performance | Apply `.Where()` before materialising |
-| Unbounded queries (no pagination) | OOM on large datasets | Add `.Take()` + `.Skip()` or use cursor pagination |
-| `SaveChanges` inside a loop | DB round-trips per iteration | Batch and save once |
+| N+1 queries | Query per row | Eager load, join, or batch |
+| Loading everything then filtering in application memory | Memory and latency | Filter in the query |
+| Unbounded queries (no pagination/limit) | OOM on large datasets | Limit + cursor/keyset pagination |
+| Writes inside a loop | Round-trip per item | Batch and commit once |
 
 ---
 
@@ -66,12 +66,12 @@ Shared between `lead` and `code-review` skills. This is the single source of tru
 
 | Anti-pattern | Why it's harmful | Fix |
 |-------------|-----------------|-----|
-| Anemic domain model — logic in services, entities are DTOs | Scattered business rules | Move behaviour to entities |
-| God class / God service | Impossible to test or change | Split by Single Responsibility |
-| Feature envy — method uses another object's data more than its own | Wrong layer for the logic | Move method to the correct class |
-| Primitive obsession — `string` for Email, `int` for Money | No validation or semantics | Introduce value objects |
+| Anemic domain model — logic in services, entities are data bags | Scattered business rules | Move behaviour to entities/modules that own the data |
+| God class / god module | Impossible to test or change | Split by single responsibility |
+| Feature envy | Logic in the wrong place | Move the function to the data it uses |
+| Primitive obsession (`string` email, `number` money) | No validation or semantics | Introduce value types |
 | Magic numbers and strings | Unclear intent | Named constants or configuration |
-| Deep nesting (3+ levels) | Hard to read and test | Guard clauses, extract methods |
+| Deep nesting (3+ levels) | Hard to read and test | Guard clauses, extract functions |
 
 ---
 
@@ -79,7 +79,8 @@ Shared between `lead` and `code-review` skills. This is the single source of tru
 
 | Anti-pattern | Why it's harmful | Fix |
 |-------------|-----------------|-----|
-| `Thread.Sleep` in tests | Flaky and slow | Use `FakeTimeProvider` or mock time |
+| Real sleeps in tests | Flaky and slow | Fake clock / controllable time |
 | Testing implementation details | Breaks on refactoring | Test observable behaviour |
-| No assertion — test always passes | False confidence | At least one meaningful `Assert` |
+| No assertion | False confidence | At least one meaningful assertion |
 | Shared mutable state between tests | Test order dependency | Isolate state per test |
+| Skipped or focused tests committed | Hidden regressions | Fix or delete with a linked issue |

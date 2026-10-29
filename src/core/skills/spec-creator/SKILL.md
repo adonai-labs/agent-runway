@@ -39,13 +39,13 @@ Apply shared policy: [../shared/caveman-skill-engineering.md](../shared/caveman-
 10. **Escalate design intentionally** — use `architect` when complexity warrants it
 11. **Decompose implementation intentionally** — avoid "single giant function" plans; define atomic responsibilities
 
-## 8-Phase Workflow
+## Workflow — Phases 0–7 (with 2.5, 2.6, 5.5, 6.5)
 
 ### Phase 0: Configuration Loading (Silent)
 
-1. Check for `.cursor/config/spec-creator.config.md`
-2. If found, use it as active configuration
-3. If not found, run generic mode:
+1. Read `{{config}}/spec-creator.config.md`
+2. If it has settings, use them as the active configuration (`output.*`, `docs.*`, `codebase_scanning.*`)
+3. If it is missing or empty, run generic mode:
    - `codebase_scanning.enabled: false`
    - `output.default_destination: markdown`
    - `output.markdown_path: .agent-runway/specs`
@@ -72,7 +72,7 @@ Apply the **Minimum context** rule from shared policy; stop gathering once draft
 Use docs and optional codebase scanning (same strategy as `ticket-creator`, adapted for specs). Collect domain terms, affected modules, API/schema impact, and ADR constraints.
 
 Before drafting, check stack template availability at:
-- `.agent-runway/config/spec-templates/<stack>/spec-template.md`
+- `{{config}}/spec-templates/<stack>/spec-template.md`
 
 If found, reuse its scaffold proposal and architectural conventions in `Proposed Design`, **Proposed Solution Structure**, and implementation planning.
 If multiple stacks are installed, pick the primary stack relevant to the requested capability.
@@ -164,14 +164,12 @@ Auto-fix obvious gaps, ask focused questions for ambiguous gaps.
 
 If the agent detects a repeated failure pattern while drafting or refining the spec
 (for example: recurring validation misses, repeated integration failures, repeated
-ambiguity from the same area), ask whether to register it for team memory.
-
-Use `AskQuestion` with a single-select prompt:
+ambiguity from the same area), ask whether to register it for team memory — a single-select question using the environment's question tool (plain text if none):
 - `yes` — register repeated error
 - `no` — skip registration
 
-If `yes`:
-- append an entry to `.agent-runway/memory/repeated-errors.md` (create file if missing)
+This skill never writes memory without that `yes` ([../shared/memory-policy.md](../shared/memory-policy.md)). If `yes`:
+- add or update one entry in `.agent-runway/memory/common-failures.md`
 - include:
   - date
   - error pattern
@@ -184,11 +182,12 @@ Keep entries concise and non-sensitive. Apply the memory hygiene policy: [../sha
 
 ### Phase 6: Output
 
-Naming is mandatory — see [template.md](template.md#output-path-convention). Never write only `spec.md`, `epic.md`, or anonymous `ticket.md`.
+Naming is mandatory — see [template.md](template.md#output-path-convention) and [../shared/artifact-writing-contract.md](../shared/artifact-writing-contract.md). The slug folder carries the identity; files inside keep their canonical names. Never write a spec outside a slug folder (e.g. a bare `.agent-runway/specs/spec.md`) or an anonymous `ticket.md`.
 
 Default output (replace `<implementation-slug>` with the agreed slug):
 
 - `.agent-runway/specs/<implementation-slug>/spec.md`
+- tickets derived later go to `.agent-runway/specs/<implementation-slug>/tickets/task-<nn>-<ticket-slice-slug>.md`
 
 Optional output:
 - markdown mirror path requested by user
@@ -196,9 +195,7 @@ Optional output:
 
 ### Phase 6.5: Human Summary Gate
 
-After generating the spec, ask whether to generate a human-readable summary.
-
-Use `AskQuestion`:
+After generating the spec, ask whether to generate a human-readable summary (single-select, using the environment's question tool or plain text):
 
 ```
 Title: Human Summary

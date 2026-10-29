@@ -79,8 +79,23 @@ Verdict: Go | Go with caution | Stop
 
 ## Suggested Path
 
-<Continue in Lite, run @checkpoint, or upgrade to Structured.>
+<Continue in Lite, run checkpoint, or upgrade to Structured.>
 ```
+
+Always end the output with this block, filled in (schema: [../shared/verdict-block.md](../shared/verdict-block.md)). Map **Go** → `go`, **Go with caution** → `caution`, **Stop** → `stop`:
+
+```yaml
+# agent-runway:verdict
+gate: safety-check
+status: [go | caution | stop]
+blocking: [0 for go; number of "Must Check Before Continuing" items for caution or stop, minimum 1]
+date: [YYYY-MM-DD]
+artifact: [branch, scope, or changed-file set checked]
+```
+
+### 5. Persist only when asked
+
+By default, do not write files. If the developer asks to save the check, write it (verdict block included) to `.agent-runway/logs/safety-checks/YYYY-MM-DD-HHMM-<slug>.md` following [../shared/artifact-writing-contract.md](../shared/artifact-writing-contract.md). Never write memory from this skill ([../shared/memory-policy.md](../shared/memory-policy.md)); suggest the `learning` skill for durable lessons.
 
 ---
 
@@ -88,9 +103,8 @@ Verdict: Go | Go with caution | Stop
 
 - If verdict is **Go**, continue with the current fast path.
 - If verdict is **Go with caution**, run the listed checks before continuing.
-- If verdict is **Stop**, recommend upgrading to Structured and using the relevant skill:
-  - `@architect` for design uncertainty
-  - `@lead` for multi-layer implementation
-  - `@code-review` for completed risky changes
+- If verdict is **Stop**:
+  - completed risky changes → the `code-review` skill (available in every mode)
+  - design uncertainty → `architect`; multi-layer implementation → `lead`. These exist only in Structured mode: if their folder is not installed next to this skill (`../<skill>/SKILL.md`), the project is in Lite mode — use `council` to weigh the options, or tell the developer to run `npx agent-runway upgrade --to structured`.
 
 Keep the answer short. This skill should add friction only when the risk is real.

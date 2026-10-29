@@ -14,11 +14,19 @@ description: Entry point for any development task. Understands what the develope
 Examples:
 - `/start I need to add email notifications when an order is placed`
 - `/start there's a bug where users can see other users' orders`
-- `/start we need to provision a new Azure Service Bus namespace`
+- `/start we need to provision a message queue for order events`
 - `/start the payment service is getting too complex, it needs cleaning up`
 - `/start PROJ-501`
 
 > Not sure if this is the right skill? It always is — `/start` figures out where to go from here.
+
+---
+
+## Mode check (run first)
+
+Agent Runway installs in **Structured** mode (all skills) or **Lite** mode (`start`, `express`, `checkpoint`, `learning`, `safety-check`, `code-review`, `council`). Before recommending any other skill, check whether its folder is installed next to this one (`../<skill>/SKILL.md`). If the `lead` folder is missing, the project is in Lite mode: use the **Lite route** column in Phase 3 and never recommend a Structured-only skill as if it were available. When the work clearly needs a Structured skill, say so and suggest `npx agent-runway upgrade --to structured`.
+
+Invocation wording: skills are invoked as `/<skill>` in Claude Code and through slash commands, or as `@<skill>` in Cursor / VS Code skill mentions. Write recommendations as "invoke the `lead` skill (`/lead`)".
 
 ---
 
@@ -50,13 +58,13 @@ Read the developer's description carefully. Identify the primary intent:
 | "checkpoint", "save state", "handoff", "pause here", "resume later" | Checkpoint |
 | "safety check", "risk check", "is this safe", "before I continue" | Safety check |
 | "clean up", "refactor", "simplify", "too complex", "hard to read" | Refactor |
-| "infrastructure", "provision", "Bicep", "Terraform", "Azure resource" | IaC |
+| "infrastructure", "provision", "Bicep", "Terraform", "CloudFormation", "Pulumi", "cloud resource" | IaC |
 | "design", "should I use", "trade-off", "architecture decision", "ADR" | Architecture |
 | "validate", "is this ticket ready", "check this story" | Ticket validation |
 | "product-ready", "PO review", "business readiness", "evaluate this spec as PO" | PO evaluation |
 | Jira ticket key (e.g. `PROJ-123`) or path to `.md` file | Ticket validation → then re-classify |
 
-If the intent is genuinely ambiguous after reading the description, use `AskQuestion` with a single-select:
+If the intent is genuinely ambiguous after reading the description, ask a single-select question using the environment's question tool (or plain text with numbered options if none):
 
 ```
 What best describes what you want to do?
@@ -80,7 +88,7 @@ Do not ask this question if the intent is clear.
 
 #### If intent is Implementation or Bug fix
 
-Apply the three classification signals from `/lead`:
+Apply the three classification signals (shared with the `lead` skill):
 
 1. Does this involve a design decision? (new pattern, layer boundary, architectural choice)
 2. Does this touch more than one layer? (Domain, Application, Infrastructure, API)
@@ -111,7 +119,7 @@ Execution routing class:
 - **Execution+contrarian**: contrarian trigger active
 
 Short-path rule:
-- If routing class is `Execution-only`, prefer minimal process path (`/express` or `/lead` Fast-Track Mode when plan is already clear).
+- If routing class is `Execution-only`, prefer the minimal process path (`express`, or `lead` Fast-Track Mode when the plan is already clear and Structured mode is installed).
 - Do not force extended discovery gates for execution-only tasks.
 
 **Then load project context** (only what exists — skip gracefully if files are absent):
@@ -125,7 +133,7 @@ Present a brief context summary:
 Project context loaded:
 - Bounded context: [name, or "not documented yet"]
 - Relevant ADRs: [list, or "none found"]
-- Existing patterns to follow: [e.g. CQRS with MediatR, Result<T>, feature-first folders]
+- Existing patterns to follow: [e.g. CQRS/mediator, result types, feature-first folders]
 - Layers touched by this work: [Domain / Application / Infrastructure / API]
 ```
 
@@ -137,7 +145,7 @@ The tech lead can add project context to .agent-runway/docs/ to improve future r
 
 #### If intent is Autonomous implementation
 
-Route directly to `/autonomous-lead`.
+Route to the `autonomous-lead` skill (Structured only — in Lite mode, explain that unattended runs need Structured and offer `express` with a `checkpoint` instead).
 
 Before handoff, load the same project context as Implementation/Bug fix and add this note:
 
@@ -150,7 +158,7 @@ Autonomous mode selected:
 
 #### If intent is Refactor
 
-Check complexity signals from `/refactor`. Ask one clarifying question if the target is not clear:
+Check refactoring complexity (micro, targeted, or structural). Ask one clarifying question if the target is not clear:
 ```
 What is the primary goal?
 - Reduce complexity in a specific class or method
@@ -161,23 +169,23 @@ What is the primary goal?
 
 #### If intent is IaC
 
-Identify the cloud target (Azure by default) and whether this is new infrastructure, a change to existing, or a review.
+Identify the cloud provider (Azure, AWS, GCP, or other) and IaC tool (Bicep, Terraform, CloudFormation, Pulumi) from the existing `infra/` files or the description — ask if neither shows it. Then identify whether this is new infrastructure, a change to existing, or a review.
 
 #### If intent is Architecture
 
-Identify whether this is a decision to make (use `/architect`), a review of an existing proposal (use `/architect`), or an ADR to write (use `/architect`).
+Identify whether this is a decision to make, a review of an existing proposal, or an ADR to write — all handled by the `architect` skill.
 
 #### If intent is Ticket validation
 
-If a Jira key or `.md` file was provided, proceed directly to `/validate`. If not, ask for one.
+If a Jira key or `.md` file was provided, route to the `ticket-eval` skill (`/validate`). If not, ask for one.
 
 #### If intent is PO evaluation
 
-If a spec/ticket path or Jira key was provided, proceed directly to `/po-eval`. If not, ask for one.
+If a spec/ticket path or Jira key was provided, route to the `po-eval` skill (`/po-eval`). If not, ask for one.
 
 #### If intent is Code review
 
-Ask for the list of files or the branch/PR reference, then proceed to `/review`.
+Ask for the list of files or the branch/PR reference, then route to the `code-review` skill (`/review`).
 
 #### If intent is Checkpoint
 
@@ -189,14 +197,27 @@ Route directly to the checkpoint skill.
 
 Present the routing decision clearly.
 
-For **Implementation and Bug fix** tasks, use the following routing rules in order:
+For **Implementation and Bug fix** tasks, use the following routing rules in order (Structured route; Lite route in the table below):
 
-1. If routing class is **Execution+contrarian**: recommend `/lead` with mandatory contrarian gate before implementation.
-2. If **Complex** → recommend `/lead`. Always. A Complex task routed to `/express` should only happen if the developer explicitly overrides after seeing an escalation signal.
-3. If **Standard** and the developer mentions they already have a plan or approach → recommend `/lead` (Fast-Track Mode).
+1. If routing class is **Execution+contrarian**: recommend `lead` with the mandatory contrarian gate before implementation.
+2. If **Complex** → recommend `lead`. Always. A Complex task goes to `express` only if the developer explicitly overrides after seeing an escalation signal.
+3. If **Standard** and the developer already has a plan or approach → recommend `lead` (Fast-Track Mode).
 4. If **Standard** and no plan mentioned:
-   - Small, well-scoped, single-layer → suggest `/express` as an option alongside `/lead`
-   - Anything else → recommend `/lead`
+   - Small, well-scoped, single-layer → suggest `express` as an option alongside `lead`
+   - Anything else → recommend `lead`
+
+| Intent | Structured route | Lite route (no `lead` folder installed) |
+|---|---|---|
+| Implementation / bug fix — Trivial or small Standard | `express` or `lead` | `express` |
+| Implementation — larger Standard or Complex | `lead` | `safety-check` first, then `express` in small slices; recommend upgrading for Complex work |
+| Autonomous implementation | `autonomous-lead` | Not available — `express` + `checkpoint`, or upgrade |
+| Refactor | `refactor` | `express` (behaviour-preserving, tests first) + `code-review` |
+| IaC | `iac` | `safety-check`, then `express`; recommend upgrading for high-impact infra |
+| Architecture / design decision | `architect` | `council` |
+| Idea or hypothesis to evaluate | `council` | `council` |
+| Ticket validation / PO evaluation | `ticket-eval` (`/validate`) / `po-eval` | `council` on the ticket, or upgrade |
+| Code review | `code-review` (`/review`) | `code-review` |
+| Checkpoint / Safety check | `checkpoint` / `safety-check` | same |
 
 The recommendation is always a suggestion, not a command. Present it as:
 
@@ -216,18 +237,18 @@ The recommendation is always a suggestion, not a command. Present it as:
 - [Layer(s) in scope]
 - [Anything the developer should know before starting]
 
-Recommended: /[command] ([brief reason])
-Alternatives: [other applicable commands]
+Recommended: invoke the `[skill]` skill (`/[skill]`) — [brief reason]
+Alternatives: [other applicable skills available in this mode]
 ```
 
 For non-implementation intents (Refactor, IaC, Architecture, Review, Ticket validation, PO evaluation, Checkpoint, Safety check), route directly to the relevant skill without the classification/alternatives block.
 
-For Autonomous implementation intents, route directly to `/autonomous-lead` and include artifact logging obligations in the handoff summary.
+For Autonomous implementation intents (Structured), route to `autonomous-lead` and include artifact logging obligations in the handoff summary.
 
 If the task is **Complex**, add:
 
 ```
-> This is a Complex task. /lead will invoke /architect in Phase 0 before any code is written.
+> This is a Complex task. The lead skill delegates to the architect in Phase 0 before any code is written.
 > Before starting, consider reading: .agent-runway/docs/[relevant section] (if it exists)
 ```
 
@@ -235,7 +256,7 @@ If routing class is **Execution+contrarian**, also add:
 
 ```
 > Contrarian gate required before build:
-> /lead must document strongest counter-argument, at least one viable alternative, and a Go/Go-with-conditions/Stop verdict.
+> The lead skill must document the strongest counter-argument, at least one viable alternative, and a Go/Go-with-conditions/Stop verdict.
 ```
 
 If no project docs exist for a Complex task, surface it explicitly:
@@ -243,7 +264,7 @@ If no project docs exist for a Complex task, surface it explicitly:
 ```
 > This is a Complex task but no architecture docs were found.
 > Recommend: ask the tech lead or architect to document the relevant bounded context before starting.
-> You can still proceed — /lead will explore the codebase in Phase 0.
+> You can still proceed — the lead skill explores the codebase in Phase 0.
 ```
 
 ---

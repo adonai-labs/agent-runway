@@ -13,10 +13,12 @@ description: Minimal-friction implementation path for well-scoped tasks. Assumes
 
 Examples:
 - `/express add null guard to OrderService.GetById`
-- `/express fix missing ConfigureAwait on async database call in PaymentHandler`
+- `/express fix unawaited async database call in PaymentHandler`
 - `/express add X-Correlation-Id header to outbound HTTP requests`
 
-> Not sure if `/express` is right for this task? Run `/start` first — it will tell you whether the task fits `/express` or needs more ceremony.
+> Not sure if `/express` is right for this task? Run the `start` skill first — it will tell you whether the task fits `express` or needs more ceremony.
+
+**Mode check:** whenever this skill recommends the `lead` skill, first check whether its folder is installed next to this one (`../<skill>/SKILL.md`). If it is not, the project is in Lite mode: recommend the `safety-check` skill and smaller `express` slices instead, or tell the developer to run `npx agent-runway upgrade --to structured`. Never point a Lite project at a skill it does not have.
 
 ---
 
@@ -26,7 +28,7 @@ Five phases. No approval gates except one: escalation signal confirmation if sig
 
 The developer owns all design decisions. This skill enforces critical safety checks and a lightweight self-review — nothing more.
 
-`/express` is not `/lead` Fast-Track Mode with fewer phases. It is a different skill designed from the ground up for minimal friction. It assumes the developer has full context, knows the codebase, and does not need a planning step.
+`express` is not the `lead` skill's Fast-Track Mode with fewer phases. It is a different skill designed from the ground up for minimal friction. It assumes the developer has full context, knows the codebase, and does not need a planning step.
 
 ---
 
@@ -38,7 +40,7 @@ Signals are **non-blocking** — the developer always sees them and always decid
 
 Simplicity policy:
 - `/express` is only for low-risk, reversible, low-uncertainty changes.
-- If risk profile does not match this, recommend `/lead` and stop instead of stretching `/express`.
+- If the risk profile does not match this, recommend the `lead` skill (Structured) or `safety-check` + upgrade (Lite) and stop instead of stretching `express`.
 
 ### Detection criteria
 
@@ -60,18 +62,19 @@ When one or more signals are detected, present them before proceeding:
    - [signal name]: [one-line explanation specific to this task]
    - [signal name]: [one-line explanation specific to this task]
 
-   These suggest this task may be more complex than /express assumes.
-   Recommended path: /lead (Fast-Track Mode if you already have a plan)
+   These suggest this task may be more complex than express assumes.
+   Recommended path: the lead skill (Fast-Track Mode if you already have a plan)
+   — in Lite mode: run safety-check, or upgrade with `npx agent-runway upgrade --to structured`
 
    Continue with /express anyway? [y/N]
 ```
 
 If the developer confirms, note the accepted signals and proceed to Phase 1.
-If the developer says no, recommend the appropriate alternative command and stop.
+If the developer says no, recommend the appropriate alternative skill available in this mode and stop.
 
 ---
 
-## Workflow — 5 Phases
+## Workflow — 5 Phases (0–4)
 
 ---
 
@@ -89,7 +92,7 @@ Also classify:
 - uncertainty
 - cost of error
 
-If risk profile is not low + reversible + low uncertainty, recommend `/lead` and stop.
+If the risk profile is not low + reversible + low uncertainty, recommend `lead` (Structured) or `safety-check` + upgrade (Lite) and stop.
 
 If no signals are found, proceed to Phase 1 without asking anything else. No gates, no approval requests.
 
@@ -103,7 +106,7 @@ Run the following searches automatically, without asking permission:
 2. **DRY — search 2**: Is there a shared abstraction, base class, or utility that already does part of this? Target a different angle from search 1.
 3. **Security**: Are there existing security patterns relevant to this change? (e.g. how the codebase currently handles validation, authorisation, or secrets in this area)
 
-These three searches are the minimum and the maximum. Do not add more — that is what `/lead` is for.
+These three searches are the minimum and the maximum. Do not add more — deeper analysis belongs to the `lead` skill.
 
 Report findings inline. If a DRY hit is found, flag it and ask the developer how they want to proceed before continuing. If no hits are found on either DRY search, state that plainly and move to Phase 2 immediately.
 
@@ -115,7 +118,7 @@ Implement the change. No planning phase. No approval gate on the implementation 
 
 Apply all relevant rules for the detected stack (engineering principles, security, and any stack-specific rules) as they are applied in any other skill — injected automatically and non-negotiable.
 
-If during implementation a significant unexpected complexity emerges (e.g. the change touches more boundaries than initially described), surface an escalation signal inline using the format above and continue. Do not stop. The developer can decide to finish with `/express` or switch to `/lead` for the remaining work.
+If during implementation a significant unexpected complexity emerges (e.g. the change touches more boundaries than initially described), surface an escalation signal inline using the format above and continue. Do not stop. The developer can decide to finish with `express` or switch to `lead` (Structured) for the remaining work.
 
 ---
 
@@ -128,7 +131,7 @@ Run the self-review checklist inline. Do not delegate to the review subagent.
 | Intent match | Does the implementation match the intent stated in Phase 0? |
 | Hardcoded values | Are there hardcoded values, secrets, or magic strings? |
 | Error handling | Is error handling present where the code can fail? |
-| Async correctness | Are there async/await issues (fire-and-forget, missing ConfigureAwait where relevant)? |
+| Async correctness | Are there async issues (unawaited calls, fire-and-forget, blocking on async work, missing cancellation)? |
 | Test coverage | Is the change covered by at least one test, or is there a documented reason why it isn't? |
 | Injection and validation | Are there any obvious injection or validation gaps? |
 | Accepted signals | If escalation signals were accepted in Phase 0, have those areas been handled carefully? |
@@ -141,4 +144,4 @@ Present the checklist results as a brief summary: issues found and how they were
 
 Produce a conventional commit message following the pattern established in the codebase (e.g. `fix(payments): add null guard to OrderService.GetById`). Done.
 
-No Phase 10.5 in `/express`. The overhead of improvement logging is not appropriate here.
+No system-feedback phase in `express`. If the work revealed a durable lesson, suggest the `learning` skill; never write memory automatically ([../shared/memory-policy.md](../shared/memory-policy.md)).

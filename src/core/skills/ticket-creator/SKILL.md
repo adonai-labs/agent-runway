@@ -40,76 +40,35 @@ Apply shared policy: [../shared/caveman-skill-engineering.md](../shared/caveman-
 
 ## Artefact naming (mandatory)
 
-- Derive an **`implementation-slug`** (kebab-case, ASCII) from the epic title, feature name, or agreed solution name. Use it in every markdown filename — never ship only `spec.md`, `epic.md`, or anonymous `ticket.md`.
-- **Epic** file: `.agent-runway/specs/<implementation-slug>/epic.md`
-- **Spec** (when originating from spec flow): same folder, `spec.md` / `summary.md` per `spec-creator` template.
-- **Delivery tickets** (markdown): `.agent-runway/specs/<implementation-slug>/tickets/task-<nn>-<ticket-slice-slug>.md` with zero-padded `nn` (`01`, `02`, …). Always in the `tickets/` subfolder of the slug — never alongside spec files or in a separate `docs/tickets/` location.
+- Derive an **`implementation-slug`** (kebab-case, ASCII) from the epic title, feature name, or agreed solution name. The slug is the folder name; files inside use the canonical names from [../shared/artifact-writing-contract.md](../shared/artifact-writing-contract.md).
+- **Epic**: `.agent-runway/specs/<implementation-slug>/epic.md`
+- **Spec / summary** (spec flow): same folder, `spec.md` / `summary.md` per the `spec-creator` template.
+- **Delivery tickets**: `.agent-runway/specs/<implementation-slug>/tickets/task-<nn>-<ticket-slice-slug>.md`, zero-padded `nn` (`01`, `02`, …). Always in the slug's `tickets/` subfolder — never next to spec files, in a separate `docs/tickets/` location, or as a bare `ticket.md`.
 - **Type line wording:** use `Feature (epic + N tickets)` — never "child tickets".
 
-## 8-Phase Workflow
+## Asking Questions
+
+"Ask" means a single-select question using the environment's question tool, or plain text with numbered options if none. Exact prompts are in [reference.md](reference.md#question-prompts).
+
+## Workflow — Phases 0–7 (with 0.5 and 5.5)
 
 ### Phase 0: Configuration Loading (Silent — No User Interaction)
 
-**This phase runs silently before any user interaction. Do not report what was found until the Phase 7 summary.**
+Runs silently; report findings only in the Phase 7 summary.
 
-**Steps:**
-
-1. **Check for project config** — look for `.cursor/config/ticket-creator.config.md`
-
-2. **If config is found:**
-   - Read and parse all sections: `project`, `personas`, `docs`, `codebase_scanning`, `output`, `agent_notes_gate`, `completeness`, `complexity`
-   - Store as the **active configuration** for this session
-   - All subsequent phases use values from active config instead of built-in defaults
-
-3. **If config is not found — activate generic mode:**
-   - `codebase_scanning.enabled` → `false`
-   - `personas` → `[user, admin]`
-   - `doc_paths` → `[]` (no docs to check)
-   - `output.default_destination` → `markdown`
-   - `output.markdown_path` → `./`
-   - `agent_notes_gate.require_named_module` → `true`
-   - `agent_notes_gate.require_constraint` → `false`
-   - Ask the user before Phase 1 begins:
-
-   ```
-   Title: Project Setup
-
-   Question: No project config found. What is your Jira project key?
-   (e.g. MYPROJ, PROJ — or press skip to use markdown output only)
-   ```
-
-   ```
-   Question: What is your Jira board URL?
-   (e.g. your-org.atlassian.net — or press skip)
-   ```
-
-   Store any answers as the active configuration for this session.
-
-   At Phase 7, append to the summary:
-   > No config found — running in generic mode. Consider creating `.cursor/config/ticket-creator.config.md` for richer output and project-specific validation.
+1. Read `{{config}}/ticket-creator.config.md`.
+2. **If it has settings:** parse `project`, `personas`, `docs`, `codebase_scanning`, `output`, `agent_notes_gate`, `completeness`, `complexity` and use them as the **active configuration** instead of built-in defaults.
+3. **If it is missing or empty:** activate generic mode with the defaults and the two optional setup questions in [reference.md](reference.md#generic-mode-setup-phase-0).
 
 **Proceed to Phase 0.5.**
 
 ### Phase 0.5: Work Item Mode Gate
 
-Before classification, confirm whether this should be handled as an **Epic** or a **Single Ticket**.
+Ask whether to create an **epic**, a single **ticket**, or let the agent decide (**auto**):
 
-Use `AskQuestion`:
-
-```
-Title: Work Item Mode
-
-Question: What do you want to create first?
-Options:
-  - epic: Create an epic with proposed tickets
-  - ticket: Create one delivery ticket
-  - auto: Let the agent decide based on complexity
-```
-
-Rules:
-- **epic**: produce an epic-level artifact (goal, scope, non-goals, success criteria, dependencies) plus a proposed ticket breakdown; then ask whether to generate those markdown tickets now or stop at epic output. Save the epic using **Artefact naming** (`.agent-runway/specs/<implementation-slug>/epic.md`).
-- **ticket**: proceed with normal ticket flow; if complexity threshold is exceeded, require a split proposal before final approval.
-- **auto**: if complexity threshold is exceeded, switch to epic mode; otherwise continue in single-ticket mode.
+- **epic**: produce an epic artifact (goal, scope, non-goals, success criteria, dependencies) plus a proposed ticket breakdown; then ask whether to generate those tickets now or stop at the epic. Save the epic per **Artefact naming**.
+- **ticket**: normal ticket flow; if the complexity threshold is exceeded, require a split proposal before final approval.
+- **auto**: switch to epic mode when the complexity threshold is exceeded; otherwise single-ticket mode.
 
 **Proceed to Phase 1.**
 
@@ -148,13 +107,7 @@ Prerequisite: Phase 0 must have completed. Active configuration is available for
 
    **If rich enough:** proceed directly to step 4 without asking anything.
 
-   **If too vague:** ask a **maximum of 3** targeted questions before generating. Questions must use plain business language — no technical terminology. Use only the questions relevant to the task type:
-
-   - **Feature**: Who is the user this affects? / What specific problem does this solve for them? / Is there any constraint or deadline driving this?
-   - **Bug**: Where does the problem happen? (e.g. which screen, step, or process) / What did you expect to happen vs what actually happened?
-   - **Task**: What is triggering this work now? / Is there a specific part of the system this affects?
-
-   After receiving answers, proceed without asking anything further — generate with what you have.
+   **If too vague:** ask at most **3** targeted questions in plain business language, using the per-type questions in [reference.md](reference.md#question-prompts). Then generate with what you have.
 
 4. **Improvement/Issue intake normalization**
    - If source is an issue, incident, or vague improvement request, extract:
@@ -164,18 +117,7 @@ Prerequisite: Phase 0 must have completed. Active configuration is available for
    - If solution space is still wide (multiple architecture or technology paths), stop ticket-only flow and propose `spec-creator` first.
    - If scope is already narrow and implementation-ready, continue with ticket generation.
 
-5. **Classify task type**
-   - Ask the user if not obvious from input:
-
-   ```
-   Title: Task Type
-
-   Question: What type of ticket is this?
-   Options:
-     - feature: Feature — new functionality or enhancement
-     - bug: Bug — defect in existing functionality
-     - task: Task — technical or operational work (no new user-facing functionality)
-   ```
+5. **Classify task type** (Feature / Bug / Task) — ask only if not obvious from the input.
 
 6. **For Bugs — gather error context**
    - Ask the user to describe the error or what they believe is failing
@@ -223,11 +165,7 @@ See [reference.md](reference.md#context-discovery) for the full discovery table 
 
 ### Phase 3: Ticket Generation
 
-**Generate a complete ticket using the appropriate template.**
-
-Use the **Feature**, **Bug**, or **Task** template from [reference.md](reference.md#ticket-templates).
-
-**Steps:**
+Generate a complete ticket with the **Feature**, **Bug**, or **Task** template ([template.md](template.md)).
 
 1. **Apply the PO/BA hybrid lens:**
 
@@ -293,161 +231,35 @@ Use the **Feature**, **Bug**, or **Task** template from [reference.md](reference
 
 ### Phase 4: Present & Refine
 
-**Show the full ticket and iterate.**
-
-**Steps:**
-
-1. **Present the complete ticket** in markdown format with this framing message:
-
-   > Here's your ticket. It's written for developers, so some sections may be more technical — focus on whether it captures what you need. Let me know if anything is missing or wrong.
-
-2. **Ask the user to review:**
-
-   ```
-   Title: Ticket Review
-
-   Question: How does this ticket look?
-   Options:
-     - approved: Looks good — proceed to validation
-     - changes: I have changes — I'll describe them below
-     - regenerate: Start over with different context
-   ```
-
-3. **If "changes"** — apply the user's feedback and re-present the updated ticket. Repeat until the user approves.
-
-4. **If "regenerate"** — return to Phase 1 with the user's updated input.
+Present the complete ticket with: "Here's your ticket. It's written for developers, so some sections may be more technical — focus on whether it captures what you need." Then ask for review (approved / changes / regenerate). On **changes**, apply feedback and re-present until approved; on **regenerate**, return to Phase 1 with the updated input.
 
 **Proceed to Phase 5 when approved.**
 
 ### Phase 5: Completeness Check
 
-**Check the ticket for completeness. Flag anything that would prevent a developer from starting work.**
+Flag anything that would stop a developer from starting work. Silently apply the `ticket-eval` criteria ([reference.md](reference.md#validation-integration)) — never expose internal rule names, criteria numbers, or thresholds to the user.
 
-Internally, apply the criteria from the `ticket-eval` skill — but never reference internal rule names, criteria numbers, or thresholds in user-facing output.
+1. Apply the gate in `agent_notes_gate.*` from active config (only fields set to true are required). For technical work, **Proposed Solution Structure** must be present and consistent with scope; if missing, infer a minimal tree and mark it inferred when config allows.
+2. Complete → "Your ticket is ready for development."
+3. Gaps → auto-fix loop: fix unambiguous gaps automatically (e.g. QA notes inferable from acceptance criteria); for gaps needing input ask **one focused question**; re-check. Max iterations: `completeness.auto_fix_max_iterations` (default 2). If `completeness.mark_inferred_content: true`, append ⚠️ _inferred — confirm with QA_ to auto-generated content.
+4. Still incomplete after the max → list remaining gaps in plain language and ask whether to fill them in or have the user provide details; apply the answer and move on.
 
-**Steps:**
+### Phase 5.5: Memory Sync (Repeated Patterns Only)
 
-1. **Run the completeness check silently** against the generated ticket
+Apply the automatic-sync rule in [../shared/memory-policy.md](../shared/memory-policy.md): write only when the same signal appears in this ticket **and** in earlier tickets/specs or memory; at most two entries per run, one lesson per file; never block ticket creation.
 
-   Apply the gate defined in `agent_notes_gate.*` from active config. Only fields set to true are required for this project.
-   - For technical work, **Proposed Solution Structure** must be present and consistent with scope; if missing, infer a minimal tree from scope and mark inferred content if config allows.
+- Repeated failure mode (validation miss, integration mismatch, recurring bug class) → one entry in `.agent-runway/memory/execution-memory.md`: pattern, where, trigger, consequence, next guardrail, linked artifact.
+- Repeated design doubt (alternative repeatedly rejected, assumption repeatedly failing) → one entry in `.agent-runway/memory/reasoning-memory.md`: initial recommendation, counter-argument, alternatives, final choice, rule update.
 
-2. **If the ticket is complete:**
-
-   Present to the user:
-   > Your ticket is ready for development.
-
-3. **If there are gaps — run the auto-fix loop:**
-   - If the gap is unambiguous (e.g. missing QA notes that can be inferred from acceptance criteria) → fix it automatically
-   - If the gap requires user input → ask **one focused question** (not a list)
-   - Re-check after the fix
-   - Maximum iterations defined by `completeness.auto_fix_max_iterations` in active config (default: 2)
-   - If `completeness.mark_inferred_content: true` in active config, append ⚠️ _inferred — confirm with QA_ to any auto-generated content
-
-4. **If still incomplete after 2 iterations:**
-
-   Present the remaining gaps in plain language:
-   > A few things to clarify before this is dev-ready:
-   > - [plain language description of gap 1]
-   > - [plain language description of gap 2]
-   >
-   > Want me to fill these in, or would you like to provide the details?
-
-   Apply the user's response, then proceed without further iteration.
-
-**Proceed to Phase 6.**
-
-### Phase 5.5: Memory Sync (Automatic on Repeated Patterns)
-
-After completeness check, detect repeated patterns from this ticket content and context.
-
-Detection signals:
-- same failure mode appears in multiple recent tickets (validation miss, integration mismatch, recurring bug class)
-- same design doubt repeats across tickets/specs (alternative repeatedly rejected, assumption repeatedly failing)
-
-When detected, write concise entries automatically:
-
-1. Execution memory:
-- append to `.agent-runway/memory/execution-memory.md`
-- include: pattern type, where, trigger, consequence, next guardrail, linked artifact
-
-2. Reasoning memory:
-- append to `.agent-runway/memory/reasoning-memory.md`
-- include: initial recommendation, counter-argument, alternatives, final choice, rule update
-
-Rules:
-- do not block ticket creation for memory writes
-- apply the memory hygiene policy: [../shared/memory-policy.md](../shared/memory-policy.md) (consolidate duplicates, cap active entries, archive instead of delete)
-- keep entries non-sensitive and implementation-relevant
-- limit writes to max 1 execution-memory entry and max 1 reasoning-memory entry per ticket run
-
-**Proceed to Phase 6.**
+Report memory writes in the Phase 7 summary.
 
 ### Phase 6: Output
 
-**Deliver the ticket to the user's preferred destination.**
-
-**Steps:**
-
-1. **Ask where to create the ticket:**
-
-   ```
-   Title: Ticket Output
-
-   Question: Where should this ticket be created?
-   Options:
-     - jira: Create directly in Jira
-     - markdown: Save as a markdown file
-     - both: Create in Jira and save a local copy
-   ```
-
-2. **If Jira selected:**
-
-   a. **Check Atlassian MCP availability.** If not connected, inform the user and fall back to markdown automatically.
-
-   b. **Determine the Jira project key:**
-      - Use `project.jira_project_key` from active config
-      - If not set, ask the user as described in the Phase 0 generic mode fallback
-
-   c. **Optional — epic link:** If the user mentioned an epic during the conversation (e.g. "this belongs under the onboarding epic"), offer to link it:
-
-      ```
-      Question: You mentioned the [epic name] epic. Want me to link this ticket to it?
-      Options:
-        - yes: Yes, link it
-        - no: No, I'll do it manually
-      ```
-
-   d. **Create the issue** — set only: summary, description, issue type, and acceptance criteria. Do not attempt to set sprint, story points, or other fields automatically.
-
-   e. Return the Jira ticket URL to the user.
-
-3. **If markdown:**
-   - Ask the user for the file path, or default to `.agent-runway/specs/<implementation-slug>/tickets/task-<nn>-<ticket-slice-slug>.md`
-   - Save the ticket as a well-formatted markdown file
-
-4. **Confirm output** — show the user where the ticket was created (Jira URL or file path)
-
-**Proceed to Phase 7.**
+Ask where to create the ticket (jira / markdown / both), then follow the output steps in [reference.md](reference.md#output-steps-phase-6): Jira via Atlassian MCP with markdown fallback, or markdown at `.agent-runway/specs/<implementation-slug>/tickets/task-<nn>-<ticket-slice-slug>.md`. Confirm where it was created.
 
 ### Phase 7: Summary
 
-**Present a brief summary of what was created.**
-
-```markdown
-## Ticket Created
-
-- **Type**: [Feature / Bug / Task]
-- **Summary**: [ticket title]
-- **Output**: [Jira URL / file path]
-- **Status**: [Ready for development / Has open items]
-- **Context sources**: [which docs were used, or "codebase scanned"]
-- **Refinement rounds**: [number of iterations]
-```
-
-**Offer follow-up:**
-
-> Would you like to create another ticket, or refine this one further?
+Present the summary template from [reference.md](reference.md#summary-template-phase-7) and offer to create another ticket or refine this one.
 
 ## Integration with Other Skills
 
@@ -464,7 +276,7 @@ ticket-creator (create & validate ticket)
 
 ## Red Flags
 
-The following conditions require a pause and a user decision before proceeding.
+These conditions require a pause and a user decision before proceeding.
 
 | Condition | When to raise | Action |
 |---|---|---|

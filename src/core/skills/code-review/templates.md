@@ -9,10 +9,10 @@ Every finding must include all fields. Findings without a file and line number a
 ````markdown
 ### [N]. [[Severity]] [Short title] - [Sources]
 
-**File:** `path/to/File.cs`
+**File:** `path/to/file.ext`
 **Lines:** 40-48
 
-```csharp
+```<language>
 // Short changed-code snippet that proves the issue.
 ```
 
@@ -77,11 +77,10 @@ Include this section when mandatory searches were run. Omit it for diff-only CI 
 
 | Category | Matches | Status |
 |----------|---------|--------|
-| Blocking async calls | 0 | Pass |
-| async void | 0 | Pass |
-| Swallowed exceptions | 2 | Findings 1, 3 |
-| Raw SQL | 0 | Pass |
-| Hardcoded secrets | 0 | Pass |
+| U1 Hardcoded Secrets | 0 | Pass |
+| U4 Injection via String-Built Queries | 0 | Pass |
+| U5 Swallowed Errors | 2 | Findings 1, 3 |
+| `<stack>`: [stack category] | 0 | Pass |
 
 ## Findings
 
@@ -104,16 +103,10 @@ Must address before merge:
 
 Strongly recommended in this PR or immediate follow-up: findings [N-N].
 
-# agent-runway:verdict
-gate: review
-status: [approve | changes | discuss]
-blocking: [count of Blocker findings]
-date: [YYYY-MM-DD]
-artifact: [feature / branch / files reviewed]
-```
+[Machine-readable verdict block — see the last section of this file.]
 ````
 
-Persist it: save the review, including the verdict block, to `.agent-runway/logs/reviews/YYYY-MM-DD-<branch-or-scope>.md` so `agent-runway metrics` can read it.
+Persist it: save the review, including the verdict block, to `.agent-runway/logs/reviews/YYYY-MM-DD-<branch-or-scope>.md` so `agent-runway metrics` can read it (metrics reads verdict blocks from both `.agent-runway/specs/` and `.agent-runway/logs/`).
 
 ---
 

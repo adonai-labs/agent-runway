@@ -1,6 +1,6 @@
 ---
 name: lead
-description: Senior implementation lead — orchestrates the full feature lifecycle from problem exploration to commit. Enforces gated approval before writing code, incremental quality checks during implementation, and handoff to code-review for final validation. Stack-agnostic by default; loads stack-specific references when a module exists. Use when the user says "start lead", "implement", "build feature", "new feature", "lead this", "/lead", "plan this", or wants to develop a new capability end-to-end.
+description: Senior implementation lead — orchestrates the full feature lifecycle from problem exploration to commit. Enforces gated approval before writing code, incremental quality checks during implementation, and handoff to code-review for final validation. Stack-agnostic by default; loads stack-specific references when a stack skill is installed. Use when the user says "start lead", "implement", "build feature", "new feature", "lead this", "/lead", "plan this", or wants to develop a new capability end-to-end.
 ---
 
 # Implementation Lead
@@ -15,10 +15,10 @@ Apply shared policy: [../shared/caveman-skill-engineering.md](../shared/caveman-
 
 Examples:
 - `/lead add order cancellation endpoint`
-- `/lead refactor payment service to use Result pattern`
+- `/lead refactor payment service to return explicit results instead of throwing`
 - `/lead implement background job for invoice generation`
 
-> Not sure which skill to use? Start with `/start` — it classifies intent and routes to the right skill.
+> Not sure which skill to use? Start with the `start` skill (`/start`) — it classifies intent and routes to the right skill.
 
 ---
 
@@ -33,16 +33,11 @@ Before any phase, classify the task. This determines which phases are required.
 
 | Classification | Signals | Workflow |
 |----------------|---------|----------|
-| **Trivial** | All three: No | Skip to Phase 4. Document reason for skipping in a one-line note. |
-| **Standard** | Any one: Yes | Full 10-phase workflow. |
-| **Complex** | Two or more: Yes, or involves a new subsystem or breaking change | Full workflow, Phase 0 **mandatory** with `/architect` skill. |
+| **Trivial** | All three: No | Skip to Phase 4. Document the reason in a one-line note. |
+| **Standard** | Any one: Yes | Full workflow (Pre-Phase 0 through Phase 10). Fast-track available. |
+| **Complex** | Two or more: Yes, or new subsystem or breaking change | Full workflow, Phase 0 **mandatory** with the `architect` skill/agent. |
 
-Also classify decision risk for gating depth:
-
-- Impact: low/medium/high
-- Reversibility: reversible/hard-to-reverse/irreversible
-- Uncertainty: low/medium/high
-- Cost of error: low/medium/high
+Also classify decision risk for gating depth — Impact (low/medium/high), Reversibility (reversible/hard-to-reverse/irreversible), Uncertainty (low/medium/high), Cost of error (low/medium/high).
 
 Contrarian trigger (any true):
 - impact is high and reversibility is hard-to-reverse or irreversible
@@ -50,417 +45,173 @@ Contrarian trigger (any true):
 - contract/public interface change with ambiguous outcomes
 - architecture decision with multiple viable paths
 
-> Example trivial: fix a typo in a log message, add a missing null guard on an existing method, update a config value.
+> Example trivial: fix a typo in a log message, add a missing null guard, update a config value.
 > Example standard: add a new query endpoint, extend an existing handler, add a validator.
 > Example complex: introduce a new aggregate, change an event schema, split a service.
 
 ### Non-Negotiable Decomposition Rule
 
-During planning and implementation, enforce atomic decomposition:
-
-- Do not implement end-to-end behavior in one large function.
+- Do not implement end-to-end behaviour in one large function.
 - Split logic into small, intention-revealing functions with one responsibility each.
 - Keep orchestration separate from domain logic, validation, and I/O.
 - If a function starts mixing concerns (validation + mapping + persistence + side effects), extract immediately.
-- Prefer simple composition of small functions over adding new abstraction layers.
+- Prefer simple composition of small functions over new abstraction layers.
 
 ### Simplicity Guardrail (Mandatory)
 
-Default to the simplest implementation that satisfies requirements.
-
+- Default to the simplest implementation that satisfies requirements.
 - Do not introduce new layers, interfaces, base classes, or frameworks unless a clear risk/scale signal requires them.
-- If new structural complexity is introduced, provide a one-line justification in Phase 7.
-- If no clear justification exists, remove the added complexity before final handoff.
+- Any new structural complexity gets a one-line justification in Phase 7; without one, remove it before handoff.
+
+### Fast-Track Mode (Standard tasks only)
+
+When the developer already has a clear plan (or the active profile makes fast-track the default), Phases 0–2 collapse into one Fast-Track Validation step: validate the plan against antipatterns and standards, search briefly for overlap, and check three risk signals (security surface, contract change, new abstraction). No signal → Phase 3. Any signal → restart at Phase 0. Read [workflow-reference.md](workflow-reference.md#fast-track-mode) before running it.
+
+### Developer Profiles
+
+Read the `active:` line of `{{config}}/developer-profiles.md`; if the file or line is missing, use **Guided** (every gate blocks). **Standard** and **Autonomous** relax how gates are presented, never which checks run, and the Phase 10 commit message always needs confirmation. Read [workflow-reference.md](workflow-reference.md#developer-profiles) when the profile is not Guided.
+
+### Asking Questions
+
+"Ask" in this skill means: ask a single-select question (multi-select where stated) using the environment's question tool, or plain text with numbered options if no such tool exists. Ask only what is genuinely ambiguous.
 
 ---
 
-## Fast-Track Mode
-
-An accelerated path for **Standard** tasks when the developer already has a clear plan.
-
-**Activation:** the developer invokes `/lead <description>` and states they want fast-track, or explicitly says they already have a plan.
-
-**Not available for:**
-- **Complex** tasks — always require the full workflow with Phase 0 architect delegation
-- **Trivial** tasks — already skip to Phase 4; fast-track adds nothing
-
-### How it works
-
-Phases 0–2 collapse into a single **Fast-Track Validation** step:
-
-1. The developer presents their plan (what to build, which layers, key decisions).
-2. Validate the plan against [antipatterns.md](antipatterns.md) and [standards.md](standards.md).
-3. Search the codebase briefly for conflicting patterns or existing implementations that overlap.
-4. Evaluate risk signals:
-   - Security surface modified (auth, secrets, input validation)
-   - Contract change (API shape, event schema, database migration)
-   - New abstraction introduced (interface, base class, shared component)
-
-**If no risk signals detected:** proceed directly to Phase 3 (DRY Analysis). Document the fast-track decision in a one-line note:
-```
-Fast-track approved — Standard task, no risk signals detected.
-```
-
-**If any risk signal detected:** halt fast-track and explain which signal was found. Fall back to the full workflow starting at Phase 0:
-```
-Fast-track denied — [signal detected, e.g. "security surface modified: new [Authorize] policy"]. 
-Reverting to full workflow at Phase 0.
-```
-
-Phases 3–10 execute without changes regardless of fast-track.
-
-> **Developer profile override:** if `.cursor/config/developer-profiles.md` exists and the active profile is Autonomous, fast-track validation is silent — the system only interrupts if a risk signal is detected. See the Developer Profiles section below.
-
----
-
-## Developer Profiles
-
-Check whether `.cursor/config/developer-profiles.md` exists. If it does, read the `active:` line to determine the current profile. If the file does not exist, default to **Guided**.
-
-The profile modifies gate behaviour across the workflow:
-
-| Gate | Guided (default) | Standard | Autonomous |
-|------|-------------------|----------|------------|
-| Phase 0 — Approach selection | `AskQuestion` — blocks | `AskQuestion` — blocks | Silent validation — only interrupts if risk signal detected |
-| Phase 1 — Scope confirmation | `AskQuestion` — blocks | Present output, proceed automatically unless ambiguity detected | Silent — proceed unless ambiguity detected |
-| Phase 2 — Plan approval | `AskQuestion` — blocks | `AskQuestion` — blocks | Silent validation — only interrupts if antipattern or risk signal detected |
-| Fast-Track (Standard tasks) | Developer must state they want fast-track | Default for Standard tasks | Default for Standard tasks |
-| Phase 10 — Commit prefix | `AskQuestion` — always | `AskQuestion` — always | `AskQuestion` — always (commit message always requires confirmation) |
-
-In **Autonomous** mode, "silent validation" means the system runs the same checks but does not present them interactively. If all checks pass, it proceeds. If any check fails (risk signal, antipattern, ambiguity), it interrupts with a specific explanation of what was found and requires developer input before continuing.
-
----
-
-## Workflow — 10 Phases
+## Workflow — Pre-Phase 0, Phases 0–10 (10.5 optional)
 
 Execute phases sequentially. **Never skip a gate unless Task Classification permits it.** Present output using templates from [validation-templates.md](validation-templates.md).
 
-### Narrative Delivery
+Cross-cutting policies:
 
-Use [../shared/narrative-delivery-policy.md](../shared/narrative-delivery-policy.md) for medium or large work. Keep a short technical story across planning, implementation, validation, commit, and PR:
-
-- Context: why this work exists now
-- Intent: what outcome the change should create
-- Change: what implementation step was taken
-- Evidence: what proves the change is safe
-- Remaining work: risks, follow-ups, or deferred scope
-
-Do not turn small changes into long prose. Compress the narrative when the change is simple.
-
-### Test-Driven Delivery
-
-Use [../shared/test-driven-delivery-policy.md](../shared/test-driven-delivery-policy.md) for behavior changes. Before writing production code:
-
-- Understand the problem, expected behavior, boundaries, and risk.
-- Define the evidence plan: which tests, checks, or artifacts will prove the change.
-- Prefer test-first for new behavior, bug fixes, validation rules, domain logic, API contracts, security-sensitive behavior, and regressions.
-- If strict test-first is not practical, record why and choose the smallest credible alternative evidence.
-
-Do not skip problem understanding because implementation is fast.
-
-### Optional Context Providers
-
-If a graph memory MCP, brain-context MCP, or similar context provider is available, use it during discovery for non-trivial work. Apply [../shared/context-provider-policy.md](../shared/context-provider-policy.md):
-
-- Query for relevant modules, prior decisions, known risks, recurring failures, related specs/tickets, and ownership or dependency links.
-- Use results only when they include concrete sources such as files, ADRs, tickets, specs, run logs, module references, or relationship metadata.
-- Record material context evidence in the phase output: what was queried, which sources mattered, and how the evidence changed the plan.
-- Continue normally if the provider is unavailable or returns low-signal context.
-
----
+- **Narrative delivery** ([../shared/narrative-delivery-policy.md](../shared/narrative-delivery-policy.md)) for medium or large work: keep a short story — context, intent, change, evidence, remaining work — across plan, implementation, commit, and PR. Compress it for small changes.
+- **Test-driven delivery** ([../shared/test-driven-delivery-policy.md](../shared/test-driven-delivery-policy.md)) for behaviour changes: understand the problem and define the evidence plan before production code; prefer test-first; if relaxed, record why and use the smallest credible alternative evidence.
+- **Optional context providers** ([../shared/context-provider-policy.md](../shared/context-provider-policy.md)): for non-trivial work, query graph/MCP context for modules, prior decisions, risks, failures, and related specs. Use only sourced results, record material evidence in the phase output, and continue normally if the provider is unavailable.
+- **Artifacts** ([../shared/artifact-writing-contract.md](../shared/artifact-writing-contract.md)) and **memory** ([../shared/memory-policy.md](../shared/memory-policy.md)): this skill never writes memory automatically — propose the lesson and suggest the `learning` skill.
 
 ### Pre-Phase 0 — Input Validation
 
-#### Path A — Formal ticket provided (Jira key or `.md` file)
+**Path A — Formal ticket provided (Jira key or `.md` file):**
 
-1. Run the `ticket-eval` rule against the ticket.
+1. Run the `ticket-eval` skill ([../ticket-eval/SKILL.md](../ticket-eval/SKILL.md)) against the ticket.
 2. Apply the verdict:
    - **YES** → proceed to Phase 0.
-   - **CONDITIONALLY** → surface the warnings using `AskQuestion` (single-select: "Proceed with warnings noted" / "Stop — refine the ticket first"). Only continue if developer explicitly approves.
-   - **NO** → stop. Return the validation report. Do not proceed until the ticket is refined and re-validated.
+   - **CONDITIONALLY** → surface the warnings and ask ("Proceed with warnings noted" / "Stop — refine the ticket first"). Continue only on explicit approval.
+   - **NO** → stop and return the validation report until the ticket is refined and re-validated.
 
-#### Path B — Inline description (no ticket)
-
-Evaluate the description against these minimum thresholds:
+**Path B — Inline description (no ticket):**
 
 | Signal | Sufficient | Insufficient |
 |--------|-----------|--------------|
-| **What** | Specific action or outcome stated | Vague or abstract goal with no concrete deliverable |
-| **Where** | Module, layer, or entity identifiable | No indication of where in the codebase this lands |
+| **What** | Specific action or outcome stated | Vague goal with no concrete deliverable |
+| **Where** | Module, layer, or entity identifiable | No indication where in the codebase this lands |
 | **Why** | Business reason or trigger implied | No context for why this is needed now |
 
-- **If all three are sufficient:** proceed to Phase 0 without asking anything.
-- **If any are insufficient:** ask a maximum of 2 targeted questions to fill the gaps, then proceed. Do not ask about signals that are already clear.
-- **If the description is a single vague sentence with none of the three:** use `AskQuestion` to collect the missing context before proceeding. Frame questions in plain language, not technical jargon.
+- All sufficient → proceed to Phase 0 without asking.
+- Any insufficient → at most 2 targeted questions, then proceed.
+- A single vague sentence with none of the three → ask for the missing context in plain language.
 
-Question budget rule:
-- low risk + reversible + low uncertainty: max 1 targeted question
-- medium risk: max 2 targeted questions
-- high risk or contrarian trigger: focused questions as needed, only on blocking ambiguity
-
----
+Question budget: low risk + reversible + low uncertainty → max 1 question; medium risk → max 2; high risk or contrarian trigger → only blocking ambiguity, as needed.
 
 ### Phase 0 — Exploration & Alternatives `[GATE]`
 
-Before exploration, run escalation signal detection against the task description. Check for: contract change, cross-boundary impact, security surface, data migration, multi-service coordination, or unknown territory. Include any detected signals as additional context in the architect handoff so the subagent has full picture — signals do not gate Phase 0 in `/lead`, they inform the analysis.
+Run escalation signal detection first (contract change, cross-boundary impact, security surface, data migration, multi-service coordination, unknown territory). Signals do not gate Phase 0; include them in the architect handoff as context. Apply **Minimum context** and **Simplicity before abstraction**.
 
-Apply the shared policy **Minimum context** and **Simplicity before abstraction** rules while evaluating options.
+1. Identify the core problem, not just the stated solution.
+2. Search the codebase for similar features, extendable services/repositories/handlers, and relevant domain entities or value objects ([reference.md](reference.md#codebase-search-patterns)).
+3. If a context provider is available, query related decisions, modules, dependencies, prior failures, and specs/tickets; keep only sourced, high-signal evidence.
+4. Propose **2–3 distinct approaches** with trade-offs. For non-trivial decisions read [../architect/tradeoffs.md](../architect/tradeoffs.md); for pattern selection [../architect/patterns.md](../architect/patterns.md); for antipattern detection [../architect/antipatterns.md](../architect/antipatterns.md). For **Complex** tasks, delegate to the `architect` agent with the `/architect Handoff` template.
+5. Recommend one approach, defended with [../architect/decision-heuristics.md](../architect/decision-heuristics.md).
+6. If the contrarian trigger is active, delegate to the `contrarian` agent with the `/contrarian Handoff` template from [validation-templates.md](validation-templates.md). It runs in an isolated context, free of this session's exploration bias. `Stop` → do not proceed; escalate with blocker details. `Go with conditions` → carry the conditions into Phase 2 as explicit checks.
 
-1. Read the request carefully. Identify the core problem, not just the stated solution.
-2. Search the codebase for existing patterns related to the feature:
-   - Similar features already implemented
-   - Existing services, repositories, or handlers that could be extended
-   - Relevant domain entities or value objects
-3. If an optional context provider is available, query it for related decisions, modules, dependencies, prior failures, and existing specs/tickets. Keep only sourced, high-signal evidence and note it in the Phase 0 output.
-4. Propose **2–3 distinct approaches** with trade-offs.
-   - For non-trivial design decisions, read [../architect/tradeoffs.md](../architect/tradeoffs.md) to frame the trade-off correctly.
-   - For pattern selection, read [../architect/patterns.md](../architect/patterns.md) to identify the right structural fit.
-   - For antipattern detection in the proposed approach, read [../architect/antipatterns.md](../architect/antipatterns.md).
-5. Recommend one approach with rationale. Apply decision heuristics from [../architect/decision-heuristics.md](../architect/decision-heuristics.md) to defend the recommendation.
-6. If contrarian trigger is active, delegate to the `contrarian` agent before presenting findings:
-   - Complete the `/contrarian Handoff` template from [validation-templates.md](validation-templates.md) with the problem, chosen approach, risk classification, and constraints.
-   - The contrarian agent runs with an isolated context window — it challenges the chosen approach without the bias of the exploration reasoning built up in this session.
-   - Surface the contrarian verdict as part of Phase 0 output. If the verdict is `Stop`, do not proceed — escalate with blocker details before asking for approach selection.
-   - If the verdict is `Go with conditions`, include the conditions in the Phase 0 output and carry them into Phase 2 as explicit implementation checks.
-
-**Present findings using Phase 0 template from [validation-templates.md](validation-templates.md).**
-
-Use the `AskQuestion` tool to collect approval before proceeding:
-- One single-select question asking which approach to proceed with (list the proposed options by name, plus an "Other / discuss first" option)
-- One optional multi-select question for concerns or constraints to factor in
-- One optional single-select question for technology direction when more than one stack/tooling option is viable
+**Present findings using the Phase 0 template.** Ask: which approach to proceed with (options by name, plus "Other / discuss first"); optionally a multi-select for concerns/constraints; optionally technology direction when more than one stack/tooling option is viable.
 
 **STOP. Do not proceed to Phase 1 until the developer selects an approach.**
 
----
-
 ### Phase 1 — Requirement Analysis `[GATE]`
 
-1. Document the full understanding of the requirement:
-   - Functional scope: what the feature does
-   - Out of scope: what it explicitly does not do
-   - Expected behaviour: what must be observably true after the change
-   - Affected areas: which layers, services, and data models are touched
-   - Dependencies: external services, events, scheduled jobs
-   - Non-functional requirements: security, performance, observability
-2. If there are open questions, use the `AskQuestion` tool to collect answers before documenting requirements. Ask only what is genuinely ambiguous — do not ask for information that can be reasonably inferred from the codebase or the request.
-3. If data model or contract ambiguity exists, ask targeted gating questions before Phase 2:
-   - entity ownership and lifecycle
-   - required invariants and uniqueness constraints
-   - migration/backfill expectations
-   - compatibility constraints for existing consumers
-4. If technology ambiguity exists, ask targeted gating questions before Phase 2:
-   - preferred persistence/integration mechanism
-   - operational constraints (latency/cost/observability)
-   - team constraints (skills, maintainability window)
-5. Define the initial evidence plan:
-   - acceptance scenario or bug signal
-   - test level: unit, integration, E2E, contract, security, performance, smoke, or manual
-   - whether test-first is expected or relaxed with reason
+1. Document: functional scope, out of scope, expected observable behaviour, affected areas (layers, services, data models), dependencies (external services, events, jobs), and non-functional requirements (security, performance, observability).
+2. Ask open questions first — never for information inferable from the codebase or request.
+3. Data model or contract ambiguity → gating questions before Phase 2: entity ownership and lifecycle, invariants and uniqueness, migration/backfill, consumer compatibility.
+4. Technology ambiguity → gating questions: persistence/integration mechanism, operational constraints (latency/cost/observability), team constraints.
+5. Define the initial evidence plan: acceptance scenario or bug signal, test level (unit, integration, E2E, contract, security, performance, smoke, manual), and whether test-first is expected or relaxed (with reason).
 
-**Present using Phase 1 template.**
-
-Use the `AskQuestion` tool to confirm scope before proceeding:
-- One single-select question asking whether the requirements are understood correctly or if corrections are needed (options: "Correct, proceed", "Minor correction — I'll clarify below", "Stop — requirements need discussion")
-- If open data/technology decisions remain, one additional single-select gate: "Resolve now" / "Proceed with explicit assumptions" / "Stop and escalate"
+**Present using the Phase 1 template.** Ask: "Correct, proceed" / "Minor correction — I'll clarify below" / "Stop — requirements need discussion". If data/technology decisions remain open, also ask: "Resolve now" / "Proceed with explicit assumptions" / "Stop and escalate".
 
 **STOP. Do not proceed to Phase 2 until scope is confirmed.**
 
----
-
 ### Phase 2 — Implementation Plan `[GATE]`
 
-1. Define the implementation architecture:
-   - New files to create (layer, name, responsibility)
-   - Existing files to modify
-   - Domain model changes (entities, value objects, events)
-   - Application layer changes (use cases, handlers, validators)
-   - Infrastructure changes (data access, migrations, external services)
-   - API layer (endpoints, request/response contracts)
-   - IaC changes required if new infrastructure resources are needed
-   - Function decomposition plan (which responsibilities become separate functions/modules)
-2. Identify anti-patterns to avoid — reference [antipatterns.md](antipatterns.md).
-3. Identify reuse opportunities (Phase 3 will confirm via search).
-4. Convert unresolved assumptions into explicit checks:
-   - validation rule to add
-   - test case to add
-   - rollback condition to monitor
-5. Plan the test-driven delivery loop:
-   - failing test, characterization test, contract check, or reproduction signal to establish first
-   - smallest implementation slice to turn evidence green
-   - refactor or cleanup step after evidence passes
+1. Define the architecture of the change: new files (layer, name, responsibility), modified files, domain model changes, application changes (use cases, handlers, validators), infrastructure changes (data access, migrations, external services), API contracts, IaC changes, and the function decomposition plan.
+2. Identify anti-patterns to avoid — [antipatterns.md](antipatterns.md).
+3. Identify reuse opportunities (Phase 3 confirms them).
+4. Convert unresolved assumptions into explicit checks: validation rule, test case, or rollback condition.
+5. Plan the test-driven loop: first evidence (failing test, characterization test, contract check, or reproduction), smallest slice to turn it green, and the refactor step after.
 
-**Present using Phase 2 template.**
-
-Use the `AskQuestion` tool to get implementation plan approval:
-- One single-select question asking whether to proceed with the plan (options: "Approved, start implementation", "Adjust the plan — I'll clarify below", "Stop — this needs rethinking")
+**Present using the Phase 2 template.** Ask: "Approved, start implementation" / "Adjust the plan — I'll clarify below" / "Stop — this needs rethinking".
 
 **STOP. Do not write any code until the plan is approved.**
 
----
-
 ### Phase 3 — DRY Analysis
 
-Search the codebase before writing any new code:
+Search before writing new code: validators to extend, similar use cases/handlers, shared utilities, existing data access for the same entity, and constants/configuration already defined. Document every reuse opportunity.
 
-- Existing validators or validation functions that could be extended
-- Similar use cases, handlers, or commands already implemented
-- Shared utilities, base classes, or helper functions
-- Existing data access patterns for the same entity or aggregate
-- Configuration or constants already defined
-
-Document every reuse opportunity found.
-
-**If DRY findings change the approved plan materially** (e.g. a planned new service can be replaced by extending an existing one, or a planned abstraction already exists), use `AskQuestion` before updating the plan:
-- One single-select question describing what was found and how the plan would change (options: "Update the plan as suggested", "Keep the original plan", "Discuss before deciding")
-
-Minor reuse opportunities (e.g. extracting a shared constant, using an existing helper) do not require confirmation — apply them and note them in the Phase 7 summary.
-
----
+If findings change the approved plan materially (a planned service can extend an existing one, a planned abstraction already exists), ask: "Update the plan as suggested" / "Keep the original plan" / "Discuss before deciding". Minor reuse (shared constant, existing helper) needs no confirmation — apply it and note it in Phase 7.
 
 ### Phase 4 — Implementation
 
 Write code following [standards.md](standards.md).
 
-**Before writing each layer, detect the project stack and load the relevant reference.**
+**Before writing each layer, detect the stack and load its reference** — full procedure in [reference.md](reference.md#stack-detection):
 
-1. **Detect the stack** — resolve using proximity to the files being changed, not project-level markers:
-
-   a. **Check the file being written or modified.** Its extension and parent directory are the strongest signal (e.g. a `.cs` file inside `src/MyApp.Api/` is .NET regardless of a `package.json` at the repo root).
-
-   b. **Walk up from the target file** to find the nearest build manifest:
-      - `*.csproj` or `*.sln` → .NET
-      - `package.json` with a `src/` or framework dependency → Node.js / TypeScript
-      - `Cargo.toml` → Rust
-      - `*.bicep` or `*.tf` → IaC
-
-   c. **In a monorepo with multiple stacks**, each file belongs to the stack of its nearest manifest. Do not apply .NET references when writing a React component, even if the solution root contains a `.sln`.
-
-   d. If the stack cannot be determined, state the ambiguity and ask the developer.
-
-2. **Load the relevant reference** using the table below. If no stack module exists for this project, apply the universal engineering principles directly.
-
-| Layer | .NET | Node.js / Express | IaC |
-|-------|------|-------------------|-----|
-| Domain / Core entities | [../dotnet-core/architecture.md](../dotnet-core/architecture.md) | — | — |
-| Application / Use cases | [../dotnet-core/application-patterns.md](../dotnet-core/application-patterns.md) | — | — |
-| Infrastructure / Data access | [../dotnet-core/infrastructure.md](../dotnet-core/infrastructure.md) | — | — |
-| API / Contracts | [../dotnet-core/api-design.md](../dotnet-core/api-design.md) | [../express/SKILL.md](../express/SKILL.md) | — |
-| IaC | [../iac/standards.md](../iac/standards.md) | [../iac/standards.md](../iac/standards.md) | [../iac/standards.md](../iac/standards.md) |
-
-> Adding a new stack? See [EXTENDING.md](../../../../EXTENDING.md) for how to register a new stack module here.
+1. Detect the stack per file from its extension and nearest manifest (`package.json`, `tsconfig.json`, `*.csproj`/`*.sln`, `pyproject.toml`/`requirements.txt`, `go.mod`, `Cargo.toml`; `*.bicep`/`*.tf` → IaC). In monorepos each file follows its nearest manifest. If ambiguous, ask.
+2. If the stack skill is installed (`../<stack>-core/SKILL.md` exists), load only what the current step needs: `../<stack>-core/architecture.md` for boundaries, `../<stack>-core/patterns.md` for implementation idioms (or the equivalent files its `SKILL.md` lists). For infrastructure, use the `iac` skill ([../iac/standards.md](../iac/standards.md)).
+3. If no stack skill is installed, apply the universal engineering principles and the project's existing conventions.
 
 For every file created or modified:
 
-- Apply layered architecture boundaries strictly (no infrastructure imports in domain or core)
-- Use constructor injection — never instantiate services directly
-- Require authentication on all protected endpoints
-- Validate all inputs at the boundary
+- Respect layer boundaries strictly (no infrastructure imports in domain or core)
+- Pass dependencies in (constructor/factory/parameters) — never construct services inside business logic
+- Require authentication on all protected endpoints; validate all inputs at the boundary
 - Use structured logging with semantic properties
-- Handle all failure cases explicitly — no silent swallowing of errors
-- Decompose monolithic functions into atomic units with clear names and single purpose
+- Handle every failure case explicitly — no silently swallowed errors
+- Decompose monolithic functions into atomic, well-named units
 
-**Hard stop if scope creep detected**: if implementation reveals work beyond Phase 2 approval, use the `AskQuestion` tool to surface it:
-- One single-select question describing the out-of-scope work found and asking how to proceed (options: "Expand scope — include it", "Exclude it — log as follow-up", "Stop — re-plan from Phase 2")
-
----
+**Hard stop on scope creep:** if implementation reveals work beyond the Phase 2 approval, describe it and ask: "Expand scope — include it" / "Exclude it — log as follow-up" / "Stop — re-plan from Phase 2".
 
 ### Phase 4b — Incremental Checks
 
-After each file, run the 5-category scan from [incremental-checks.md](incremental-checks.md):
-
-1. Anti-patterns (check against [antipatterns.md](antipatterns.md))
-2. Naming & readability
-3. Structure & layer boundaries
-4. Async/await correctness
-5. Security surface
-
-Fix findings before moving to the next file.
-
----
+After each file, run the 5-category scan from [incremental-checks.md](incremental-checks.md): anti-patterns, naming & readability, structure & layer boundaries, async and concurrency correctness, security surface. Fix findings before moving to the next file.
 
 ### Phase 5 — Testing
 
-If a stack-specific testing reference exists for this project, load it before writing tests:
+If the stack skill is installed, load `../<stack>-core/testing.md` before writing tests.
 
-- .NET: [../dotnet-core/testing.md](../dotnet-core/testing.md)
-
-For every new or modified behaviour:
-
-- Confirm the evidence plan from Phase 1/2 was followed, or record why it changed
-- Unit tests for domain logic and core business rules (isolated, no real I/O)
+- Confirm the Phase 1/2 evidence plan was followed, or record why it changed
+- Unit tests for domain logic and business rules (isolated, no real I/O)
 - Integration tests for infrastructure adapters and external services
-- Tests assert behaviour, not implementation details
-- Cover: happy path, edge cases (null, empty, boundary), failure paths
+- Assert behaviour, not implementation details; cover happy path, edge cases (null, empty, boundary), and failure paths
 - Bug fixes include regression coverage when feasible
 
 Run the project's test suite. All tests must pass before continuing.
 
----
-
 ### Phase 6 — Self-Review
 
-Work through the self-review checklist from [standards.md](standards.md), then apply the following targeted checks.
+Work through the self-review checklist in [standards.md](standards.md). If the stack skill is installed, also load `../<stack>-core/security.md` and `../<stack>-core/observability.md` (and `../<stack>-core/delivery-checks.md` when the stack provides it). Then confirm:
 
-If a stack-specific security or observability reference exists for this project, load it to apply stack-specific checks:
-- .NET: [../dotnet-core/security.md](../dotnet-core/security.md) and [../dotnet-core/observability.md](../dotnet-core/observability.md)
-
-**Security:**
-- [ ] All inputs validated before use
-- [ ] No secrets in code or config files
-- [ ] All protected endpoints require authentication
-- [ ] No sensitive data in log output
-
-**Observability:**
-- [ ] Structured logging with semantic properties on important operations
-- [ ] Correlation ID propagated if this touches async or cross-service flows
-- [ ] Health check updated if new dependency added
-
-**Architecture** — apply [../architect/review-lenses.md](../architect/review-lenses.md) lenses:
-- [ ] Dependency direction correct (no infrastructure imports in domain or core)
-- [ ] No domain logic in controllers, HTTP handlers, or infrastructure
-- [ ] Contracts (DTOs, events, API responses) do not expose internal model details
-
-**General:**
-- [ ] Code quality & readability
-- [ ] SOLID principles respected
-- [ ] DRY — no duplicated logic
-- [ ] Decomposition — no monolithic "do everything" functions
-- [ ] Testing — adequate coverage
-- [ ] Scope — no unrelated changes introduced
-- [ ] IaC updated if infrastructure changed
-
----
+- [ ] **Security** — inputs validated, no secrets in code/config, protected endpoints authenticated, no sensitive data in logs
+- [ ] **Observability** — structured logs on important operations, correlation ID propagated across async/cross-service flows, health check updated for new dependencies
+- [ ] **Architecture** ([../architect/review-lenses.md](../architect/review-lenses.md)) — dependency direction correct, no domain logic in handlers/controllers/infrastructure, contracts don't expose internal models
+- [ ] **General** — readability, SOLID, DRY, decomposition, adequate tests, no unrelated changes, IaC updated if infrastructure changed
 
 ### Phase 7 — Summary
 
-Present a structured implementation summary using the Phase 7 template from [validation-templates.md](validation-templates.md):
-
-- What was built
-- Files created/modified
-- Decisions made and why
-- Trade-offs accepted
-- Known limitations or follow-up tasks
-
----
+Present the Phase 7 template from [validation-templates.md](validation-templates.md): what was built, files created/modified, decisions and why, trade-offs accepted, known limitations or follow-ups, and the justification for any new structural complexity.
 
 ### Phase 8 — Automated Verification
 
-Run the project's build and quality suite. All must pass:
-
-| Stack | Commands |
-|-------|----------|
-| .NET | `dotnet build --no-incremental && dotnet test && dotnet format --verify-no-changes` |
-| Node.js | `npm run build && npm test && npm run lint` |
-| Other | Run the project's equivalent build, test, and lint commands |
-
-If any step fails, fix and re-run before continuing.
-
----
+Run the project's build, test, and format/lint suite. All must pass. Take the commands from the injected `../code-review/commands-<stack>.md` for the stack, or the project's own scripts — never assume a toolchain ([reference.md](reference.md#build-test-lint-commands)). If any step fails, fix and re-run.
 
 ### Phase 9 — Delegate to Code Review
-
-**First, evaluate whether `/review` is required:**
 
 | Condition | Action |
 |-----------|--------|
@@ -470,94 +221,28 @@ If any step fails, fix and re-run before continuing.
 | Config, docs, or test files only — no production logic changed | Skip |
 | Single file, fewer than 20 lines changed, no logic change | Skip |
 
-If any **Delegate** condition is met, skip applies to nothing — delegate regardless.
-If task was classified as **Trivial** at the start, skip is the default unless a Delegate condition applies.
+Any Delegate condition wins over every Skip condition. For **Trivial** tasks, skip is the default unless a Delegate condition applies.
 
-**When delegating**, complete the `/review Handoff` template from [validation-templates.md](validation-templates.md), then delegate to the `review` agent:
+**When delegating**, complete the `/review Handoff` template from [validation-templates.md](validation-templates.md) and delegate to the `review` agent:
 
 ```
 /review
 [paste completed /review Handoff template]
 ```
 
-The `review` agent runs with an isolated context window — its judgement is not biased by this session's implementation reasoning, which is what makes the validation independent. (If the agent is unavailable in the current environment, fall back to running the `code-review` skill directly and note that the review shared this session's context.)
+The `review` agent runs in an isolated context, which is what makes the validation independent. If the agent is unavailable, run the `code-review` skill ([../code-review/SKILL.md](../code-review/SKILL.md)) directly and note that the review shared this session's context.
 
-**When skipping**, note the reason inline (e.g. "Skipping /review — single config file change, no logic modified") and proceed to Phase 10.
+**When skipping**, note the reason inline (e.g. "Skipping review — single config file change, no logic modified").
 
-The independent review performs the final validation. Address all blockers before proceeding to Phase 10.
-
----
+Address all blockers before Phase 10.
 
 ### Phase 10 — Commit
 
-Use the `AskQuestion` tool to collect the commit prefix:
-- One single-select question asking for the commit type (options: `feat`, `fix`, `refactor`, `chore`)
-
-Before committing, review the diff shape. Prefer atomic commits grouped by functional intent when the work contains multiple independent changes:
-
-- Keep refactors separate from behaviour changes where practical.
-- Keep tests/docs/config-only changes easy to identify.
-- Keep dependency or generated changes separate from product logic.
-- If one commit intentionally mixes concerns, explain why in the commit body or PR description.
-- Each commit should represent one coherent step in the implementation story: context, intent, change, and evidence should be understandable from the commit message/body and surrounding PR.
-
-Commit format:
-
-```
-<prefix>(<scope>): <short description>
-
-<body — what changed and why, not how>
-```
-
-Example:
-```
-feat(orders): add order cancellation endpoint
-
-Implements POST /api/orders/{id}/cancel with idempotency check.
-Raises OrderCancelledEvent for downstream notification handling.
-```
-
-Then create a PR if the branch is not main.
-
-PR description should summarize the full story:
-
-- Problem
-- Approach
-- What changed
-- Validation
-- Risks / follow-ups
-
----
+Ask for the commit prefix (`feat`, `fix`, `refactor`, `chore`). Review the diff shape and prefer atomic commits grouped by functional intent (refactors apart from behaviour changes; tests/docs/config and dependency changes easy to identify). Format: `<prefix>(<scope>): <short description>` plus a body explaining what changed and why. Create a PR if the branch is not the default branch, with Problem, Approach, What changed, Validation, Risks / follow-ups. Read [workflow-reference.md](workflow-reference.md#commit-and-pr-format) when the change needs several commits or the project has no commit convention.
 
 ### Phase 10.5 — System Feedback *(optional)*
 
-After the commit, capture any signals that could improve the `.cursor` framework itself.
-
-Use the `AskQuestion` tool with a single multi-select question:
-
-```
-Did this cycle reveal anything that should be captured for system improvement?
-- A new pattern worth documenting in standards.md
-- An antipattern not yet in antipatterns.md
-- An architectural decision that merits an ADR in `.agent-runway/docs/architecture/decisions/`
-- A recurring friction point in the workflow
-- None — nothing to capture
-```
-
-**If "None" is selected:** close the session. No further action.
-
-**If any other option is selected:** append an entry to `.agent-runway/config/system-improvements.md` (create the file if it does not exist) with the following format:
-
-```markdown
-### YYYY-MM-DD — [Short description]
-
-- **Type**: Pattern / Antipattern / ADR / Workflow friction
-- **Detail**: [One-paragraph description of what was found]
-- **Suggested target file**: [e.g. `antipatterns.md`, `standards.md`, `.agent-runway/docs/architecture/decisions/`]
-- **Source**: [Feature or ticket that surfaced this]
-```
-
-Do not modify any `.cursor` file directly — only log the improvement for the tech lead to review and apply.
+After the commit, ask one multi-select question: did this cycle reveal a pattern for [standards.md](standards.md), an antipattern for [antipatterns.md](antipatterns.md), an ADR-worthy decision, a workflow friction point, or nothing? If anything other than "nothing", log it as described in [workflow-reference.md](workflow-reference.md#system-feedback). Never edit installed skill or rule files directly.
 
 ---
 
@@ -566,25 +251,21 @@ Do not modify any `.cursor` file directly — only log the improvement for the t
 - [antipatterns.md](antipatterns.md) — canonical anti-pattern list
 - [incremental-checks.md](incremental-checks.md) — per-file quality scan
 - [standards.md](standards.md) — DO/DON'T examples, self-review checklist
-- [validation-templates.md](validation-templates.md) — phase checkpoint output templates
-- [reference.md](reference.md) — search commands and key file paths
-- [../shared/artifact-writing-contract.md](../shared/artifact-writing-contract.md) - artifact write locations
-- [../shared/context-provider-policy.md](../shared/context-provider-policy.md) - optional graph/MCP context rules
-- [../shared/narrative-delivery-policy.md](../shared/narrative-delivery-policy.md) - narrative tickets, commits, PRs, checkpoints, and memory
-- [../shared/test-driven-delivery-policy.md](../shared/test-driven-delivery-policy.md) - problem understanding, evidence planning, and test-first loops
-
----
+- [validation-templates.md](validation-templates.md) — phase output and handoff templates
+- [reference.md](reference.md) — stack detection, stack reference loading, build/test commands, search patterns
+- [workflow-reference.md](workflow-reference.md) — fast-track, developer profiles, commit/PR format, system feedback
+- [../shared/artifact-writing-contract.md](../shared/artifact-writing-contract.md) — artifact write locations
+- [../shared/context-provider-policy.md](../shared/context-provider-policy.md) — optional graph/MCP context rules
+- [../shared/narrative-delivery-policy.md](../shared/narrative-delivery-policy.md) — narrative tickets, commits, PRs, checkpoints, memory
+- [../shared/test-driven-delivery-policy.md](../shared/test-driven-delivery-policy.md) — evidence planning and test-first loops
 
 ## Related Skills
 
-Use the following skills for deeper reasoning when needed:
-
 | Need | Skill |
 |------|-------|
-| Evaluate design trade-offs or architectural decisions in Phase 0 | `architect` — see [decision-heuristics.md](../architect/decision-heuristics.md) and [tradeoffs.md](../architect/tradeoffs.md) |
-| Identify antipatterns in the proposed design | `architect` — see [antipatterns.md](../architect/antipatterns.md) |
-| Choose the right structural pattern | `architect` — see [patterns.md](../architect/patterns.md) |
-| .NET application patterns (CQRS, handlers, validation) | `dotnet-core` — see [application-patterns.md](../dotnet-core/application-patterns.md) |
-| .NET infrastructure patterns (EF Core, messaging, caching) | `dotnet-core` — see [infrastructure.md](../dotnet-core/infrastructure.md) |
-| .NET API design | `dotnet-core` — see [api-design.md](../dotnet-core/api-design.md) |
-| .NET observability wiring | `dotnet-core` — see [observability.md](../dotnet-core/observability.md) |
+| Design trade-offs or architectural decisions in Phase 0 | `architect` — [decision-heuristics.md](../architect/decision-heuristics.md), [tradeoffs.md](../architect/tradeoffs.md) |
+| Architectural antipatterns in the proposed design | `architect` — [antipatterns.md](../architect/antipatterns.md) |
+| Structural pattern selection | `architect` — [patterns.md](../architect/patterns.md) |
+| Stack idioms, testing, security, observability | `<stack>-core`, if installed — e.g. `../<stack>-core/patterns.md` |
+| Infrastructure changes | `iac` — [standards.md](../iac/standards.md) |
+| Durable lessons from this work | `learning` — [SKILL.md](../learning/SKILL.md) |

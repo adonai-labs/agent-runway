@@ -8,7 +8,7 @@ Place this fenced block at the **top** of the run log, filled in:
 
 ```yaml
 # agent-runway:run
-run_id: 20260626T031500Z-add-metrics
+run_id: 20260626-0315-add-metrics
 date: 2026-06-26
 task: Add the metrics command
 classification: standard
@@ -25,7 +25,7 @@ memory_refs:
 
 | Field | Required | Meaning |
 |-------|----------|---------|
-| `run_id` | yes | Matches the run log filename |
+| `run_id` | yes | UTC `YYYYMMDD-HHMM-<slug>`; matches the run log filename |
 | `date` | yes | ISO date `YYYY-MM-DD` |
 | `task` | yes | One-line description of the run |
 | `classification` | yes | `trivial` \| `standard` \| `complex` |

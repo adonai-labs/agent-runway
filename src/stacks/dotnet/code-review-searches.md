@@ -152,3 +152,39 @@ rg "\[Ignore\]|\[Skip\]" --type cs
 ```
 
 High. Tests with `Thread.Sleep` are flaky. Tests without assertions provide false confidence.
+
+---
+
+## Category: Missing Authorisation (ASP.NET Core)
+
+```powershell
+# Find all controllers and check for [Authorize]
+rg "\[ApiController\]" -B 2 -A 10 --type cs
+# Find all [AllowAnonymous] usages
+rg "\[AllowAnonymous\]" --type cs
+# Minimal API endpoints without RequireAuthorization
+rg "Map(Get|Post|Put|Patch|Delete)\(" --type cs
+```
+
+Critical. Manually verify every controller and endpoint either has `[Authorize]` / `RequireAuthorization()` or an intentional, justified `[AllowAnonymous]`.
+
+---
+
+## Category: Sensitive Data in Log Calls
+
+```powershell
+rg "Log(Information|Warning|Error|Debug|Trace|Critical).*([Pp]assword|[Tt]oken|[Ss]ecret|[Aa]pi[Kk]ey)" --type cs
+```
+
+Critical. PII, passwords, and tokens must never appear in `ILogger` output.
+
+---
+
+## Category: ConfigureAwait Missing (Library Code)
+
+```powershell
+rg "await [^;]+" --type cs --glob "**/*.Infrastructure/**" --glob "**/*.Domain/**"
+# Check for missing .ConfigureAwait(false) in shared/library projects only
+```
+
+Low-Medium, library projects only. Application and ASP.NET Core API projects do not require `ConfigureAwait(false)`. Disable this category in the review config when the solution has no library/shared projects.

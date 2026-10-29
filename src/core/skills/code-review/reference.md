@@ -2,52 +2,50 @@
 
 > The checklists below are reviewer-specific — they cover what a reviewer verifies layer by layer.
 >
-> **Stack note**: the per-layer checklists use .NET/C# examples (EF Core, MediatR, ASP.NET Core). The principles are general — apply the equivalent for your stack. The OWASP, Testing, and IaC checklists are stack-neutral.
+> **Stack note**: these checklists are stack-neutral. When a stack skill is installed, apply its deeper checks too (`../<stack>-core/security.md`, `../<stack>-core/testing.md`, and for .NET the `dotnet-core` delivery checks).
 
 ---
 
-## Domain Layer Checklist
+## Domain / Core Layer Checklist
 
-- [ ] No `using Microsoft.*` or `using System.Data.*` in domain entities
-- [ ] Entities enforce invariants in constructors or factory methods — not services
-- [ ] Navigation properties are private setters or `init`
-- [ ] Domain events raised for cross-aggregate side effects
-- [ ] Value objects override `Equals` and `GetHashCode`
-- [ ] No `public` setters on aggregate roots for mutable state — use methods
+- [ ] No framework, persistence, or transport dependencies in domain code
+- [ ] Entities enforce invariants in constructors/factories — not in services
+- [ ] State changes go through intention-revealing methods, not public setters on aggregates
+- [ ] Domain events (or equivalent) raised for cross-aggregate side effects
+- [ ] Value objects compare by value and are immutable
 
 ---
 
-## Application Layer Checklist
+## Application / Use-Case Layer Checklist
 
-- [ ] Each handler handles exactly one command or query
-- [ ] `IRequestHandler<TRequest, TResponse>` used consistently (MediatR)
-- [ ] Validators registered and applied (`AbstractValidator<T>`)
-- [ ] No direct `DbContext` — only repository interfaces
-- [ ] `CancellationToken` accepted and propagated
-- [ ] `Result<T>` returned for expected failures; exceptions for unexpected ones
+- [ ] Each handler/use case/service function has exactly one responsibility
+- [ ] Inputs validated at the boundary with the project's validation approach
+- [ ] No direct database/ORM client access — depends on repository/port abstractions
+- [ ] Cancellation/abort signals (tokens, contexts, `AbortSignal`) accepted and propagated
+- [ ] Expected failures returned as explicit results/errors; exceptions/panics reserved for the unexpected
 
 ---
 
 ## Infrastructure Layer Checklist
 
-- [ ] EF Core queries use `.AsNoTracking()` for read-only scenarios
-- [ ] Migrations are additive — no destructive column drops without a data migration step
-- [ ] `IEntityTypeConfiguration<T>` used — no `OnModelCreating` bloat
-- [ ] `HttpClient` registered via `IHttpClientFactory`
-- [ ] Polly retry policies applied to transient HTTP/DB failures
-- [ ] No business logic — pure infrastructure adapters
+- [ ] Read-only queries avoid unnecessary tracking/locking; queries are bounded (pagination/limits)
+- [ ] Migrations are additive — no destructive drops without a data migration step
+- [ ] Mapping/configuration kept out of domain code
+- [ ] HTTP and DB clients are pooled/reused (no per-call client construction)
+- [ ] Retries with backoff for transient failures; timeouts on every outbound call
+- [ ] No business logic — pure adapters
 
 ---
 
-## API Layer Checklist
+## API / Interface Layer Checklist
 
-- [ ] `[Authorize]` applied (or `[AllowAnonymous]` explicitly justified)
-- [ ] Request DTOs use `[Required]` or FluentValidation
-- [ ] Response DTOs are explicit — no entity objects returned directly
-- [ ] Problem Details (`ProblemDetails`) used for error responses
-- [ ] Route naming follows `api/v{ver}/<plural-resource>` convention
-- [ ] Async all the way — no `.Result` or `.Wait()`
-- [ ] `CancellationToken` accepted from `HttpContext.RequestAborted`
+- [ ] Authorisation applied to every protected endpoint (anonymous access explicit and justified)
+- [ ] Request payloads validated before reaching the handler
+- [ ] Response contracts are explicit — internal/persistence models never returned directly
+- [ ] Consistent error format (e.g. RFC 9457 Problem Details) and correct status codes
+- [ ] Route naming follows the project's convention (e.g. `api/v{ver}/<plural-resource>`)
+- [ ] No blocking on async work inside request handlers
+- [ ] Request cancellation propagated downstream
 
 ---
 
@@ -60,9 +58,9 @@
 | A03 | Injection | No raw SQL, inputs validated, output encoded |
 | A04 | Insecure Design | Threat modelling done for sensitive flows |
 | A05 | Security Misconfiguration | Dev error pages off in prod; HSTS enabled |
-| A06 | Vulnerable Components | `dotnet list package --vulnerable` passes |
+| A06 | Vulnerable Components | The stack's dependency audit passes (see `commands-<stack>.md`) |
 | A07 | Auth Failures | Tokens validated; sessions expire; MFA considered |
-| A08 | Integrity Failures | `BinaryFormatter` not used; NuGet source trusted |
+| A08 | Integrity Failures | No unsafe deserialisation of untrusted data; package sources trusted and pinned |
 | A09 | Logging Failures | Auth events logged; no sensitive data in logs |
 | A10 | SSRF | External URLs validated; no user-controlled redirects |
 
@@ -74,9 +72,9 @@
 - [ ] Happy path tested
 - [ ] Null / empty / boundary inputs tested
 - [ ] Failure path tested (what happens when dependency fails?)
-- [ ] No `Thread.Sleep` — use `FakeTimeProvider` or mock
+- [ ] No real sleeps/timers — use a fake clock or controllable time source
 - [ ] Assertions present and meaningful
-- [ ] Test method names describe behaviour: `Should_ReturnFailure_When_OrderNotFound`
+- [ ] Test names describe behaviour (e.g. `returns failure when order not found`)
 
 ---
 
@@ -84,8 +82,8 @@
 
 - [ ] All resources parameterised — no environment-specific hardcodes
 - [ ] Every resource tagged: `environment`, `application`, `owner`, `cost-centre`
-- [ ] Secrets are Key Vault references — not in parameter files in plaintext
-- [ ] Managed identity used instead of service principal where possible
+- [ ] Secrets come from the provider's secret store (Key Vault, Secrets Manager, Secret Manager) — never plaintext parameters
+- [ ] Workload identity (managed identity, IAM role, service account) used instead of long-lived credentials
 - [ ] Private endpoints on data services in production
 - [ ] Diagnostic settings configured for all resources
-- [ ] `what-if` run documented in PR description
+- [ ] Plan / what-if / change-set preview documented in PR description

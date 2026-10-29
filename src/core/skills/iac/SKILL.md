@@ -1,6 +1,6 @@
 ---
 name: iac
-description: Infrastructure as Code for .NET on Azure - defines, reviews, and troubleshoots Bicep and Terraform for .NET applications. Use when the user says "/iac", "infrastructure", "Bicep", "Terraform", "ARM template", "provision resources", "Azure resources", "deploy infra", "cloud setup", "new environment", or wants to create, review, or fix infrastructure for a .NET application.
+description: Cloud-neutral Infrastructure as Code - defines, reviews, and troubleshoots IaC (Terraform/OpenTofu, Bicep, CloudFormation/CDK, Pulumi) for Azure, AWS, or GCP with risk scoring and contrarian review for high-impact changes. Use when the user says "/iac", "infrastructure", "Terraform", "Bicep", "CloudFormation", "Pulumi", "ARM template", "provision resources", "cloud resources", "deploy infra", "cloud setup", "new environment", or wants to create, review, or fix infrastructure.
 ---
 
 # Infrastructure as Code
@@ -12,10 +12,12 @@ description: Infrastructure as Code for .NET on Azure - defines, reviews, and tr
 ```
 
 Examples:
-- `/iac new App Service + SQL Database for the orders service`
-- `/iac review infra/main.bicep`
-- `/iac add Key Vault and update app settings references`
+- `/iac new container service + managed Postgres for the orders service`
+- `/iac review infra/main.tf`
+- `/iac add a secrets store and reference it from app settings`
 - `/iac create dev and prod parameter files`
+
+Provider and tool are detected from the repository (`*.tf`, `*.bicep`, `template.yaml`/`cdk.json`, `Pulumi.yaml`) or asked once. Examples in [standards.md](standards.md) and [reference.md](reference.md) show Azure/Bicep alongside AWS and GCP equivalents; apply the same principles to whichever provider is in use.
 
 > Not sure which skill to use? Start with `/start` - it classifies intent and routes to the right skill.
 
@@ -86,7 +88,8 @@ Contrarian output template:
 
 Before writing any IaC, clarify:
 
-- What Azure services are needed?
+- Which cloud provider and IaC tool? (detect from existing files first)
+- Which managed services are needed?
 - What environments? (dev / staging / prod)
 - Scaling and availability requirements
 - Compliance or data residency constraints
@@ -97,12 +100,12 @@ Question budget:
 - Execution+validation: max 2 targeted questions
 - Execution+contrarian: ask only blocking questions needed for safe decision
 
-Refer to [reference.md](reference.md) for the standard Azure service list and naming conventions.
+Refer to [reference.md](reference.md) for the cross-provider service map, CLI commands, and naming conventions.
 
 If Execution-only, apply short path:
 - skip non-blocking deep discovery
 - proceed to Step 3 after requirements are clear
-- still enforce security review and what-if validation
+- still enforce security review and plan/preview validation
 
 ### Step 2 - Establish Structure
 
@@ -114,9 +117,9 @@ Apply all standards from [standards.md](standards.md):
 
 - Parameterise everything environment-specific
 - Tag every resource
-- Reference secrets via Key Vault
-- Use managed identity over service principals
-- Enable diagnostic settings
+- Reference secrets from the provider's secret store (Key Vault, Secrets Manager / SSM, Secret Manager)
+- Use workload identity (managed identity, IAM roles, service accounts) over long-lived credentials
+- Send logs and metrics to the central monitoring workspace
 
 Simplicity guardrail:
 - choose the smallest infra shape that meets requirements
@@ -129,16 +132,16 @@ Run the security checks from [standards.md](standards.md) before any deployment.
 
 ### Step 5 - Deployment Validation
 
-Always run `what-if` before applying:
+Always preview changes before applying, with the tool in use:
 
-```powershell
-az deployment group what-if `
-  --resource-group rg-<appname>-<env> `
-  --template-file infra/main.bicep `
-  --parameters infra/main.parameters.<env>.json
-```
+| Tool | Preview command |
+|------|-----------------|
+| Terraform / OpenTofu | `terraform plan -var-file=<env>.tfvars` |
+| Bicep / ARM | `az deployment group what-if --resource-group <rg> --template-file infra/main.bicep --parameters infra/main.parameters.<env>.json` |
+| CloudFormation / CDK | `aws cloudformation create-change-set ...` / `cdk diff` |
+| Pulumi | `pulumi preview --stack <env>` |
 
-Document the `what-if` output in the PR description.
+Document the preview output in the PR description.
 
 For high-impact or hard-to-reverse changes, include:
 - rollback path
@@ -151,11 +154,11 @@ For high-impact or hard-to-reverse changes, include:
 IaC Review Checklist
 - [ ] All resources parameterised
 - [ ] Resources tagged (environment, application, owner, cost-centre)
-- [ ] Secrets via Key Vault - not in plaintext params
-- [ ] Managed identity used where possible
-- [ ] Private endpoints on data services (prod)
-- [ ] Diagnostic settings enabled -> Log Analytics
-- [ ] what-if run and documented
+- [ ] Secrets from the provider's secret store - not in plaintext params
+- [ ] Workload identity used where possible
+- [ ] Private networking on data services (prod)
+- [ ] Logs/metrics shipped to the central monitoring workspace
+- [ ] Plan / what-if / change-set preview run and documented
 - [ ] Module outputs documented
 - [ ] Naming conventions consistent
 - [ ] IaC reviewed in PR before deployment
@@ -164,23 +167,19 @@ IaC Review Checklist
 - [ ] Rollback and blast radius documented for high-impact changes
 ```
 
-### Step 7 - Memory Sync (Repeated Patterns)
+### Step 7 - Memory Sync (Repeated Patterns Only)
 
-If repeated patterns are detected, update memory artifacts automatically.
+Follow the automatic-sync rule in [../shared/memory-policy.md](../shared/memory-policy.md): write only when the same signal has been seen at least twice, at most two entries per run, one lesson per file.
 
 Detection signals:
-- same IaC failure mode repeats (mis-tagging, missing diagnostics, unsafe exposure, rollback gaps)
-- same decision doubt repeats (same rejected option resurfaces, assumption repeatedly fails)
+- same IaC failure mode repeats (mis-tagging, missing diagnostics, unsafe exposure, rollback gaps) → one entry in `.agent-runway/memory/execution-memory.md`
+- same decision doubt repeats (same rejected option resurfaces, assumption repeatedly fails) → one entry in `.agent-runway/memory/reasoning-memory.md`
 
-Write rules:
-- append max 1 entry to `.agent-runway/memory/execution-memory.md`
-- append max 1 entry to `.agent-runway/memory/reasoning-memory.md`
-- apply the memory hygiene policy: [../shared/memory-policy.md](../shared/memory-policy.md) (consolidate duplicates, cap active entries, archive instead of delete)
-- keep entries concise, non-sensitive, and linked to affected IaC artifact paths
+Keep entries concise, non-sensitive, and linked to the affected IaC paths. Report any memory write in the summary.
 
 ---
 
 ## Supporting Files
 
-- [standards.md](standards.md) - folder structure, naming, Bicep/Terraform patterns, tagging
-- [reference.md](reference.md) - Azure service resource types, CLI commands, parameter examples
+- [standards.md](standards.md) - principles, folder structure, naming, tagging, secrets, identity, with Azure/AWS/GCP examples
+- [reference.md](reference.md) - cross-provider service map, CLI commands, parameter and pipeline examples

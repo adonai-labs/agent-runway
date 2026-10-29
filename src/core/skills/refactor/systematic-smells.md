@@ -1,144 +1,142 @@
 # Systematic Smell Detection — Search Commands
 
-Run these searches against the target code to identify refactoring candidates systematically. Document count and file locations for each.
+Run these searches against the target code to identify refactoring candidates. Document count and file locations for each.
+
+The commands are language-neutral starting points using `rg` and standard shell tools. Narrow them with a file filter for the project's language (`--type ts`, `--type py`, `--type go`, `--type rust`, `--type cs`, `--type java`) and scope them to the refactoring target. If the stack skill is installed, also run its language-specific smell searches (for .NET: `../<stack>-core/delivery-checks.md` in `dotnet-core`).
 
 ---
 
-## 1 — Large Classes
+## 1 — Large Files / Classes
 
-```powershell
-# Files with high line count (likely god classes)
-Get-ChildItem -Recurse -Filter *.cs -Exclude *Tests*,*Migrations* | Where-Object { (Get-Content $_.FullName | Measure-Object -Line).Lines -gt 300 } | Select-Object FullName, @{N='Lines';E={(Get-Content $_.FullName | Measure-Object -Line).Lines}} | Sort-Object Lines -Descending
+```bash
+# Files over 300 lines, excluding tests, migrations, and generated code
+rg --files -g '!**/*test*' -g '!**/*spec*' -g '!**/migrations/**' -g '!**/generated/**' <src> \
+  | xargs wc -l | awk '$1 > 300' | sort -rn | head -20
 ```
 
-Signal: classes over 300 lines are candidates for decomposition by SRP.
+Signal: files/classes over ~300 lines are candidates for decomposition by SRP.
 
 ---
 
-## 2 — Long Methods
+## 2 — Long Functions
 
-```powershell
-# Methods with excessive line count — look for opening braces at method level
-rg "^\s+(public|private|protected|internal)\s+(static\s+)?(async\s+)?(void|Task|IActionResult|Result|string|int|bool|decimal|Guid|IEnumerable|IReadOnlyList|IList|IDictionary)" --type cs -c | Sort-Object
-```
+Use the project's linter or complexity tool first — it measures function length precisely:
 
-Manually inspect the top results. Methods over 30 lines are candidates for Extract Method.
+| Language | Tool |
+|----------|------|
+| TypeScript / JavaScript | ESLint `max-lines-per-function`, `complexity` |
+| Python | Ruff `PLR0915` / `C901`, Radon `cc` |
+| Go | `gocyclo`, `gocognit`, `funlen` (golangci-lint) |
+| Rust | Clippy `too_many_lines`, `cognitive_complexity` |
+| C# | .NET code metrics, analyzers (`CA1502`) |
+
+Manually inspect the top results. Functions over ~30 lines are Extract Function candidates.
 
 ---
 
 ## 3 — Deep Nesting (3+ Levels)
 
-```powershell
-rg "^\s{16,}(if|else|foreach|for|while|switch|try|catch)" --type cs
+```bash
+rg "^(\s{12,}|\t{3,})(if|else|for|foreach|while|switch|match|try|catch|except)\b" <src>
 ```
 
-Signal: code indented 4+ levels (16+ spaces / 4 tabs). Candidate for guard clauses or method extraction.
+Signal: control flow indented 3+ levels below the function body. Candidate for guard clauses or extraction.
 
 ---
 
-## 4 — God Constructors (Excessive Dependencies)
+## 4 — Too Many Dependencies
 
-```powershell
-rg "public\s+\w+\(" -A 10 --type cs | rg "(I[A-Z]\w+\s+\w+,|I[A-Z]\w+\s+\w+\))"
+```bash
+# Constructors / factories / __init__ with long parameter lists (5+ commas)
+rg "(constructor|__init__|func New\w*|fn new|public \w+)\s*\(([^,)]*,){5,}" <src>
 ```
 
-Manually count constructor parameters. Classes with 6+ injected dependencies likely violate SRP.
+Signal: 6+ injected dependencies usually means more than one responsibility.
 
 ---
 
 ## 5 — Primitive Obsession
 
-```powershell
-# String parameters where value objects might be appropriate
-rg "(string\s+(email|phone|address|currency|country|postcode|url|uri|path))" --type cs -i
-rg "(int\s+(amount|price|total|quantity|count|age|year|month|day))" --type cs -i
-rg "(decimal\s+(amount|price|total|cost|fee|rate|tax|discount))" --type cs -i
+```bash
+rg "(email|phone|currency|country|postcode|url|uri)\s*[:=]?\s*(string|str|String)\b" -i <src>
+rg "(string|str|String)\s+(email|phone|currency|country|postcode|url|uri)\b" -i <src>
+rg "(amount|price|total|cost|fee|rate|tax|discount)\s*[:=]?\s*(number|float|double|f64|float64|decimal)\b" -i <src>
 ```
 
-Signal: domain concepts represented as primitives instead of value objects.
+Signal: domain concepts represented as primitives instead of value types.
 
 ---
 
-## 6 — Feature Envy
+## 6 — Feature Envy / Message Chains
 
-```powershell
-# Methods accessing another object's properties extensively
-rg "\.\w+\.\w+\.\w+" --type cs
+```bash
+rg "\w+\.\w+\.\w+\.\w+" <src>
 ```
 
-Signal: chains of 3+ property accesses suggest the method belongs on the accessed object.
+Signal: chains of 3+ property accesses suggest the logic belongs on the accessed object.
 
 ---
 
 ## 7 — Anemic Domain — Logic in Services
 
-```powershell
-# Services with domain logic (setting properties on entities)
-rg "\.\w+\s*=\s*" --type cs --glob "*Service.cs"
-rg "\.\w+\s*=\s*" --type cs --glob "*Handler.cs"
+```bash
+# Services/handlers assigning fields on other objects
+rg "\b\w+\.\w+\s*=\s*[^=]" -g '*[Ss]ervice*' -g '*[Hh]andler*' -g '*use[-_]case*' <src>
 ```
 
-Cross-reference with entity files — if entities have only public getters/setters and services mutate them, the domain model is anemic.
+Cross-check the entity/model files: if they are pure data and services mutate them, behaviour should move onto the entity.
 
 ---
 
 ## 8 — Duplicate Logic Blocks
 
-```powershell
-# Same validation or logic pattern appearing in multiple files
-rg "if\s*\(\w+\s*==\s*null\)\s*(throw|return)" --type cs -c | Where-Object { $_ -match ":\d{2,}" }
+Prefer a duplication detector: `jscpd` (multi-language), `pylint --enable=duplicate-code`, `dupl` (Go), SonarQube.
+
+```bash
+npx jscpd --min-lines 6 --reporters console <src>
 ```
 
-Also look for repeated try/catch blocks, repeated LINQ chains, or repeated mapping code across handlers.
+Also look for repeated try/catch blocks, repeated query chains, and repeated mapping code.
 
 ---
 
 ## 9 — Magic Numbers and Strings
 
-```powershell
-rg "^\s*(if|while|return|case|var\s+\w+\s*=).*[^a-zA-Z\"']\d{2,}[^a-zA-Z\d]" --type cs
-rg "\"[A-Za-z]{3,}\"" --type cs --glob "!*Tests*" --glob "!*appsettings*"
+```bash
+rg "^\s*(if|while|return|case|const|let|var)\b.*[^a-zA-Z\"'_]\d{2,}[^a-zA-Z\d]" <src>
+rg "(==|!=|===|case)\s*[\"'][A-Za-z]{3,}[\"']" <src>
 ```
 
-Signal: unexplained numeric literals or string constants that should be named constants or configuration.
+Signal: unexplained literals that should be named constants or configuration.
 
 ---
 
 ## 10 — Switch / If-Else on Type
 
-```powershell
-rg "switch\s*\(" -A 15 --type cs
-rg "if\s*\(\w+\s*==\s*\"" --type cs
-rg "case\s+\"" --type cs
+```bash
+rg "(switch|match)\s*\(?\s*\w*(type|kind|status)\b" -i -A 10 <src>
+rg "(type|kind)\s*(==|===)\s*[\"']" -i <src>
 ```
 
-Signal: type-switching logic repeated across methods. Candidate for Strategy or polymorphism.
+Signal: the same type switch repeated across functions. Candidate for strategy, polymorphism, or a lookup table.
 
 ---
 
-## 11 — Missing Abstractions (Repeated Patterns)
+## 11 — Missing Abstractions (Repeated Shapes)
 
-```powershell
-# Same method signature pattern across multiple files
-rg "public async Task<Result" --type cs -c
-rg "public async Task<IActionResult>" --type cs -c
-```
-
-If many handlers follow the exact same structure (validate → fetch → mutate → save → return), consider a pipeline behaviour or base handler.
+Look for many handlers/endpoints with the same structure (validate → fetch → mutate → save → return). Count them with a signature search for the project's convention (for example `rg -c "async function handle"` or `rg -c "def handle_"`). Consider middleware, a pipeline step, or a shared helper — only when the repetition is real.
 
 ---
 
-## 12 — Coupling Signals
+## 12 — Coupling Signals (Layer Leaks)
 
-```powershell
-# Infrastructure types in Domain or Application layers
-rg "using.*Infrastructure" --type cs --glob "**/Domain/**"
-rg "using.*Infrastructure" --type cs --glob "**/Application/**"
-rg "DbContext|SqlConnection|HttpClient|BlobClient" --type cs --glob "**/Domain/**"
-rg "DbContext|SqlConnection|HttpClient|BlobClient" --type cs --glob "**/Application/**"
+```bash
+# Infrastructure imports inside domain/application code
+rg "(import|from|using|use)\s+.*(infrastructure|infra|persistence|db|orm|http)" -i \
+  -g '**/domain/**' -g '**/application/**' -g '**/core/**' <src>
 ```
 
-Signal: layer boundary violations — infrastructure leaking into core layers.
+Signal: infrastructure leaking into core layers. Adjust the folder globs to the project's layout.
 
 ---
 
@@ -147,5 +145,5 @@ Signal: layer boundary violations — infrastructure leaking into core layers.
 | Severity | Smells |
 |----------|--------|
 | High — refactor soon | God class, anemic domain, coupling violations, deep nesting, feature envy |
-| Medium — refactor when touching | Primitive obsession, duplicate logic, long methods, switch on type |
+| Medium — refactor when touching | Primitive obsession, duplicate logic, long functions, switch on type |
 | Low — refactor opportunistically | Magic values, long parameter lists, missing abstractions |

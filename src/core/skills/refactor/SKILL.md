@@ -1,6 +1,6 @@
 ---
 name: refactor
-description: Guides structured refactoring to improve readability, maintainability, and SOLID/Clean Architecture alignment — without changing observable behaviour. Deepest examples are in .NET/C#, but the workflow applies to any stack. Use when the user says "/refactor", "clean up", "improve this", "simplify", "restructure", "reduce complexity", "extract this", "decouple", "too complex", or wants to improve existing code quality.
+description: Guides structured refactoring to improve readability, maintainability, and SOLID/Clean Architecture alignment — without changing observable behaviour. Stack-neutral workflow with multi-language examples; stack-specific smell searches come from the installed stack skill. Use when the user says "/refactor", "clean up", "improve this", "simplify", "restructure", "reduce complexity", "extract this", "decouple", "too complex", or wants to improve existing code quality.
 ---
 
 # Refactor
@@ -42,7 +42,7 @@ Read [safe-refactoring.md](safe-refactoring.md) before starting any refactoring 
 
 ### Step 2 — Detect Smells Systematically
 
-Run the relevant searches from [systematic-smells.md](systematic-smells.md) against the target code. Document what you find.
+Run the relevant searches from [systematic-smells.md](systematic-smells.md) against the target code (plus the stack skill's smell searches when it is installed, e.g. `../<stack>-core/delivery-checks.md` for .NET). Document what you find.
 
 Then name the specific problem using the smell table in [reference.md](reference.md) before proposing a fix. If the smell is not in the table, describe it in terms of the complexity signals from [complexity-signals.md](complexity-signals.md).
 
@@ -91,13 +91,13 @@ Run the verification steps from [safe-refactoring.md](safe-refactoring.md), then
 
 - Not adding new functionality — separate commit
 - Not a performance optimisation — profile first, optimise after, validate with tests
-- Not a style-only change — let `dotnet format` handle formatting
+- Not a style-only change — let the project's formatter (Prettier, Black/Ruff, gofmt, rustfmt, `dotnet format`, ...) handle formatting
 
 ---
 
 ## Supporting Files
 
-- [reference.md](reference.md) — smell table, refactoring patterns with before/after C# examples
+- [reference.md](reference.md) — smell table, refactoring patterns with before/after examples
 - [systematic-smells.md](systematic-smells.md) — search commands to detect smells systematically
 - [safe-refactoring.md](safe-refactoring.md) — characterisation tests, incremental strategy, blast radius, verification
 - [complexity-signals.md](complexity-signals.md) — when to refactor, complexity indicators, prioritisation, knowing when to stop
@@ -116,9 +116,9 @@ Use the following skills for deeper reasoning when needed:
 | Validate the refactored design against architectural antipatterns | `architect` — see [antipatterns.md](../architect/antipatterns.md) |
 | Check whether a boundary introduced during refactor is justified | `architect` — see [decision-heuristics.md](../architect/decision-heuristics.md) |
 | Evaluate trade-offs of a structural refactoring approach | `architect` — see [tradeoffs.md](../architect/tradeoffs.md) |
-| Apply correct .NET patterns after structural changes | `dotnet-core` — see [application-patterns.md](../dotnet-core/application-patterns.md) |
-| Verify layer boundaries after moving code between layers | `dotnet-core` — see [architecture.md](../dotnet-core/architecture.md) |
-| Run independent final validation after a large refactor | `code-review` — invoke with `/review` (see delegation criteria below) |
+| Apply idiomatic stack patterns after structural changes | `<stack>-core`, if installed — `../<stack>-core/patterns.md` |
+| Verify layer boundaries after moving code between layers | `<stack>-core`, if installed — `../<stack>-core/architecture.md` |
+| Run independent final validation after a large refactor | `code-review` — [SKILL.md](../code-review/SKILL.md), invoked with `/review` (see delegation criteria below) |
 
 ### When to delegate to `/review` after refactoring
 
@@ -128,6 +128,6 @@ Use the following skills for deeper reasoning when needed:
 | 3 or more files changed | Delegate |
 | Any Domain or Application layer touched | Delegate |
 | Micro refactor — rename, extract method, inline variable, single file | Skip |
-| Style-only — formatting, comment cleanup, `dotnet format` output | Skip |
+| Style-only — formatting, comment cleanup, formatter output | Skip |
 
 When skipping, note the reason inline before closing the session.

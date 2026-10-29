@@ -149,12 +149,12 @@ See [`template.md`](template.md) for the full template definitions (Feature, Bug
 
 ## Validation Integration
 
-After generating the ticket, the skill runs the `ticket-eval` rule (`.cursor/rules/ticket-eval.mdc`) as a self-check.
+After generating the ticket, Phase 5 applies the criteria of the `ticket-eval` skill ([../ticket-eval/SKILL.md](../ticket-eval/SKILL.md)) as a silent self-check.
 
 ### How to Trigger Validation
 
 1. Save the ticket content as markdown (either the output file or a temporary buffer)
-2. Validate against the 7 criteria from the rule:
+2. Validate against the 7 criteria from the `ticket-eval` skill:
    - Context / Clear Objective
    - Defined Scope
    - Acceptance Criteria
@@ -201,6 +201,116 @@ If the Atlassian MCP is not connected or the create call fails, fall back to mar
 
 ## Markdown artefact naming
 
-Follow **Artefact naming** in `SKILL.md`: every saved markdown ticket or epic uses `implementation-slug` and the `task-<nn>-...` pattern — never a bare `ticket.md` or `[summary-slug].md` without the solution name.
+Follow **Artefact naming** in [SKILL.md](SKILL.md): every saved markdown ticket or epic lives under `.agent-runway/specs/<implementation-slug>/` and tickets use the `tickets/task-<nn>-<ticket-slice-slug>.md` pattern — never a bare `ticket.md` or a file outside the slug folder.
+
+---
+
+## Generic Mode Setup (Phase 0)
+
+Used when `{{config}}/ticket-creator.config.md` is missing or empty. Defaults:
+
+- `codebase_scanning.enabled` → `false`
+- `personas` → `[user, admin]`
+- `docs` → none (no docs to check)
+- `output.default_destination` → `markdown`
+- `output.markdown_path` → `.agent-runway/specs`
+- `agent_notes_gate.require_named_module` → `true`
+- `agent_notes_gate.require_constraint` → `false`
+- `completeness.auto_fix_max_iterations` → `2`
+
+Before Phase 1, ask (each skippable):
+
+```
+Title: Project Setup
+Question: No project config found. What is your Jira project key?
+(e.g. MYPROJ — or skip to use markdown output only)
+```
+
+```
+Question: What is your Jira board URL?
+(e.g. your-org.atlassian.net — or skip)
+```
+
+Store any answers as the active configuration for this session. At Phase 7, append:
+
+> No config found — running in generic mode. Fill in `{{config}}/ticket-creator.config.md` for richer output and project-specific validation.
+
+---
+
+## Question Prompts
+
+Ask each as a single-select question using the environment's question tool (plain text with numbered options if none).
+
+```
+Title: Work Item Mode (Phase 0.5)
+Question: What do you want to create first?
+  - epic: Create an epic with proposed tickets
+  - ticket: Create one delivery ticket
+  - auto: Let the agent decide based on complexity
+```
+
+```
+Title: Task Type (Phase 1)
+Question: What type of ticket is this?
+  - feature: Feature — new functionality or enhancement
+  - bug: Bug — defect in existing functionality
+  - task: Task — technical or operational work (no new user-facing functionality)
+```
+
+```
+Title: Ticket Review (Phase 4)
+Question: How does this ticket look?
+  - approved: Looks good — proceed to validation
+  - changes: I have changes — I'll describe them below
+  - regenerate: Start over with different context
+```
+
+```
+Title: Ticket Output (Phase 6)
+Question: Where should this ticket be created?
+  - jira: Create directly in Jira
+  - markdown: Save as a markdown file
+  - both: Create in Jira and save a local copy
+```
+
+Vague-input questions (Phase 1, max 3, plain business language):
+
+- **Feature**: Who is the user this affects? / What specific problem does this solve for them? / Is there any constraint or deadline driving this?
+- **Bug**: Where does the problem happen? / What did you expect vs what actually happened?
+- **Task**: What is triggering this work now? / Which part of the system does this affect?
+
+---
+
+## Output Steps (Phase 6)
+
+**Jira:**
+
+1. Check Atlassian MCP availability; if not connected, tell the user and fall back to markdown.
+2. Project key from `project.jira_project_key` in active config; if not set, ask as in Generic Mode Setup.
+3. If the user mentioned an epic earlier, offer to link the ticket to it (yes / no).
+4. Create the issue with only summary, description, issue type, and acceptance criteria — never sprint, story points, or other fields.
+5. Return the Jira ticket URL.
+
+**Markdown:** ask for a path or default to `.agent-runway/specs/<implementation-slug>/tickets/task-<nn>-<ticket-slice-slug>.md`, then save.
+
+Confirm where the ticket was created (URL or path).
+
+---
+
+## Summary Template (Phase 7)
+
+```markdown
+## Ticket Created
+
+- **Type**: [Feature / Bug / Task]
+- **Summary**: [ticket title]
+- **Output**: [Jira URL / file path]
+- **Status**: [Ready for development / Has open items]
+- **Context sources**: [which docs were used, or "codebase scanned"]
+- **Refinement rounds**: [number of iterations]
+- **Memory sync**: [entries written, or "none"]
+```
+
+Then offer: "Would you like to create another ticket, or refine this one further?"
 
 

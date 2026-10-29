@@ -7,7 +7,7 @@ These searches complement the universal searches in `code-review/systematic-sear
 ## Category: Inline Functions in JSX Props
 
 ```bash
-rg "onClick=\{.*=>|onChange=\{.*=>|onSubmit=\{.*=>" --type tsx
+rg "onClick=\{.*=>|onChange=\{.*=>|onSubmit=\{.*=>" --type ts
 ```
 
 Low-Medium. Inline arrow functions create new instances on every render. Consider extracting to useCallback for performance in frequently re-rendered components.
@@ -17,7 +17,7 @@ Low-Medium. Inline arrow functions create new instances on every render. Conside
 ## Category: Missing Dependency Arrays
 
 ```bash
-rg "useEffect\(|useCallback\(|useMemo\(" -A 5 --type tsx
+rg "useEffect\(|useCallback\(|useMemo\(" -A 5 --type ts
 ```
 
 High. Verify dependency arrays are complete and accurate. Missing dependencies cause stale closures. Extra dependencies cause unnecessary re-renders.
@@ -27,7 +27,7 @@ High. Verify dependency arrays are complete and accurate. Missing dependencies c
 ## Category: Keys on List Items
 
 ```bash
-rg "\.map\(" -A 3 --type tsx
+rg "\.map\(" -A 3 --type ts
 ```
 
 Medium. Verify each mapped element has a unique, stable key prop. Using array index as key is an anti-pattern.
@@ -37,7 +37,7 @@ Medium. Verify each mapped element has a unique, stable key prop. Using array in
 ## Category: Direct State Mutation
 
 ```bash
-rg "\.push\(|\.pop\(|\.splice\(|\.sort\(|\.reverse\(" --type tsx --type ts
+rg "\.push\(|\.pop\(|\.splice\(|\.sort\(|\.reverse\(" --type ts --type ts
 ```
 
 High. Verify these mutations are not applied to React state directly. State must be immutable - use spread operator or array methods that return new arrays.
@@ -47,7 +47,7 @@ High. Verify these mutations are not applied to React state directly. State must
 ## Category: Unsafe HTML Rendering
 
 ```bash
-rg "dangerouslySetInnerHTML" --type tsx
+rg "dangerouslySetInnerHTML" --type ts
 ```
 
 Critical. This API exposes XSS risk. Verify content is sanitized with DOMPurify or similar library before rendering.

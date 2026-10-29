@@ -68,4 +68,4 @@ Simplicity first. SOLID, DRY, and Clean Architecture apply at the right scale �
 
 - `architect` — design decisions and ADRs
 - `code-review` — searches-typescript.md for review passes
-- Rules in `.cursor/rules/` — typescript.mdc, advanced-patterns.mdc, api-design-typescript.mdc auto-attach on `*.ts` files
+- Rules in `.cursor/rules/` — typescript.mdc, api-design-typescript.mdc, code-convention.mdc auto-attach on `*.ts` files

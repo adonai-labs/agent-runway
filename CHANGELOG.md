@@ -13,6 +13,8 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Version
 - `agent-runway update` and `upgrade` now record the running CLI version in the project config, so `status` no longer reports version drift right after an update.
 - `agent-runway update` restores stack spec templates under `.agent-runway/config/spec-templates/`.
 - `agent-runway init` rejects unknown `--stacks` and `--target` values instead of saving typos or silently falling back to Cursor.
+- TypeScript and React code-review searches used `--type tsx`, which ripgrep does not recognize, so every one of them failed. They now use `--type ts`, which already covers `.tsx`.
+- `code-convention.mdc` (ESLint/JS/TS conventions) moved from the .NET stack to the TypeScript stack, and `advanced-patterns.mdc` (Electron patterns) moved from the TypeScript stack to the Electron stack, so each preset installs rules for its own language.
 
 ### Changed
 

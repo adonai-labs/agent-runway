@@ -13,36 +13,32 @@ This roadmap is directional, not a date-based commitment. Items may move as real
 - Prefer workflows agents can actually follow.
 - Keep escape hatches for teams that do not need full governance.
 
-## Now: v1.6
+## Now: v1.7
 
-- Multi-environment support for Cursor, Claude Code, and VS Code.
-- Stack skills for .NET, TypeScript, Node.js, React, Python, Go, and Rust.
-- Project-scoped `.agent-runway/` memory, docs, specs, workflows, and logs.
-- Artifact writing contract with canonical paths for checkpoints, reviews, autonomous run logs, ADRs, specs, tickets, and learning entries.
-- CI governance checks through `agent-runway ci-check`.
-- Delivery scorecards through `agent-runway metrics`.
-- `@checkpoint` skill for saving current state during rapid prototyping, pauses, and handoffs.
-- `@learning` skill for capturing durable project lessons into memory artifacts.
-- Vibe/Lite preset for fast, skill-first usage with minimal installed context, including `@code-review`.
-- `@safety-check` skill for quick Go / Go with caution / Stop risk review.
-- `@council` preview skill for council review of idea, hypothesis, or implementation validation.
-- Upgrade path from Lite to Structured through `agent-runway upgrade --to structured`.
+- One source for commands, agents and skills, installed for Cursor (project or global), Claude Code and VS Code Copilot with per-target path resolution.
+- Native Claude Code skills in `.claude/skills/` (every workflow invocable as `/<skill>`, including Lite), with the contrarian review forked into its own subagent.
+- Safe updates: managed-entry manifests so user-authored skills, rules, commands and agents are never deleted; `copilot-instructions.md`, `CLAUDE.md` and `AGENTS.md` keep user content outside marked blocks.
+- Project config and editable workflow config in `.agent-runway/` for every target, with automatic migration from pre-1.7 layouts.
+- Stack-agnostic core: .NET-specific searches and checks live in the dotnet stack; Lite skills route only to installed workflows.
+- Context diet: always-on rules cut from ~530 to ~145 lines; large skills split into on-demand reference files.
+- Current guidance: OWASP Top 10:2025 and LLM Top 10 2025, React 19, .NET 10, Express 5, Rust 2024, Python with ruff/uv, Go 1.25; Electron stack skill.
+- Governance: verdicts from specs and logs (reviews, council, safety-check), monthly trends, `ci-check --format markdown`, GitHub step summary and a reusable GitHub Action.
+- Release safety: installed-output link check across every target, mode and stack; lockfile and `npm ci` in CI; no known dependency advisories.
+
+## Shipped in v1.6
+
+- Vibe/Lite preset, `@checkpoint`, `@learning`, `@safety-check`, `@council` preview, and Lite to Structured upgrade.
 - Consolidated PR review output with compact/isolated modes, source labels, optional contrarian lens, and technical debt separation.
-- Narrative Delivery guidance for tickets, commits, PRs, checkpoints, run logs, and memory entries.
-- Test-Driven Delivery guidance for problem understanding, evidence planning, test-first loops, and validation gap recording.
-- Optional graph/brain-context provider policy for sourced context retrieval without a hard dependency.
-- Generated `AGENTS.md` entrypoint for coding agents, with user-authored content preserved outside the Agent Runway marked block.
-- Release validation with build, content validation, smoke tests, content tests, and package dry-run.
-- Content guardrails for broken links, command/agent parity, stack completeness, CLAUDE.md preservation, and mojibake detection.
+- Narrative Delivery and Test-Driven Delivery guidance; optional context-provider policy; generated `AGENTS.md`.
+- CI governance checks through `agent-runway ci-check` and delivery scorecards through `agent-runway metrics`.
 
-## Next: v1.7
+## Next: v1.8
 
-- Modularize the CLI internals into smaller focused modules.
-- Add more artifact-level regression tests for generated logs, reviews, ADRs, and memory updates.
-- Add more targeted install/update regression tests.
-- Reduce large utility surfaces and make path/config/copy/generation behavior easier to review.
-- Improve documentation around local package testing and release operations.
 - Stabilize `@council` based on real idea, hypothesis, and implementation validation examples.
+- Stabilize the `ci-check` JSON contract and add PR comment publishing to the GitHub Action.
+- Recurring-finding analysis in `metrics` (which review findings and memory entries repeat across PRs).
+- Add more artifact-level regression tests for generated logs, reviews, ADRs, and memory updates.
+- Evaluate migrating the CLI to native ES modules.
 
 ## Later
 

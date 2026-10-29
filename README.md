@@ -11,7 +11,7 @@ Agent Runway keeps delivery knowledge in the repository: specs, memory, checkpoi
 
 It does not replace your stack, architecture, or process. It wraps around them.
 
-As of v1.6, Agent Runway supports Cursor, Claude Code, and VS Code Copilot, and ships implementation skills for .NET, TypeScript, Node.js, React, Python, Go, and Rust.
+As of v1.7, Agent Runway supports Cursor, Claude Code, and VS Code Copilot from one set of sources, and ships implementation skills for .NET, TypeScript, Node.js, React, Python, Go, Rust, and Electron.
 
 ## Requirements
 
@@ -29,7 +29,7 @@ Fast, skill-first setup for prototypes, solo work, and low-ceremony coding.
 npx @adonai-labs/agent-runway init --preset vibe-lite --target all
 ```
 
-Lite installs `@start`, `@express`, `@code-review`, `@checkpoint`, `@learning`, `@safety-check`, `@council` preview, and a small rule set for engineering principles, security, and testing. It does not install slash command aliases, agents, or heavy structured delivery workflows.
+Lite installs the `start`, `express`, `code-review`, `checkpoint`, `learning`, `safety-check`, and `council` (preview) skills, plus a small rule set for engineering principles, security, and testing. It does not install command aliases, agents, or heavy structured delivery workflows. In Claude Code every installed skill is also a slash command (`/start`, `/express`, ...); in Cursor and VS Code the agent discovers them from the skills folder.
 
 When the work outgrows Lite, upgrade in place:
 
@@ -47,7 +47,7 @@ Full delivery workflow for long-lived products, teams, and work that needs trace
 npx @adonai-labs/agent-runway init --preset node-typescript --target all
 ```
 
-Structured installs slash commands, agents, specs, tickets, lead/autonomous workflows, architecture/contrarian gates, `@council` preview, full rules, and optional governance checks.
+Structured installs every workflow skill (specs, tickets, lead/autonomous, architecture/contrarian gates, `council` preview), commands, agents, full rules, and optional governance checks.
 
 Or install first:
 
@@ -168,7 +168,9 @@ Most slash commands point to a full skill workflow. Lightweight workflows can be
 | `@safety-check` | `safety-check` | Skill-only risk check |
 | `@council` | `council` | Skill-only preview council review |
 
-Stack-specific guidance has no slash commands. Use installed rules and stack skills such as `@dotnet-core`, `@typescript-core`, `@node-core`, or `@react-core` after `agent-runway add <stack>`.
+In Claude Code, workflows are native skills in `.claude/skills/`, so each one is also invocable as `/<skill>` (for example `/lead`, `/code-review`); `/review` and `/validate` remain as aliases. `/contrarian` runs in an isolated `contrarian` subagent.
+
+Stack-specific guidance has no commands. Use installed rules and stack skills such as `dotnet-core`, `typescript-core`, `node-core`, or `react-core` after `agent-runway add <stack>`.
 
 ## PR Code Review
 
@@ -205,8 +207,8 @@ agent-runway remove <stack> # Remove a stack
 agent-runway update        # Refresh generated framework files from the current CLI version
 agent-runway list          # List installed stacks
 agent-runway status        # Show installation state
-agent-runway metrics       # Delivery scorecard from gate verdicts + run logs
-agent-runway ci-check      # Optional governance validation for CI
+agent-runway metrics       # Delivery scorecard and monthly trends from gate verdicts + run logs
+agent-runway ci-check      # Optional governance validation for CI (text, --json, --format markdown)
 agent-runway upgrade       # Upgrade Lite projects to Structured mode
 ```
 
@@ -225,7 +227,9 @@ npx agent-runway update
 npx @adonai-labs/agent-runway@latest update
 ```
 
-The update command preserves project artifacts such as `.agent-runway/memory/`, `.agent-runway/logs/`, `.agent-runway/docs/`, checkpoints, and existing `CLAUDE.md` / `AGENTS.md` content outside the Agent Runway marked blocks.
+The update command preserves project artifacts such as `.agent-runway/memory/`, `.agent-runway/logs/`, `.agent-runway/docs/`, `.agent-runway/config/`, checkpoints, and existing `CLAUDE.md` / `AGENTS.md` / `.github/copilot-instructions.md` content outside the Agent Runway marked blocks.
+
+Your own skills, rules, commands, and agents are safe too: each folder Agent Runway writes to keeps a `.agent-runway-managed.json` manifest, and updates replace only the entries listed there. Projects installed before 1.7 are migrated automatically (config moves from `.cursor/` to `.agent-runway/`, Claude Code skills move from `.agent-runway/skills/` to `.claude/skills/`).
 
 ## Artifact Model
 
@@ -243,9 +247,10 @@ Delivery knowledge lives in the repository, not in chat.
 |           `-- task-02-<description>.md
 |-- docs/
 |-- memory/
-|-- config/
+|-- config/            # editable workflow config (review, ticket, spec, developer profiles)
 |-- workflows/
-`-- logs/
+|-- logs/
+`-- agent-runway.json  # installed targets, mode, stacks, version
 ```
 
 | Artifact | Purpose |
@@ -280,12 +285,12 @@ Target-specific files:
 | Environment | Files installed in Structured mode |
 | ----------- | ---------------------------------- |
 | Cursor | `.cursor/commands/`, `.cursor/skills/`, `.cursor/rules/`, `.cursor/agents/` |
-| Claude Code | `.claude/commands/`, `.claude/agents/`, `CLAUDE.md`, `.agent-runway/skills/`, `.agent-runway/rules/`. Existing `CLAUDE.md` content is preserved; Agent Runway updates only its marked block. |
-| VS Code | `.github/copilot-instructions.md`, `.github/instructions/`, `.github/prompts/`, `.github/agents/`, `.github/skills/` |
+| Claude Code | `.claude/skills/` (native skills, each invocable as `/<skill>`), `.claude/commands/` (aliases only), `.claude/agents/`, `CLAUDE.md`, `.agent-runway/rules/`. Existing `CLAUDE.md` content is preserved; Agent Runway updates only its marked block. |
+| VS Code | `.github/copilot-instructions.md` (marked block), `.github/instructions/agent-runway/`, `.github/prompts/`, `.github/agents/`, `.github/skills/` |
 
 Agent Runway also writes a root `AGENTS.md` with a marked Agent Runway block. This provides a neutral entrypoint for coding agents that support `AGENTS.md` while preserving any user-authored content outside the generated block.
 
-Lite installs a smaller subset: skills, selected rules, and the `.agent-runway/` artifact layer.
+Lite installs a smaller subset: the Lite skills, three rules, and the `.agent-runway/` artifact layer.
 
 ### Generated Agent Instructions
 
@@ -295,7 +300,7 @@ Agent Runway uses generated instruction files as lightweight entrypoints, not as
 | ---- | ------- | ------------ |
 | `AGENTS.md` | Neutral instructions for coding agents that support the `AGENTS.md` convention | Existing content outside the Agent Runway block is preserved |
 | `CLAUDE.md` | Claude Code entrypoint and rule index | Existing content outside the Agent Runway block is preserved |
-| `.github/copilot-instructions.md` | VS Code Copilot project instructions | Regenerated from the current framework state |
+| `.github/copilot-instructions.md` | VS Code Copilot project instructions | Existing content outside the Agent Runway block is preserved |
 
 Put durable decisions in `.agent-runway/memory/`, ADRs and architecture context in `.agent-runway/docs/`, and generated standards in `.agent-runway/rules/`.
 
@@ -319,15 +324,18 @@ Recommended for teams. All files go into the repository and can be committed and
 
 The core framework is stack-agnostic. No stack has its own slash command. Stacks install rules, code-review integration, and optional stack skills via `agent-runway add <stack>`.
 
-| Stack | Stack skill | Primary scope | Rules | Review |
-| ----- | ----------- | ------------- | ----- | ------ |
-| .NET | `dotnet-core` | ASP.NET Core, EF Core, MediatR | Full | Full |
-| TypeScript | `typescript-core` | Vitest, Zod, Pino | Full | Full |
-| Node.js | `node-core` | Express / Fastify | Full | Full |
-| React | `react-core` | React 18+ Vite SPA, React Query | Full | Full |
-| Python | `python-core` | FastAPI, pytest, structlog | Full | Full |
-| Go | `go-core` | net/http / chi, slog | Full | Full |
-| Rust | `rust-core` | Axum, sqlx, tracing | Full | Full |
+| Stack | Stack skill | Primary scope | Rules | Spec template | Depth |
+| ----- | ----------- | ------------- | ----- | ------------- | ----- |
+| .NET | `dotnet-core` | .NET 10, ASP.NET Core, EF Core | 7 | Yes | Deep |
+| TypeScript | `typescript-core` | Vitest, Zod, Pino, ESLint flat config | 6 | Yes | Deep |
+| React | `react-core` | React 19 SPA (Vite), React Query | 2 | Yes | Deep |
+| Node.js | `node-core` | Express 5 / Fastify services | 4 | Yes | Standard |
+| Electron | `electron-core` | Secure main/preload/renderer, typed IPC | 3 | No | Standard |
+| Rust | `rust-core` | Axum 0.8, sqlx, tracing (edition 2024) | 1 | Yes | Standard |
+| Python | `python-core` | FastAPI, pytest, ruff, uv | 1 | Yes | Light rules, full skill |
+| Go | `go-core` | net/http / chi, slog | 1 | Yes | Light rules, full skill |
+
+Every stack also ships code-review searches (ripgrep) and build/test commands that the `code-review` skill picks up automatically. "Depth" reflects how much always-available rule guidance exists; all stack skills cover architecture, patterns, testing, security, observability, and reference material.
 
 All stack skills enforce the same principles: simplicity first, SOLID and DRY as guides, Clean Architecture at the right scale, and no over-engineering.
 
@@ -357,6 +365,17 @@ Use strict mode only when the team is ready for the pipeline to fail on missing 
 ```bash
 npx agent-runway ci-check --profile strict
 ```
+
+In GitHub Actions, use the bundled action. The report is also written to the workflow run summary:
+
+```yaml
+- uses: actions/checkout@v4
+- uses: adonai-labs/agent-runway@v1.7.0
+  with:
+    profile: light   # or strict
+```
+
+`--format markdown` prints the same report for posting as a PR comment, and `--json` gives a machine-readable result. Gate verdicts are read from `.agent-runway/specs/` and `.agent-runway/logs/` (reviews, council), and `agent-runway metrics` shows pass-rate trends by month.
 
 Preview status means the command is usable, but its checks and JSON shape may still evolve before being treated as a stable CI contract.
 

@@ -10,9 +10,12 @@ import {
   copyNeutralSkills,
   copyClaude,
   copyVscode,
+  copyStackSpecTemplates,
   ensureProjectScaffold,
   getGlobalCursorDir,
+  getPackageVersion,
   resolveConfigPath,
+  saveConfig,
   normalizeWorkflowMode,
 } from '../utils';
 
@@ -82,7 +85,12 @@ export async function updateCommand(options: UpdateOptions = {}) {
     if (!isGlobal) {
       spinner.text = 'Refreshing project scaffold...';
       await ensureProjectScaffold(projectRoot);
+      await copyStackSpecTemplates(projectRoot, config.stacks);
     }
+
+    // Record the framework version now on disk so `status` stops reporting drift.
+    config.version = getPackageVersion();
+    await saveConfig(configDir, config);
 
     spinner.succeed(chalk.green('Agent Runway updated successfully!'));
 

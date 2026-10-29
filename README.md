@@ -15,7 +15,7 @@ As of v1.6, Agent Runway supports Cursor, Claude Code, and VS Code Copilot, and 
 
 ## Requirements
 
-- Node.js 22 or newer
+- Node.js 22.12 or newer (the CLI relies on `require()` of ES modules, unflagged since 22.12)
 
 ## Quick Start
 

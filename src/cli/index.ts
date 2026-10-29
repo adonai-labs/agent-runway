@@ -33,7 +33,7 @@ program
 program
   .command('init')
   .description('Initialize Agent Runway in your project')
-  .option('-s, --stacks <stacks>', 'Comma-separated list of stacks (node,typescript,react,dotnet,rust,electron)')
+  .option('-s, --stacks <stacks>', 'Comma-separated list of stacks (node,typescript,react,dotnet,python,go,rust,electron)')
   .option('-p, --preset <preset>', 'Use a preset configuration (vibe-lite,node-typescript,web-fullstack-ts,dotnet-backend,electron-desktop,etc)')
   .option('-t, --target <target>', 'Agent environment: cursor, claude, vscode, both, all, or comma-separated targets')
   .option('--scope <scope>', 'Installation scope: project or global')

@@ -1,5 +1,25 @@
 # Changelog
 
+All notable changes to Agent Runway are documented here.
+
+Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versions follow [Semantic Versioning](https://semver.org/).
+
+---
+
+## [Unreleased]
+
+### Fixed
+
+- `agent-runway update` and `upgrade` now record the running CLI version in the project config, so `status` no longer reports version drift right after an update.
+- `agent-runway update` restores stack spec templates under `.agent-runway/config/spec-templates/`.
+- `agent-runway init` rejects unknown `--stacks` and `--target` values instead of saving typos or silently falling back to Cursor.
+
+### Changed
+
+- Minimum Node.js version is now 22.12, the first 22.x release that loads the CLI's ES module dependencies without a flag. CI tests 22.12 explicitly.
+
+---
+
 ## [1.6.1] - 2026-10-01
 
 ### Fixed
@@ -23,12 +43,6 @@
 - Added Test-Driven Delivery guidance so workflows understand the problem, define evidence, prefer test-first loops when feasible, and record validation gaps.
 - Added generated `AGENTS.md` support as a neutral agent entrypoint while preserving user-authored content outside the Agent Runway marked block.
 - Tightened engineering principles with function-size heuristics for focused, reviewable code.
-
-All notable changes to Agent Runway are documented here.
-
-Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versions follow [Semantic Versioning](https://semver.org/).
-
----
 
 ## [1.5.0] — 2026-06-26
 

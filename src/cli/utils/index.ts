@@ -154,6 +154,15 @@ export function normalizeTargets(
   return targets.length > 0 ? targets : [...fallback];
 }
 
+// Returns the raw target tokens normalizeTargets would silently drop (typos such as "claud").
+export function findInvalidTargets(value: string): string[] {
+  const known = new Set(['cursor', 'claude', 'vscode', 'both', 'all']);
+  return value
+    .split(',')
+    .map((target) => target.trim().toLowerCase())
+    .filter((target) => target && !known.has(target));
+}
+
 export async function hasGlobalInstallation(): Promise<boolean> {
   const globalDir = getGlobalCursorDir();
   const newConfigPath = path.join(globalDir, NEW_CONFIG_FILENAME);

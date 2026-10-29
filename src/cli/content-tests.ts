@@ -9,7 +9,7 @@ import { removeCommand } from './commands/remove';
 import { updateCommand } from './commands/update';
 import { upgradeCommand } from './commands/upgrade';
 import { collectMetrics } from './commands/metrics';
-import { normalizeTargets, getPackageVersion, compareVersions } from './utils';
+import { normalizeTargets, findInvalidTargets, getPackageVersion, compareVersions } from './utils';
 
 // Pure-function checks
 function testNormalizeTargets(): void {
@@ -19,6 +19,13 @@ function testNormalizeTargets(): void {
   assert.deepStrictEqual(normalizeTargets('cursor,cursor,claude'), ['cursor', 'claude']);
   assert.deepStrictEqual(normalizeTargets('nonsense'), ['cursor']);
   console.log('ok content:normalizeTargets');
+}
+
+function testFindInvalidTargets(): void {
+  assert.deepStrictEqual(findInvalidTargets('cursor,claude'), []);
+  assert.deepStrictEqual(findInvalidTargets('all'), []);
+  assert.deepStrictEqual(findInvalidTargets('cursor, claud'), ['claud']);
+  console.log('ok content:findInvalidTargets');
 }
 
 function testCompareVersions(): void {
@@ -225,6 +232,33 @@ async function testUpdatePrunesStaleFiles(): Promise<void> {
   console.log('ok content:updatePrunesStaleFiles');
 }
 
+async function testUpdateRecordsCurrentVersion(): Promise<void> {
+  await withTempInstall(async (root) => {
+    const configPath = path.join(root, '.agent-runway', 'agent-runway.json');
+    const config = await fs.readJson(configPath);
+    await fs.writeJson(configPath, { ...config, version: '1.0.0' });
+    await fs.remove(path.join(root, '.agent-runway', 'config', 'spec-templates'));
+
+    await updateCommand({});
+
+    const updated = await fs.readJson(configPath);
+    assert.strictEqual(updated.version, getPackageVersion(), 'update records the CLI version');
+    assert.ok(updated.updatedAt, 'update records updatedAt');
+  }, 'react', 'claude');
+  console.log('ok content:updateRecordsCurrentVersion');
+}
+
+async function testUpdateRestoresSpecTemplates(): Promise<void> {
+  await withTempInstall(async (root) => {
+    const templates = path.join(root, '.agent-runway', 'config', 'spec-templates', 'react');
+    assert.ok(await fs.pathExists(templates), 'init installs react spec templates');
+    await fs.remove(templates);
+    await updateCommand({});
+    assert.ok(await fs.pathExists(templates), 'update restores react spec templates');
+  }, 'react', 'claude');
+  console.log('ok content:updateRestoresSpecTemplates');
+}
+
 async function testUpdateRecreatesScaffold(): Promise<void> {
   await withTempInstall(async (root) => {
     const logsDir = path.join(root, '.agent-runway', 'logs');
@@ -401,6 +435,7 @@ async function testCiCheckClean(): Promise<void> {
 
 async function main(): Promise<void> {
   testNormalizeTargets();
+  testFindInvalidTargets();
   testCompareVersions();
   testPackageVersion();
   await testSkillInjection();
@@ -414,6 +449,8 @@ async function main(): Promise<void> {
   await testRemoveDeletesProjectSpecTemplates();
   await testUpdatePrunesStaleFiles();
   await testUpdateRecreatesScaffold();
+  await testUpdateRecordsCurrentVersion();
+  await testUpdateRestoresSpecTemplates();
   await testCursorAgentParity();
   await testMetricsAggregates();
   await testVerdictMarkersPresent();

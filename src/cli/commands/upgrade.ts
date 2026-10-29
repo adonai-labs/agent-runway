@@ -13,6 +13,7 @@ import {
   copyVscode,
   ensureProjectScaffold,
   copyStackSpecTemplates,
+  getPackageVersion,
   normalizeWorkflowMode,
 } from '../utils';
 
@@ -77,6 +78,7 @@ export async function upgradeCommand(options: UpgradeOptions = {}) {
     await copyStackSpecTemplates(projectRoot, config.stacks);
 
     config.mode = 'structured';
+    config.version = getPackageVersion();
     await saveConfig(configDir, config);
 
     spinner.succeed(chalk.green('Agent Runway upgraded to Structured mode successfully!'));

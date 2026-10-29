@@ -7,6 +7,7 @@ import {
   type InstallTarget,
   getAvailableStacks,
   normalizeTargets,
+  findInvalidTargets,
   copyCore,
   cleanupLegacyCursorMemory,
   copyStacks,
@@ -23,7 +24,7 @@ import {
   normalizeWorkflowMode,
   type WorkflowMode,
 } from '../utils';
-import { PRESETS, getPreset } from '../presets';
+import { PRESETS, getPreset, validateStacks } from '../presets';
 
 interface InitOptions {
   stacks?: string;
@@ -45,6 +46,22 @@ export async function initCommand(options: InitOptions) {
   const hasExplicitInstallOptions = Boolean(options.stacks || options.preset || options.target);
   const isGlobal = await resolveInstallScope(options, hasExplicitInstallOptions);
   const cursorDir = getCursorDir(projectRoot, isGlobal);
+
+  // Fail fast on typos instead of silently installing the wrong target or an unknown stack.
+  const invalidTargets = options.target ? findInvalidTargets(options.target) : [];
+  if (invalidTargets.length > 0) {
+    console.log(chalk.red(`Unknown target(s): ${invalidTargets.join(', ')}`));
+    console.log(chalk.gray('Valid targets: cursor, claude, vscode, both, all'));
+    process.exit(1);
+  }
+  if (options.stacks) {
+    const { invalid } = validateStacks(options.stacks.split(',').map((s) => s.trim()).filter(Boolean));
+    if (invalid.length > 0) {
+      console.log(chalk.red(`Unknown stack(s): ${invalid.join(', ')}`));
+      console.log(chalk.gray(`Available stacks: ${getAvailableStacks().map((s) => s.id).join(', ')}`));
+      process.exit(1);
+    }
+  }
 
   // Global installs are always Cursor-only
   if (isGlobal) {
@@ -111,7 +128,7 @@ export async function initCommand(options: InitOptions) {
   let selectedMode: WorkflowMode = 'structured';
 
   if (options.stacks) {
-    selectedStacks = options.stacks.split(',').map((s) => s.trim());
+    selectedStacks = options.stacks.split(',').map((s) => s.trim()).filter(Boolean);
     selectedMode = 'structured';
   } else if (options.preset) {
     const preset = getPreset(options.preset);

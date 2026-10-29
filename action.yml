@@ -1,0 +1,31 @@
+name: Agent Runway governance check
+description: Validate Agent Runway governance artifacts (specs, gate verdicts, run logs) and publish the report on the workflow summary.
+branding:
+  icon: check-square
+  color: blue
+inputs:
+  profile:
+    description: "light (advisory, never fails) or strict (fails on missing or incomplete governance artifacts)"
+    required: false
+    default: light
+  version:
+    description: Agent Runway version to run (npm dist-tag or exact version)
+    required: false
+    default: latest
+  working-directory:
+    description: Directory that contains the project's .agent-runway/ folder
+    required: false
+    default: .
+runs:
+  using: composite
+  steps:
+    - uses: actions/setup-node@v4
+      with:
+        node-version: 22
+    - name: Run agent-runway ci-check
+      shell: bash
+      working-directory: ${{ inputs.working-directory }}
+      env:
+        AR_PROFILE: ${{ inputs.profile }}
+        AR_VERSION: ${{ inputs.version }}
+      run: npx --yes "@adonai-labs/agent-runway@${AR_VERSION}" ci-check --profile "${AR_PROFILE}"

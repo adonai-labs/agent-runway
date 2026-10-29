@@ -8,19 +8,15 @@ import {
   getAvailableStacks,
   normalizeTargets,
   findInvalidTargets,
-  copyCore,
-  cleanupLegacyCursorMemory,
-  copyStacks,
-  copyNeutralSkills,
-  copyClaude,
-  copyVscode,
-  copyStackSpecTemplates,
-  ensureProjectScaffold,
-  createConfig,
+  findProjectConfig,
   getCursorDir,
   getGlobalCursorDir,
   hasGlobalInstallation,
+  installFromConfig,
+  newConfig,
   resolveConfigPath,
+  saveConfig,
+  saveProjectConfig,
   normalizeWorkflowMode,
   type WorkflowMode,
 } from '../utils';
@@ -33,10 +29,6 @@ interface InitOptions {
   global?: boolean;
   target?: string;
   scope?: string;
-}
-
-async function ensureProjectStructure(projectRoot: string): Promise<void> {
-  await ensureProjectScaffold(projectRoot);
 }
 
 export async function initCommand(options: InitOptions) {
@@ -68,9 +60,13 @@ export async function initCommand(options: InitOptions) {
     console.log(chalk.cyan(`📍 Installing globally in: ${getGlobalCursorDir()}`));
     console.log(chalk.yellow('⚠️  This will affect ALL Cursor projects on this machine\n'));
 
-    const { confirm } = await inquirer.prompt([
-      { type: 'confirm', name: 'confirm', message: 'Continue with global installation?', default: false },
-    ]);
+    const confirm =
+      options.yes ||
+      (
+        await inquirer.prompt([
+          { type: 'confirm', name: 'confirm', message: 'Continue with global installation?', default: false },
+        ])
+      ).confirm;
     if (!confirm) {
       console.log(chalk.yellow('Installation cancelled.'));
       return;
@@ -83,12 +79,11 @@ export async function initCommand(options: InitOptions) {
   }
 
   // Check if already initialized
-  const configPath = await resolveConfigPath(cursorDir);
-  const agentRunwayConfig = path.join(projectRoot, '.agent-runway', 'agent-runway.json');
-  const alreadyInitialized =
-    (await fs.pathExists(configPath)) || (!isGlobal && (await fs.pathExists(agentRunwayConfig)));
+  const alreadyInitialized = isGlobal
+    ? await fs.pathExists(await resolveConfigPath(cursorDir))
+    : (await findProjectConfig(projectRoot)) !== null;
 
-  if (alreadyInitialized) {
+  if (alreadyInitialized && !options.yes) {
     const location = isGlobal ? 'globally' : 'in this project';
     const { confirm } = await inquirer.prompt([
       {
@@ -164,38 +159,13 @@ export async function initCommand(options: InitOptions) {
   const installsVscode = targets.includes('vscode');
 
   try {
-    if (installsCursor) {
-      await fs.ensureDir(cursorDir);
-      spinner.text = 'Copying core framework files...';
-      await copyCore(cursorDir, selectedMode);
-      await cleanupLegacyCursorMemory(cursorDir);
-
-      if (selectedStacks.length > 0) {
-        spinner.text = `Installing stacks: ${selectedStacks.join(', ')}...`;
-        await copyStacks(cursorDir, selectedStacks);
-      }
+    const config = newConfig(selectedStacks, targets, selectedMode, isGlobal);
+    await installFromConfig(projectRoot, config, isGlobal);
+    if (isGlobal) {
+      await saveConfig(cursorDir, config);
+    } else {
+      await saveProjectConfig(projectRoot, config);
     }
-
-    if (installsClaude) {
-      spinner.text = 'Installing Claude Code support...';
-      await copyNeutralSkills(projectRoot, selectedStacks, selectedMode);
-      await copyClaude(projectRoot, selectedStacks, selectedMode);
-    }
-
-    if (installsVscode) {
-      spinner.text = 'Installing VS Code support...';
-      await copyVscode(projectRoot, selectedStacks, selectedMode);
-    }
-
-    // Config lives in .cursor/ for cursor installs, .agent-runway/ for claude-only
-    const configDir = installsCursor ? cursorDir : path.join(projectRoot, '.agent-runway');
-    spinner.text = 'Creating configuration...';
-    await createConfig(configDir, selectedStacks, isGlobal, targets, selectedMode);
-
-    spinner.text = 'Creating project structure...';
-    await ensureProjectStructure(projectRoot);
-    spinner.text = 'Copying stack spec templates...';
-    await copyStackSpecTemplates(projectRoot, selectedStacks);
 
     spinner.succeed(chalk.green('Agent Runway installed successfully!'));
 
@@ -213,10 +183,10 @@ export async function initCommand(options: InitOptions) {
         console.log(chalk.gray(selectedMode === 'lite' ? 'Then invoke @start or @express from the installed skills' : 'Then run /start and describe what you want to do'));
       }
       if (installsClaude) {
-        console.log(chalk.gray(selectedMode === 'lite' ? 'Claude Code: reference .agent-runway/skills/<skill>/SKILL.md directly' : 'Claude Code: run /start or any /command in your project'));
+        console.log(chalk.gray('Claude Code: run /start (skills are installed in .claude/skills and invocable as /<skill>)'));
       }
       if (installsVscode) {
-        console.log(chalk.gray(selectedMode === 'lite' ? 'VS Code: reload the window, then reference .github/skills/<skill>/SKILL.md' : 'VS Code: reload the window, then use Agent Runway prompt files such as /start'));
+        console.log(chalk.gray(selectedMode === 'lite' ? 'VS Code: reload the window; Copilot discovers the skills in .github/skills' : 'VS Code: reload the window, then use Agent Runway prompt files such as /start'));
       }
       console.log();
     }

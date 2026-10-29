@@ -15,7 +15,7 @@
     "prepublishOnly": "npm run build",
     "dev": "tsc --watch",
     "prepare": "npm run build",
-    "test": "npm run build && node dist/smoke.js && node dist/content-tests.js",
+    "test": "npm run build && node dist/smoke.js && node dist/content-tests.js && node dist/installed-links.js",
     "release:check": "npm test && npm pack --dry-run"
   },
   "keywords": [
@@ -45,15 +45,14 @@
     "dist",
     "src/core",
     "src/stacks",
-    "docs",
     "USAGE.md",
-    "EXTENDING.md"
+    "EXTENDING.md",
+    "action.yml"
   ],
   "devDependencies": {
     "@types/fs-extra": "^11.0.0",
     "@types/inquirer": "^9.0.0",
     "@types/node": "^20.0.0",
-    "@types/update-notifier": "^6.0.8",
     "typescript": "^5.0.0"
   },
   "dependencies": {
@@ -61,8 +60,7 @@
     "commander": "^11.0.0",
     "fs-extra": "^11.0.0",
     "inquirer": "^9.0.0",
-    "ora": "^7.0.0",
-    "update-notifier": "^5.1.0"
+    "ora": "^7.0.0"
   },
   "engines": {
     "node": ">=22.12.0"

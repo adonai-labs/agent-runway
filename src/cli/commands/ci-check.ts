@@ -2,7 +2,7 @@ import chalk from 'chalk';
 import path from 'path';
 import fs from 'fs-extra';
 import { getAgentRunwayDir } from '../utils';
-import { collectMetrics, parseBlocks } from './metrics';
+import { type Metrics, collectMetrics, listMdFiles, parseBlocks } from './metrics';
 
 export type CiProfile = 'light' | 'strict';
 
@@ -17,21 +17,7 @@ export interface CiCheckResult {
   profile: CiProfile;
   findings: CiFinding[];
   passed: boolean;
-}
-
-async function listMdFiles(dir: string): Promise<string[]> {
-  if (!(await fs.pathExists(dir))) return [];
-  const out: string[] = [];
-  const entries = await fs.readdir(dir, { withFileTypes: true });
-  for (const entry of entries) {
-    const full = path.join(dir, entry.name);
-    if (entry.isDirectory()) {
-      out.push(...(await listMdFiles(full)));
-    } else if (entry.isFile() && entry.name.endsWith('.md')) {
-      out.push(full);
-    }
-  }
-  return out;
+  metrics?: Metrics;
 }
 
 async function specSlugs(specsDir: string): Promise<string[]> {
@@ -125,14 +111,50 @@ export async function runCiCheck(
   const hasErrors = findings.some((f) => f.severity === 'error');
   const passed = profile === 'light' ? true : !hasErrors;
 
-  return { profile, findings, passed };
+  return { profile, findings, passed, metrics };
 }
 
-export async function ciCheckCommand(options: { profile?: string; json?: boolean }): Promise<void> {
-  const profile: CiProfile = options.profile === 'strict' ? 'strict' : 'light';
-  const result = await runCiCheck(process.cwd(), profile);
+// Markdown report for pull request summaries (GitHub step summary or a PR comment).
+export function formatCiMarkdown(result: CiCheckResult, projectRoot: string): string {
+  const status = result.passed ? (result.findings.length === 0 ? 'Passed' : 'Passed with warnings') : 'Failed';
+  const lines = [`## Agent Runway governance: ${status}`, '', `Profile: \`${result.profile}\``, ''];
 
-  if (options.json) {
+  if (result.findings.length === 0) {
+    lines.push('No governance findings.');
+  } else {
+    lines.push('| Severity | Code | Finding | File |', '| --- | --- | --- | --- |');
+    for (const f of result.findings) {
+      const file = f.file ? `\`${path.relative(projectRoot, f.file)}\`` : '';
+      lines.push(`| ${f.severity} | \`${f.code}\` | ${f.message.replace(/\|/g, '\\|')} | ${file} |`);
+    }
+  }
+
+  const gates = result.metrics?.gates ?? [];
+  if (gates.length > 0) {
+    lines.push('', '### Gate outcomes', '', '| Gate | Passed | Total | Blocking |', '| --- | --- | --- | --- |');
+    for (const g of gates) lines.push(`| ${g.gate} | ${g.pass} | ${g.total} | ${g.blocking} |`);
+  }
+
+  return `${lines.join('\n')}\n`;
+}
+
+export async function ciCheckCommand(options: { profile?: string; json?: boolean; format?: string }): Promise<void> {
+  const profile: CiProfile = options.profile === 'strict' ? 'strict' : 'light';
+  const projectRoot = process.cwd();
+  const result = await runCiCheck(projectRoot, profile);
+
+  // In GitHub Actions, publish the report on the run summary page as well.
+  if (process.env.GITHUB_STEP_SUMMARY) {
+    await fs.appendFile(process.env.GITHUB_STEP_SUMMARY, formatCiMarkdown(result, projectRoot));
+  }
+
+  if (options.format === 'markdown') {
+    process.stdout.write(formatCiMarkdown(result, projectRoot));
+    if (!result.passed) process.exit(1);
+    return;
+  }
+
+  if (options.json || options.format === 'json') {
     console.log(JSON.stringify(result, null, 2));
     if (!result.passed) process.exit(1);
     return;

@@ -80,7 +80,8 @@ async function testSkillInjection(): Promise<void> {
 
 async function testConfigVersion(): Promise<void> {
   await withTempInstall(async (root) => {
-    const config = await fs.readJson(path.join(root, '.cursor', 'agent-runway.json'));
+    const config = await fs.readJson(path.join(root, '.agent-runway', 'agent-runway.json'));
+    assert.ok(!(await fs.pathExists(path.join(root, '.cursor', 'agent-runway.json'))), 'config is not written to .cursor/');
     assert.strictEqual(config.version, getPackageVersion(), 'config version matches package version');
   });
   console.log('ok content:configVersion');
@@ -93,7 +94,7 @@ async function testLitePresetUpgradesToStructured(): Promise<void> {
     process.chdir(tempRoot);
     await initCommand({ yes: true, scope: 'project', target: 'all', preset: 'vibe-lite' });
 
-    const cursorConfigPath = path.join(tempRoot, '.cursor', 'agent-runway.json');
+    const cursorConfigPath = path.join(tempRoot, '.agent-runway', 'agent-runway.json');
     const liteConfig = await fs.readJson(cursorConfigPath);
     assert.strictEqual(liteConfig.mode, 'lite', 'vibe-lite stores lite mode');
     assert.ok(await fs.pathExists(path.join(tempRoot, '.cursor', 'skills', 'safety-check', 'SKILL.md')), 'lite installs safety-check');
@@ -101,7 +102,9 @@ async function testLitePresetUpgradesToStructured(): Promise<void> {
     assert.ok(await fs.pathExists(path.join(tempRoot, '.cursor', 'skills', 'council', 'SKILL.md')), 'lite installs council');
     assert.ok(await fs.pathExists(path.join(tempRoot, '.cursor', 'skills', 'code-review', 'SKILL.md')), 'lite installs code-review');
     assert.ok(!(await fs.pathExists(path.join(tempRoot, '.cursor', 'commands', 'start.md'))), 'lite does not install Cursor commands');
-    assert.ok(!(await fs.pathExists(path.join(tempRoot, '.claude', 'commands', 'start.md'))), 'lite does not install Claude commands');
+    assert.ok(!(await fs.pathExists(path.join(tempRoot, '.claude', 'commands', 'review.md'))), 'lite does not install Claude commands');
+    assert.ok(await fs.pathExists(path.join(tempRoot, '.claude', 'skills', 'start', 'SKILL.md')), 'lite installs native Claude skills');
+    assert.ok(!(await fs.pathExists(path.join(tempRoot, '.claude', 'skills', 'lead'))), 'lite does not install lead skill for Claude');
     assert.ok(!(await fs.pathExists(path.join(tempRoot, '.github', 'prompts', 'start.prompt.md'))), 'lite does not install VS Code prompts');
 
     await upgradeCommand({ to: 'structured' });
@@ -109,7 +112,8 @@ async function testLitePresetUpgradesToStructured(): Promise<void> {
     const structuredConfig = await fs.readJson(cursorConfigPath);
     assert.strictEqual(structuredConfig.mode, 'structured', 'upgrade stores structured mode');
     assert.ok(await fs.pathExists(path.join(tempRoot, '.cursor', 'commands', 'start.md')), 'structured restores Cursor commands');
-    assert.ok(await fs.pathExists(path.join(tempRoot, '.claude', 'commands', 'start.md')), 'structured restores Claude commands');
+    assert.ok(await fs.pathExists(path.join(tempRoot, '.claude', 'commands', 'review.md')), 'structured installs Claude alias commands');
+    assert.ok(await fs.pathExists(path.join(tempRoot, '.claude', 'skills', 'lead', 'SKILL.md')), 'structured installs lead as a Claude skill');
     assert.ok(await fs.pathExists(path.join(tempRoot, '.github', 'prompts', 'start.prompt.md')), 'structured restores VS Code prompts');
     assert.ok(await fs.pathExists(path.join(tempRoot, '.cursor', 'skills', 'lead', 'SKILL.md')), 'structured restores lead skill');
   } finally {
@@ -123,7 +127,7 @@ async function testClaudeMdContainsMaintainabilityRule(): Promise<void> {
   await withTempInstall(async (root) => {
     const content = await fs.readFile(path.join(root, 'CLAUDE.md'), 'utf-8');
     assert.ok(
-      content.includes('Prefer files and classes under 600 lines'),
+      /600 lines/.test(content),
       'CLAUDE.md includes maintainability rule'
     );
   }, 'node,typescript', 'claude');
@@ -143,7 +147,7 @@ async function testClaudeMdPreservesExistingContent(): Promise<void> {
     assert.ok(content.includes('# Existing Claude Rules'), 'existing CLAUDE.md heading preserved');
     assert.ok(content.includes('- Keep my local instruction.'), 'existing CLAUDE.md instruction preserved');
     assert.ok(content.includes('<!-- agent-runway:claude:start -->'), 'Agent Runway block marker written');
-    assert.ok(content.includes('Prefer files and classes under 600 lines'), 'generated Agent Runway rules included');
+    assert.ok(/600 lines/.test(content), 'generated Agent Runway rules included');
     assert.strictEqual((content.match(/agent-runway:claude:start/g) ?? []).length, 1, 'Agent Runway block is not duplicated');
   } finally {
     process.chdir(originalCwd);
@@ -220,16 +224,87 @@ async function testRemoveDeletesProjectSpecTemplates(): Promise<void> {
 }
 async function testUpdatePrunesStaleFiles(): Promise<void> {
   await withTempInstall(async (root) => {
-    const staleFile = path.join(root, '.cursor', 'commands', '__stale__.md');
-    await fs.writeFile(staleFile, '# stale command removed in a newer release\n');
-    assert.ok(await fs.pathExists(staleFile), 'stale file created');
+    const commandsDir = path.join(root, '.cursor', 'commands');
+    const manifestPath = path.join(commandsDir, '.agent-runway-managed.json');
+    const manifest = await fs.readJson(manifestPath);
+    // A command Agent Runway shipped in an older release, recorded in the manifest.
+    await fs.writeFile(path.join(commandsDir, '__stale__.md'), '# removed in a newer release\n');
+    await fs.writeJson(manifestPath, { ...manifest, entries: [...manifest.entries, '__stale__.md'] });
+    // A command the team wrote themselves.
+    await fs.writeFile(path.join(commandsDir, 'team-deploy.md'), '# our own command\n');
 
     await updateCommand({});
 
-    assert.ok(!(await fs.pathExists(staleFile)), 'stale file pruned by update');
-    assert.ok(await fs.pathExists(path.join(root, '.cursor', 'commands', 'review.md')), 'real command preserved');
+    assert.ok(!(await fs.pathExists(path.join(commandsDir, '__stale__.md'))), 'stale managed file pruned by update');
+    assert.ok(await fs.pathExists(path.join(commandsDir, 'team-deploy.md')), 'user-authored command preserved');
+    assert.ok(await fs.pathExists(path.join(commandsDir, 'review.md')), 'real command preserved');
   });
   console.log('ok content:updatePrunesStaleFiles');
+}
+
+async function testUpdatePreservesUserRulesAndSkills(): Promise<void> {
+  await withTempInstall(async (root) => {
+    const userRule = path.join(root, '.claude', 'skills', 'team-release', 'SKILL.md');
+    await fs.outputFile(userRule, '---\nname: team-release\ndescription: ours\n---\n');
+    const userAgent = path.join(root, '.claude', 'agents', 'team-agent.md');
+    await fs.outputFile(userAgent, '# ours\n');
+    await fs.outputFile(path.join(root, '.github', 'copilot-instructions.md'), '# Team Copilot rules\n');
+
+    await updateCommand({});
+
+    assert.ok(await fs.pathExists(userRule), 'user Claude skill preserved');
+    assert.ok(await fs.pathExists(userAgent), 'user Claude agent preserved');
+  }, 'typescript', 'claude');
+  console.log('ok content:updatePreservesUserContent');
+}
+
+async function testCopilotInstructionsPreserveUserContent(): Promise<void> {
+  const originalCwd = process.cwd();
+  const tempRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'agent-runway-copilot-merge-'));
+  try {
+    process.chdir(tempRoot);
+    await fs.outputFile(path.join(tempRoot, '.github', 'copilot-instructions.md'), '# Team Copilot rules\n\n- Keep this.\n');
+    await initCommand({ yes: true, scope: 'project', target: 'vscode', stacks: 'typescript' });
+    await updateCommand({});
+    const content = await fs.readFile(path.join(tempRoot, '.github', 'copilot-instructions.md'), 'utf-8');
+    assert.ok(content.includes('- Keep this.'), 'user Copilot instructions preserved');
+    assert.strictEqual((content.match(/agent-runway:copilot:start/g) ?? []).length, 1, 'generated block not duplicated');
+  } finally {
+    process.chdir(originalCwd);
+    await fs.remove(tempRoot);
+  }
+  console.log('ok content:copilotInstructionsPreserveUserContent');
+}
+
+async function testLegacyCursorInstallMigrates(): Promise<void> {
+  await withTempInstall(async (root) => {
+    // Recreate the pre-1.7 layout: config in .cursor/, editable config files in .cursor/config/.
+    const config = await fs.readJson(path.join(root, '.agent-runway', 'agent-runway.json'));
+    await fs.remove(path.join(root, '.agent-runway', 'agent-runway.json'));
+    await fs.writeJson(path.join(root, '.cursor', 'agent-runway.json'), config);
+    await fs.outputFile(path.join(root, '.cursor', 'config', 'review-config.md'), '# team-edited review config\n');
+    await fs.remove(path.join(root, '.agent-runway', 'config', 'review-config.md'));
+
+    await updateCommand({});
+
+    assert.ok(await fs.pathExists(path.join(root, '.agent-runway', 'agent-runway.json')), 'config moved to .agent-runway/');
+    assert.ok(!(await fs.pathExists(path.join(root, '.cursor', 'agent-runway.json'))), 'legacy config removed');
+    const reviewConfig = await fs.readFile(path.join(root, '.agent-runway', 'config', 'review-config.md'), 'utf-8');
+    assert.ok(reviewConfig.includes('team-edited'), 'edited config file migrated, not replaced by the template');
+    assert.ok(!(await fs.pathExists(path.join(root, '.cursor', 'config'))), 'legacy .cursor/config removed');
+  });
+  console.log('ok content:legacyCursorInstallMigrates');
+}
+
+async function testClaudeContrarianRunsForked(): Promise<void> {
+  await withTempInstall(async (root) => {
+    const skill = await fs.readFile(path.join(root, '.claude', 'skills', 'contrarian', 'SKILL.md'), 'utf-8');
+    assert.ok(/^---\n[\s\S]*context: fork[\s\S]*\n---/.test(skill), 'contrarian skill forks into a subagent');
+    assert.ok(/agent: contrarian/.test(skill), 'contrarian skill uses the contrarian agent');
+    assert.ok(!(await fs.pathExists(path.join(root, '.claude', 'commands', 'contrarian.md'))), 'no command shadowed by a skill');
+    assert.ok(await fs.pathExists(path.join(root, '.claude', 'agents', 'contrarian.md')), 'contrarian agent installed');
+  }, 'typescript', 'claude');
+  console.log('ok content:claudeContrarianRunsForked');
 }
 
 async function testUpdateRecordsCurrentVersion(): Promise<void> {
@@ -361,6 +436,34 @@ async function testMetricsAggregates(): Promise<void> {
   console.log('ok content:metricsAggregates');
 }
 
+async function testMetricsReadsReviewLogsAndTrends(): Promise<void> {
+  const tempRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'agent-runway-trends-'));
+  try {
+    const verdict = (gate: string, status: string, date: string) =>
+      ['```yaml', '# agent-runway:verdict', `gate: ${gate}`, `status: ${status}`, 'blocking: 0', `date: ${date}`, 'artifact: x', '```', ''].join('\n');
+    await fs.outputFile(path.join(tempRoot, 'logs', 'reviews', 'pr-1.md'), verdict('review', 'approve', '2026-09-03'));
+    await fs.outputFile(path.join(tempRoot, 'logs', 'reviews', 'pr-2.md'), verdict('review', 'changes', '2026-10-11'));
+    await fs.outputFile(path.join(tempRoot, 'logs', 'council', 'idea.md'), verdict('council', 'pursue', '2026-10-12'));
+
+    const metrics = await collectMetrics(tempRoot);
+    const review = metrics.gates.find((g) => g.gate === 'review');
+    assert.deepStrictEqual([review?.pass, review?.total], [1, 2], 'review verdicts in logs/ are counted');
+    assert.strictEqual(metrics.gates.find((g) => g.gate === 'council')?.pass, 1, 'council pursue counts as pass');
+    assert.deepStrictEqual(
+      metrics.trends.map((t) => `${t.period}:${t.gate}:${t.pass}/${t.total}`),
+      ['2026-09:review:1/1', '2026-10:council:1/1', '2026-10:review:0/1'],
+      'trends grouped by month and gate'
+    );
+
+    const { runCiCheck, formatCiMarkdown } = await import('./commands/ci-check');
+    const markdown = formatCiMarkdown(await runCiCheck(path.dirname(tempRoot), 'light'), tempRoot);
+    assert.ok(markdown.startsWith('## Agent Runway governance:'), 'markdown report has a heading');
+  } finally {
+    await fs.remove(tempRoot);
+  }
+  console.log('ok content:metricsReadsReviewLogsAndTrends');
+}
+
 async function testVerdictMarkersPresent(): Promise<void> {
   await withTempInstall(async (root) => {
     const skills = path.join(root, '.cursor', 'skills');
@@ -448,11 +551,16 @@ async function main(): Promise<void> {
   await testRemoveRefreshesCursorArtifacts();
   await testRemoveDeletesProjectSpecTemplates();
   await testUpdatePrunesStaleFiles();
+  await testUpdatePreservesUserRulesAndSkills();
+  await testCopilotInstructionsPreserveUserContent();
+  await testLegacyCursorInstallMigrates();
+  await testClaudeContrarianRunsForked();
   await testUpdateRecreatesScaffold();
   await testUpdateRecordsCurrentVersion();
   await testUpdateRestoresSpecTemplates();
   await testCursorAgentParity();
   await testMetricsAggregates();
+  await testMetricsReadsReviewLogsAndTrends();
   await testVerdictMarkersPresent();
   await testCiCheckStrict();
   await testCiCheckClean();

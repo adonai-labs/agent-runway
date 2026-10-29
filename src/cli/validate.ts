@@ -165,49 +165,32 @@ async function listMdBasenames(dir: string): Promise<Set<string>> {
   return result;
 }
 
-// Validates structural parity:
-// - command set matches between Cursor (commands/) and Claude (claude-commands/)
-// - agent set matches between Cursor (agents/) and Claude (claude-agents/)
-// - every core skill (dir with SKILL.md) is reachable from at least one command/agent or marked standalone
+// Validates that commands and agents have one source each and that every core skill
+// (dir with SKILL.md) is reachable from at least one command/agent or marked standalone.
 async function validateParity(packageRoot: string): Promise<ValidationError[]> {
   const errors: ValidationError[] = [];
 
   const commandsDir = path.join(packageRoot, 'src/core/commands');
-  const claudeCommandsDir = path.join(packageRoot, 'src/core/claude-commands');
   const agentsDir = path.join(packageRoot, 'src/core/agents');
-  const claudeAgentsDir = path.join(packageRoot, 'src/core/claude-agents');
   const coreSkillsDir = path.join(packageRoot, 'src/core/skills');
 
-  const pairs: Array<{ aName: string; aSet: Set<string>; bName: string; bSet: Set<string> }> = [
-    {
-      aName: 'commands',
-      aSet: await listMdBasenames(commandsDir),
-      bName: 'claude-commands',
-      bSet: await listMdBasenames(claudeCommandsDir),
-    },
-    {
-      aName: 'agents',
-      aSet: await listMdBasenames(agentsDir),
-      bName: 'claude-agents',
-      bSet: await listMdBasenames(claudeAgentsDir),
-    },
-  ];
+  for (const legacy of ['claude-commands', 'claude-agents']) {
+    if (await fs.pathExists(path.join(packageRoot, 'src/core', legacy))) {
+      errors.push({ file: `src/core/${legacy}`, issue: 'Per-target copies are generated at install time; keep a single source in commands/ or agents/' });
+    }
+  }
 
-  for (const { aName, aSet, bName, bSet } of pairs) {
-    for (const f of aSet) {
-      if (!bSet.has(f)) errors.push({ file: `src/core/${aName}/${f}`, issue: `Missing parity: no matching file in ${bName}/` });
-    }
-    for (const f of bSet) {
-      if (!aSet.has(f)) errors.push({ file: `src/core/${bName}/${f}`, issue: `Missing parity: no matching file in ${aName}/` });
-    }
+  for (const file of await walkDir(commandsDir, '.md')) {
+    const fm = parseFrontmatter(await fs.readFile(file, 'utf-8'));
+    if (!fm?.description) errors.push({ file: path.relative(packageRoot, file), issue: 'Command is missing a description in frontmatter' });
   }
 
   // Skill reachability — collect skill names referenced by any command or agent.
   const referencedSkills = new Set<string>();
-  for (const d of [commandsDir, claudeCommandsDir, agentsDir, claudeAgentsDir]) {
+  for (const d of [commandsDir, agentsDir]) {
     for (const file of await walkDir(d, '.md')) {
       const content = await fs.readFile(file, 'utf-8');
-      for (const m of content.matchAll(/\.(?:cursor|agent-runway)\/skills\/([^/`)\s]+)/g)) {
+      for (const m of content.matchAll(/\{\{skills\}\}\/([^/`)\s]+)/g)) {
         referencedSkills.add(m[1]);
       }
     }
@@ -233,7 +216,7 @@ async function validateParity(packageRoot: string): Promise<ValidationError[]> {
   return errors;
 }
 
-// Validates command files: every .cursor/skills/<name>/ reference must resolve to a known skill.
+// Validates command files: every {{skills}}/<name>/ reference must resolve to a known skill.
 // Checks src/core/skills/<name>/ first, then src/stacks/*/skill-<name>/ as fallback.
 async function validateCommandFiles(packageRoot: string): Promise<ValidationError[]> {
   const errors: ValidationError[] = [];
@@ -271,7 +254,7 @@ async function validateCommandFiles(packageRoot: string): Promise<ValidationErro
     const content = await fs.readFile(file, 'utf-8');
     const rel = path.relative(packageRoot, file);
 
-    const skillRefs = [...content.matchAll(/`\.cursor\/skills\/([^/`]+)\//g)];
+    const skillRefs = [...content.matchAll(/\{\{skills\}\}\/([^/`]+)\//g)];
     const seenSkills = new Set<string>();
 
     for (const match of skillRefs) {
@@ -317,9 +300,7 @@ async function validateSkillInternalRefs(packageRoot: string): Promise<Validatio
     ...(await walkDir(coreSkillsDir, '.md')),
     ...(await walkDir(stacksDir, '.md')),
     ...(await walkDir(path.join(packageRoot, 'src/core/commands'), '.md')),
-    ...(await walkDir(path.join(packageRoot, 'src/core/claude-commands'), '.md')),
     ...(await walkDir(path.join(packageRoot, 'src/core/agents'), '.md')),
-    ...(await walkDir(path.join(packageRoot, 'src/core/claude-agents'), '.md')),
   ];
 
   for (const file of mdFiles) {
@@ -333,7 +314,7 @@ async function validateSkillInternalRefs(packageRoot: string): Promise<Validatio
       const linkPath = match[1].split('#')[0];
       if (!linkPath) continue;
       if (linkPath.startsWith('http') || linkPath.startsWith('#')) continue;
-      if (linkPath.includes('.cursor/') || linkPath.includes('.agent-runway/')) continue;
+      if (linkPath.includes('.cursor/') || linkPath.includes('.agent-runway/') || linkPath.includes('{{')) continue;
 
       // searches-*.md and commands-*.md are generated at install time by the CLI.
       // They don't exist in the source tree but are valid at runtime.
@@ -351,6 +332,28 @@ async function validateSkillInternalRefs(packageRoot: string): Promise<Validatio
     }
   }
 
+  return errors;
+}
+
+// Sources are shared by every target, so they must use {{skills}}, {{rules}} and {{config}}
+// placeholders (or relative links) instead of one target's install paths.
+async function validateTargetNeutralPaths(packageRoot: string): Promise<ValidationError[]> {
+  const errors: ValidationError[] = [];
+  const files = [
+    ...(await walkDir(path.join(packageRoot, 'src/core'), '.md')),
+    ...(await walkDir(path.join(packageRoot, 'src/core'), '.mdc')),
+    ...(await walkDir(path.join(packageRoot, 'src/stacks'), '.md')),
+    ...(await walkDir(path.join(packageRoot, 'src/stacks'), '.mdc')),
+  ];
+  const pattern = /\.cursor\/(?:skills|rules|config|commands|agents)|\.agent-runway\/skills|\.claude\/(?:skills|commands|agents)|\.github\/(?:skills|prompts|agents)/;
+  for (const file of files) {
+    const lines = (await fs.readFile(file, 'utf-8')).split(/\r?\n/);
+    lines.forEach((line, idx) => {
+      if (pattern.test(line)) {
+        errors.push({ file: `${path.relative(packageRoot, file)}:${idx + 1}`, issue: 'Target-specific path; use {{skills}}, {{rules}}, {{config}} or a relative link' });
+      }
+    });
+  }
   return errors;
 }
 
@@ -398,6 +401,7 @@ async function main(): Promise<void> {
     ...(await validateParity(packageRoot)),
     ...(await validateSkillInternalRefs(packageRoot)),
     ...(await validateStackCompleteness(packageRoot)),
+    ...(await validateTargetNeutralPaths(packageRoot)),
   ];
 
   if (allErrors.length === 0) {

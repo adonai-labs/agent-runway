@@ -16,7 +16,10 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: ${{ matrix.node }}
-      - run: npm install
+          cache: npm
+      - run: npm ci
       - run: npm run build
       - run: node dist/smoke.js
       - run: node dist/content-tests.js
+      - run: node dist/installed-links.js
+      - run: npm pack --dry-run

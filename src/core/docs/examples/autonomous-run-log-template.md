@@ -8,7 +8,7 @@ Use this template for:
 
 ## 0) Run Header (machine-readable)
 
-Fill in and keep at the top — `agent-runway metrics` reads this block. Schema: `shared/run-log-schema.md` in your agent's skills directory (`.cursor/skills`, `.agent-runway/skills`, or `.github/skills`).
+Fill in and keep at the top — `agent-runway metrics` reads this block. Schema: `shared/run-log-schema.md` in your agent's skills directory (Cursor, Claude Code, or VS Code Copilot skills folder).
 
 ```yaml
 # agent-runway:run

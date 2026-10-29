@@ -1,9 +1,6 @@
 #!/usr/bin/env node
 
 import { Command } from 'commander';
-import fs from 'fs-extra';
-import path from 'path';
-import updateNotifier from 'update-notifier';
 import { initCommand } from './commands/init';
 import { addCommand } from './commands/add';
 import { removeCommand } from './commands/remove';
@@ -14,14 +11,7 @@ import { metricsCommand } from './commands/metrics';
 import { ciCheckCommand } from './commands/ci-check';
 import { upgradeCommand } from './commands/upgrade';
 import { getPackageVersion } from './utils';
-
-// Notify (once per day, never in CI) when a newer version is published to npm.
-try {
-  const pkg = fs.readJsonSync(path.join(__dirname, '..', 'package.json'));
-  updateNotifier({ pkg }).notify();
-} catch {
-  // Update check is best-effort; never block the CLI on it.
-}
+import { notifyIfUpdateAvailable } from './utils/update-check';
 
 const program = new Command();
 
@@ -38,7 +28,7 @@ program
   .option('-t, --target <target>', 'Agent environment: cursor, claude, vscode, both, all, or comma-separated targets')
   .option('--scope <scope>', 'Installation scope: project or global')
   .option('-g, --global', 'Install globally in ~/.cursor/ (same as --scope global)')
-  .option('-y, --yes', 'Skip prompts and use recommended preset with project cursor target')
+  .option('-y, --yes', 'Skip prompts: recommended preset, project scope, cursor target, and reinitialize if needed')
   .action(initCommand);
 
 program
@@ -78,6 +68,7 @@ program
 program
   .command('metrics')
   .description('Aggregate gate verdicts and run logs into a delivery scorecard')
+  .option('--json', 'Emit machine-readable JSON')
   .action(metricsCommand);
 
 program
@@ -85,6 +76,9 @@ program
   .description('Validate governance artefacts under .agent-runway/ (optional CI enforcement)')
   .option('--profile <profile>', 'light (advisory, default) or strict (fail on violations)', 'light')
   .option('--json', 'Emit machine-readable JSON result')
+  .option('--format <format>', 'Output format: text (default), json, or markdown')
   .action(ciCheckCommand);
 
-program.parse(process.argv);
+program
+  .parseAsync(process.argv)
+  .then(() => notifyIfUpdateAvailable(getPackageVersion()));

@@ -9,6 +9,8 @@ const PASS_TOKEN: Record<string, string> = {
   'po-eval': 'yes',
   review: 'approve',
   contrarian: 'go',
+  council: 'pursue',
+  'safety-check': 'go',
 };
 
 export interface GateStat {
@@ -18,8 +20,17 @@ export interface GateStat {
   blocking: number;
 }
 
+// Gate outcomes grouped by calendar month (from each verdict's `date`).
+export interface GateTrend {
+  period: string;
+  gate: string;
+  total: number;
+  pass: number;
+}
+
 export interface Metrics {
   gates: GateStat[];
+  trends: GateTrend[];
   acPending: number;
   runs: {
     total: number;
@@ -70,7 +81,7 @@ export function parseBlocks(content: string, marker: string): Record<string, str
   return blocks;
 }
 
-async function listMdFiles(dir: string): Promise<string[]> {
+export async function listMdFiles(dir: string): Promise<string[]> {
   if (!(await fs.pathExists(dir))) return [];
   const out: string[] = [];
   const entries = await fs.readdir(dir, { withFileTypes: true });
@@ -94,7 +105,7 @@ function bumpGate(
   else if (value === 'skipped') bucket.skipped++;
 }
 
-// Aggregates verdict blocks (specs) and run headers (logs) under .agent-runway.
+// Aggregates verdict blocks (specs and logs, where reviews are saved) and run headers (logs).
 export async function collectMetrics(agentRunwayDir: string): Promise<Metrics> {
   const specsDir = path.join(agentRunwayDir, 'specs');
   const logsDir = path.join(agentRunwayDir, 'logs');
@@ -103,21 +114,31 @@ export async function collectMetrics(agentRunwayDir: string): Promise<Metrics> {
   const logFiles = await listMdFiles(logsDir);
 
   const gateMap = new Map<string, GateStat>();
+  const trendMap = new Map<string, GateTrend>();
   let acPending = 0;
 
-  for (const file of specFiles) {
+  for (const file of [...specFiles, ...logFiles]) {
     const content = await fs.readFile(file, 'utf-8');
 
     for (const v of parseBlocks(content, '# agent-runway:verdict')) {
       const gate = v.gate;
       if (!gate) continue;
+      const passed = Boolean(v.status) && v.status === PASS_TOKEN[gate];
       const stat = gateMap.get(gate) ?? { gate, total: 0, pass: 0, blocking: 0 };
       stat.total++;
-      if (v.status && v.status === PASS_TOKEN[gate]) stat.pass++;
+      if (passed) stat.pass++;
       stat.blocking += Number.parseInt(v.blocking ?? '0', 10) || 0;
       gateMap.set(gate, stat);
+
+      const period = /^\d{4}-\d{2}/.test(v.date ?? '') ? v.date.slice(0, 7) : 'undated';
+      const key = `${period}|${gate}`;
+      const trend = trendMap.get(key) ?? { period, gate, total: 0, pass: 0 };
+      trend.total++;
+      if (passed) trend.pass++;
+      trendMap.set(key, trend);
     }
 
+    if (!file.startsWith(specsDir)) continue;
     acPending += (content.match(/Verified by:\s*pending/gi) ?? []).length;
   }
 
@@ -153,6 +174,7 @@ export async function collectMetrics(agentRunwayDir: string): Promise<Metrics> {
 
   return {
     gates: [...gateMap.values()].sort((a, b) => a.gate.localeCompare(b.gate)),
+    trends: [...trendMap.values()].sort((a, b) => a.period.localeCompare(b.period) || a.gate.localeCompare(b.gate)),
     acPending,
     runs: {
       total: runTotal,
@@ -176,7 +198,7 @@ function pct(pass: number, total: number): string {
   return `${Math.round((pass / total) * 100)}%`;
 }
 
-export async function metricsCommand(): Promise<void> {
+export async function metricsCommand(options: { json?: boolean } = {}): Promise<void> {
   const projectRoot = process.cwd();
   const agentRunwayDir = getAgentRunwayDir(projectRoot);
 
@@ -187,11 +209,16 @@ export async function metricsCommand(): Promise<void> {
 
   const metrics = await collectMetrics(agentRunwayDir);
 
+  if (options.json) {
+    console.log(JSON.stringify(metrics, null, 2));
+    return;
+  }
+
   console.log(chalk.blue.bold('\nAgent Runway Metrics\n'));
 
   console.log(chalk.bold('Gates'));
   if (metrics.gates.length === 0) {
-    console.log(chalk.gray('  No verdict blocks found under .agent-runway/specs/'));
+    console.log(chalk.gray('  No verdict blocks found under .agent-runway/specs/ or .agent-runway/logs/'));
   } else {
     console.log(chalk.gray('  Gate          Pass rate   Pass/Total   Blocking'));
     for (const g of metrics.gates) {
@@ -200,6 +227,17 @@ export async function metricsCommand(): Promise<void> {
       const passTotal = `${g.pass}/${g.total}`.padStart(11);
       const blocking = String(g.blocking).padStart(9);
       console.log(`  ${name}${rate}${passTotal}${blocking}`);
+    }
+  }
+
+  const periods = [...new Set(metrics.trends.map((t) => t.period))];
+  if (periods.length > 1) {
+    console.log(chalk.bold('\nTrend (pass rate by month)'));
+    for (const period of periods) {
+      const cells = metrics.trends
+        .filter((t) => t.period === period)
+        .map((t) => `${t.gate} ${pct(t.pass, t.total)} (${t.pass}/${t.total})`);
+      console.log(`  ${period.padEnd(9)} ${cells.join(' | ')}`);
     }
   }
 

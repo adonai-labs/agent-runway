@@ -113,6 +113,18 @@ async function validateMdcFiles(packageRoot: string): Promise<ValidationError[]>
     if (fm.globs === undefined) {
       errors.push({ file: rel, issue: 'Missing required field: globs' });
     }
+    if (typeof fm.globs === 'string') {
+      // globs feed VS Code applyTo, which splits on commas: quote them, anchor each
+      // pattern with **/ (or use exactly "**"), and never use {a,b} brace expansion.
+      const rawGlobs = content.replace(/\r\n/g, '\n').match(/^globs:\s*(.*)$/m)?.[1]?.trim() ?? '';
+      if (!/^".*"$/.test(rawGlobs)) {
+        errors.push({ file: rel, issue: 'globs must be a double-quoted string' });
+      }
+      for (const pattern of fm.globs.split(',').map((g) => g.trim())) {
+        if (/[{}]/.test(pattern)) errors.push({ file: rel, issue: `globs must not use brace expansion: ${pattern}` });
+        else if (pattern !== '**' && !pattern.startsWith('**/')) errors.push({ file: rel, issue: `glob must start with **/ or be "**": ${pattern}` });
+      }
+    }
     if (typeof fm.alwaysApply !== 'boolean') {
       errors.push({ file: rel, issue: `Field alwaysApply must be boolean, got: ${JSON.stringify(fm.alwaysApply)}` });
     }

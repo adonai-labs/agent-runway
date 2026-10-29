@@ -6,7 +6,7 @@ Detailed examples and workflows for using Agent Runway.
 
 ## Requirements
 
-- Node.js 22 or newer
+- Node.js 22.12 or newer (the CLI relies on `require()` of ES modules, unflagged since 22.12)
 
 ## Installation & Setup
 
@@ -23,31 +23,34 @@ npx agent-runway init
 **Interactive prompts:**
 
 ```
+? Where should Agent Runway be installed?  Project
+? Which AI agent environment are you installing for?  Cursor
 ? What type of project is this?
-  🟨 Node.js + TypeScript
-  🌐 Full-stack Web (TypeScript + React)
-  ⚡ .NET Backend API
-  🖥️ Electron Desktop App
-  🦀 Rust Systems Programming
-  🐍 Python Backend
-  🐹 Go Backend
-  🎯 Core Only (universal rules only)
-  🔀 Polyglot Backend
-  🔧 Custom Selection
-  🚪 Exit
+  [LITE] Vibe/Lite
+  [TS] Node.js + TypeScript
+  [WEB] Full-stack Web (TypeScript + React)
+  [NET] .NET Backend API
+  [DESK] Electron Desktop App
+  [RS] Rust Systems Programming
+  [PY] Python Backend
+  [GO] Go Backend
+  [CORE] Core Only
+  [POLY] Polyglot Backend
+  [CUSTOM] Custom Selection
+  [EXIT] Exit
 
-✓ Created .cursor/rules/ with 8 rules
-✓ Created .cursor/skills/ with 10 skills
-✓ Created .cursor/commands/ with 12 commands
-✓ Created .agent-runway/docs/ structure
+✔ Agent Runway installed successfully!
 
-📋 Next steps:
-1. Populate .agent-runway/docs/ with your project context
-2. Open in Cursor and run: Ctrl+Shift+P → Developer: Reload Window
-3. Run /start and describe what you want to do
+📋 Installed for: cursor
 
+Cursor: open the project and run Developer: Reload Window
+Then run /start and describe what you want to do
+
+Mode: structured
 Installed stacks: node, typescript
 ```
+
+Next, populate `.agent-runway/docs/` with your project context.
 
 
 ### Vibe/Lite Preset
@@ -58,7 +61,9 @@ Use Lite when you want fast, skill-first workflows without slash command aliases
 npx agent-runway init --preset vibe-lite --target all
 ```
 
-Lite installs `@start`, `@express`, `@code-review`, `@checkpoint`, `@learning`, `@safety-check`, `@council` preview, and a small rule set for engineering principles, security, and testing.
+Lite installs `@start`, `@express`, `@code-review`, `@checkpoint`, `@learning`, `@safety-check`, `@council` preview, and a small rule set for engineering principles, security, and testing. In Claude Code each of these is also a slash command (`/start`, `/express`, ...).
+
+`start`, `express`, `council`, and `safety-check` detect a Lite install and route only to skills that are actually installed. When the work needs a Structured-only workflow (`lead`, `spec-creator`, `architect`, ...), they say so and suggest the upgrade below.
 
 Upgrade to Structured when the work needs specs, tickets, agents, slash commands, lead/autonomous workflows, architecture/contrarian gates, full rules, or governed delivery:
 
@@ -77,6 +82,8 @@ npx agent-runway init --stacks node,typescript,react
 # Use recommended preset
 npx agent-runway init --yes
 ```
+
+`--yes` never prompts: it uses project scope, the `cursor` target (unless `--target` is given), the recommended preset (`node-typescript`) unless `--stacks` or `--preset` is given, and reinitializes an existing install. Unknown `--stacks` or `--target` values are rejected instead of being silently ignored.
 
 ### Multi-Target Setup
 
@@ -103,9 +110,13 @@ Each target installs different files:
 
 | Target | Files created |
 |--------|--------------|
-| `cursor` | `.cursor/` runtime (commands, skills, rules, agents) |
-| `claude` | `.claude/` commands and agents, `CLAUDE.md`, `.agent-runway/skills/` and `rules/`. Existing `CLAUDE.md` content is preserved; Agent Runway updates only its marked block. |
-| `vscode` | `.github/copilot-instructions.md`, `.github/instructions/`, `prompts/`, `agents/`, `skills/` |
+| `cursor` | `.cursor/commands/`, `.cursor/agents/`, `.cursor/skills/`, `.cursor/rules/` (global installs use `~/.cursor/`) |
+| `claude` | `.claude/skills/` (native skills, each invocable as `/<skill>`), `.claude/commands/` (aliases only), `.claude/agents/`, `.agent-runway/rules/`, `CLAUDE.md`. Existing `CLAUDE.md` content is preserved; Agent Runway updates only its marked block. |
+| `vscode` | `.github/skills/`, `.github/prompts/` (one per command), `.github/agents/`, `.github/instructions/agent-runway/`, `.github/copilot-instructions.md` (marked block), `.agent-runway/rules/` |
+
+Every target shares the same project config file, `.agent-runway/agent-runway.json`, and the editable workflow config in `.agent-runway/config/`. Lite installs skills and rules only: no commands, prompts, or agents.
+
+In Claude Code, `.claude/commands/` holds only the aliases whose name does not collide with a skill (`/review` -> `code-review`, `/validate` -> `ticket-eval`); everything else is invoked as `/<skill>`. The `contrarian` skill runs forked in the isolated `contrarian` subagent.
 
 Project installs also create or update a root `AGENTS.md` with an Agent Runway marked block. Existing content outside that block is preserved, so teams can keep their own agent instructions alongside the generated Runway entrypoint.
 
@@ -117,7 +128,7 @@ Agent Runway keeps long-lived project knowledge in `.agent-runway/` artifacts an
 | ---- | ------- | --------------- |
 | `AGENTS.md` | Neutral instructions for coding agents that support the `AGENTS.md` convention | Agent Runway updates only the marked block |
 | `CLAUDE.md` | Claude Code entrypoint and rule index | Agent Runway updates only the marked block |
-| `.github/copilot-instructions.md` | VS Code Copilot project instructions | Regenerated from framework state |
+| `.github/copilot-instructions.md` | VS Code Copilot project instructions | Agent Runway updates only the marked block |
 
 Do not put all engineering standards directly into `AGENTS.md` or `CLAUDE.md`. Put durable project decisions in `.agent-runway/memory/`, ADRs/docs in `.agent-runway/docs/`, and generated framework rules in `.agent-runway/rules/`.
 
@@ -131,8 +142,8 @@ Do not put all engineering standards directly into `AGENTS.md` or `CLAUDE.md`. P
 # Add .NET support to existing project
 npx agent-runway add dotnet
 
-✓ Stack "dotnet" added successfully!
-Reload Cursor window to activate the new rules.
+✔ Stack "dotnet" added successfully!
+Reload your editor to activate the new rules and skills.
 ```
 
 ### Remove a Stack
@@ -141,28 +152,33 @@ Reload Cursor window to activate the new rules.
 # Remove Rust stack
 npx agent-runway remove rust
 
-✓ Stack "rust" removed successfully!
-Note: Manually remove stack-specific files if needed.
+✔ Stack "rust" removed successfully!
 ```
+
+The stack's rules, skills, code-review extensions, and spec templates are removed on refresh. Files you added yourself are left alone.
 
 ### List Stacks
 
 ```bash
 npx agent-runway list
 
-📦 Installed Stacks:
+Installed Targets:
 
-  ● TypeScript (typescript)
-  ● Node.js (node)
-  ● React (react)
+  cursor, claude
 
-📋 Available Stacks:
+Installed Stacks:
 
-  ○ .NET / C# (dotnet)
-  ○ Rust (rust)
-  ○ Python (python)
-  ○ Go (go)
-  ○ Electron (electron)
+  - Node.js (node)
+  - TypeScript (typescript)
+  - React (react)
+
+Available Stacks:
+
+  - .NET / C# (dotnet)
+  - Rust (rust)
+  - Python (python)
+  - Go (go)
+  - Electron (electron)
 
 Use `agent-runway add <stack>` to install a stack.
 ```
@@ -173,11 +189,10 @@ Use `agent-runway add <stack>` to install a stack.
 # Refresh generated files with the currently running CLI version
 npx agent-runway update
 
-Updating Agent Runway...
-✓ Updating core files...
-✓ Updating stacks: node, typescript, react...
-✓ Agent Runway updated successfully!
-Reload Cursor window to apply updates.
+📁 Updating project installation
+
+✔ Agent Runway updated successfully!
+Updated: cursor + claude. Reload your editor to apply changes.
 ```
 
 `agent-runway update` refreshes generated Agent Runway files inside the project. It does not upgrade the npm package by itself.
@@ -193,7 +208,9 @@ npx agent-runway update
 npx @adonai-labs/agent-runway@latest update
 ```
 
-The command keeps the existing mode, targets, and stacks from `agent-runway.json`. It preserves project memory, logs, docs, checkpoints, and existing `CLAUDE.md` / `AGENTS.md` content outside the Agent Runway marked blocks.
+The command keeps the existing mode, targets, and stacks from `.agent-runway/agent-runway.json`. It preserves project memory, logs, docs, checkpoints, `.agent-runway/config/`, and existing `CLAUDE.md` / `AGENTS.md` / `.github/copilot-instructions.md` content outside the Agent Runway marked blocks.
+
+Your own skills, rules, commands, and agents are preserved too: each folder Agent Runway writes to (skills, rules, commands, agents, prompts) keeps a `.agent-runway-managed.json` manifest, and an update replaces only the entries listed there. Projects installed before 1.7 are migrated automatically: the config moves from `.cursor/` to `.agent-runway/`, and Claude Code skills move from the old `.agent-runway/skills/` folder (now removed) to `.claude/skills/`.
 
 ### Delivery Metrics
 
@@ -201,7 +218,16 @@ The command keeps the existing mode, targets, and stacks from `agent-runway.json
 npx agent-runway metrics
 ```
 
-Aggregates the machine-readable verdict blocks (from `ticket-eval`, `po-eval`, `review`, `contrarian`) and autonomous run headers found under `.agent-runway/` into a scorecard: gate pass rates, blocking findings, acceptance criteria still `pending`, run gate pass rates, retries, time-to-green, and how often each memory entry was applied.
+Aggregates the machine-readable `# agent-runway:verdict` blocks found under `.agent-runway/specs/` and `.agent-runway/logs/` (saved reviews and council outputs) plus autonomous run headers into a scorecard: gate pass rates, blocking findings, acceptance criteria still `pending`, run gate pass rates, retries, time-to-green, and how often each memory entry was applied. Pass rates are also shown as monthly trends.
+
+| Gate | Counts as pass |
+| ---- | -------------- |
+| `ticket-eval`, `po-eval` | `yes` |
+| `review` | `approve` |
+| `contrarian`, `safety-check` | `go` |
+| `council` | `pursue` |
+
+Add `--json` for machine-readable output.
 
 ### PR Code Review Format
 
@@ -209,7 +235,7 @@ Aggregates the machine-readable verdict blocks (from `ticket-eval`, `po-eval`, `
 
 - verdict first: `APPROVE`, `REQUEST CHANGES`, or `NEEDS DISCUSSION`
 - deduplicated severity counts
-- source labels such as `CR`, `SEC`, `PERF`, `ARCH`, and optional `CTR`
+- source labels `CR` (code review), `SEC` (security), `SNR` (senior architecture/operational review), and optional `CTR` (contrarian)
 - findings with file/line evidence, impact, why fix, a paste-ready English PR comment, and suggested solutions
 - positives and a suggested merge gate
 
@@ -270,7 +296,12 @@ npx agent-runway ci-check --profile strict
 
 # Machine-readable output for CI dashboards
 npx agent-runway ci-check --profile strict --json
+
+# Markdown report, e.g. to post as a PR comment
+npx agent-runway ci-check --format markdown
 ```
+
+When `$GITHUB_STEP_SUMMARY` is set (GitHub Actions), the markdown report is also written to the workflow run summary.
 
 **Strict profile checks:**
 
@@ -281,11 +312,13 @@ npx agent-runway ci-check --profile strict --json
 | `AC_PENDING` | Acceptance criteria still have `Verified by: pending` |
 | `RUN_LOG_WITHOUT_HEADER` | Autonomous run logs missing `# agent-runway:run` header |
 
-Example GitHub Actions step (opt-in):
+In GitHub Actions, use the bundled action (opt-in). Inputs: `profile` (`light` or `strict`, default `light`), `version` (npm version or dist-tag, default `latest`), and `working-directory` (folder containing `.agent-runway/`, default `.`):
 
 ```yaml
-- name: Agent Runway governance
-  run: npx agent-runway ci-check --profile strict
+- uses: actions/checkout@v4
+- uses: adonai-labs/agent-runway@v1.7.0
+  with:
+    profile: strict
 ```
 
 Most teams can skip this entirely. Start with advisory mode, inspect the output for a few PRs, then move to `--profile strict` only when the team accepts the gate.
@@ -294,7 +327,7 @@ Most teams can skip this entirely. Start with advisory mode, inspect the output 
 
 ## Using Commands
 
-After initialization, you have access to slash commands in Cursor.
+After a Structured initialization, slash commands are available in every target: Cursor commands, Claude Code skills (plus the `/review` and `/validate` aliases), and VS Code prompt files.
 
 ### Recommended Delivery Paths
 
@@ -329,10 +362,12 @@ This keeps fast paths available without losing rigor on complex changes.
 
 ### Repeated Error Registration
 
-If a repeated failure pattern is detected during spec work, the system should ask
+If a repeated failure pattern is detected during spec work, `spec-creator` asks
 whether to register it in project memory. If approved, it logs a concise entry in:
 
-`.agent-runway/memory/repeated-errors.md`
+`.agent-runway/memory/common-failures.md`
+
+Other memory files (`project-decisions`, `execution-memory`, `reasoning-memory`, `recurring-patterns`, `review-findings`, `testing-notes`, `ticket-quality-notes`) follow the same policy: skills write only with your approval, except a few that may auto-record a lesson seen at least twice.
 
 Use this to reduce recurring mistakes across future cycles.
 
@@ -342,11 +377,18 @@ After `spec-creator` generates a spec, it should ask:
 
 `Generate human summary?` (requires explicit confirmation)
 
-If accepted, it creates:
+If accepted, it creates `summary.md` next to the spec:
 
-`.agent-runway/specs/proposed/<implementation-slug>/<implementation-slug>-summary.md`
+```text
+.agent-runway/specs/<implementation-slug>/
+|-- spec.md        # full implementation artefact
+|-- epic.md        # when ticket-creator proposes an epic
+|-- summary.md     # human summary
+`-- tickets/
+    `-- task-01-<description>.md
+```
 
-Use this summary for PM/stakeholder quick review while keeping `<implementation-slug>-spec.md` as the full implementation artefact (never a bare `spec.md` name).
+Use this summary for PM/stakeholder quick review while keeping `spec.md` as the full implementation artefact. The slug folder carries the identity; a spec is never written outside one.
 
 ### `/start` - Entry Point
 
@@ -372,28 +414,30 @@ Context for this work:
 - Recommended pattern: Async background job queue for email sending
 
 Task classification: Standard
-Recommended: /lead (full workflow with quality gates)
-Alternatives: /lead (Fast-Track Mode if you already have a plan), /express (if simple single-layer change)
+Recommended: invoke the `lead` skill (`/lead`) — full workflow with quality gates
+Alternatives: /lead in Fast-Track Mode if you already have a plan, /express if it is a simple single-layer change
 ```
+
+In a Lite install, `/start` recommends only the installed Lite skills.
 
 ### `/lead` - Full Implementation Workflow
 
-10-phase implementation with quality gates:
+Input validation plus Phases 0–10, with approval gates on Phases 0–2:
 
 ```
 /lead
 
-Phase 0: Task Understanding
-- Reading task description...
-- Classifying complexity: Standard
-- Loading relevant context from .agent-runway/docs/
+Pre-Phase 0: Input Validation
+- Ticket provided -> ticket-eval verdict, or inline description checked for what/where/why
 
-Phase 1: DRY Check
+Phase 0: Exploration & Alternatives [GATE]
 - Searching for existing email notification patterns...
-- Found: UserRegistration email sender
-- Recommendation: Reuse EmailService pattern
+- 2-3 approaches with trade-offs; recommendation: reuse EmailService pattern
 
-[... continues through 10 phases ...]
+[... Phase 1 Requirement Analysis [GATE], Phase 2 Implementation Plan [GATE],
+     Phase 3 DRY Analysis, Phase 4 Implementation, Phase 5 Testing, Phase 6 Self-Review,
+     Phase 7 Summary, Phase 8 Automated Verification, Phase 9 Delegate to Code Review,
+     Phase 10 Commit, optional 10.5 System Feedback ...]
 ```
 
 ### `/review` - Code Review
@@ -405,6 +449,7 @@ Systematic code review with security checks:
 
 Files changed: [src/services/OrderNotificationService.ts, src/jobs/EmailJob.ts]
 
+Phase 0: Preparation
 Phase 1: Initial Assessment
 - Files classified by layer and risk level
 
@@ -415,7 +460,8 @@ Phase 2: Systematic Review
 - Found 0 critical issues
 - Found 2 medium issues
 
-[... detailed findings report ...]
+[... Phase 3 Detailed Review, Phase 4 Issue Classification,
+     Phase 5 Generate Report, Phase 6 Verification Contract ...]
 ```
 
 ### `/architect` - Architecture Decisions
@@ -486,6 +532,8 @@ By default it does not write files. If you ask it to save the review, it writes 
 - `/refactor` - Guided refactoring workflow
 - `/express` - Fast implementation for simple changes
 - `/lead` - Full workflow; state you have a plan to activate Fast-Track Mode
+- `/autonomous-lead` - Governed autonomous run with mandatory run logs and ADR gates
+- `/contrarian` - Adversarial review of a chosen approach
 - `/iac` - Infrastructure as Code workflows
 
 ### Stack guidance (no slash commands)
@@ -501,8 +549,9 @@ Stacks do not have their own commands. After `agent-runway add <stack>`:
 | python | `*.py`, `pyproject.toml` | `@python-core` |
 | go | `*.go`, `go.mod` | `@go-core` |
 | rust | `*.rs`, `Cargo.toml` | `@rust-core` |
+| electron | `src/main/`, `src/preload/`, `src/renderer/`, Electron config files | `@electron-core` |
 
-Edit matching files for automatic rule context, or invoke the stack skill directly when installed (`@skill-name` in Cursor, or reference the skill file in Claude Code).
+Edit matching files for automatic rule context, or invoke the stack skill directly when installed (`@skill-name` in Cursor, `/<skill-name>` such as `/dotnet-core` in Claude Code).
 
 ---
 
@@ -565,37 +614,43 @@ This context helps Agent Runway:
 
 ### agent-runway.json
 
-Created automatically during init. Location depends on targets:
-- Cursor or multi-target: `.cursor/agent-runway.json`
-- Claude-only: `.agent-runway/agent-runway.json`
+Created automatically during init at `.agent-runway/agent-runway.json` for every target (global Cursor installs keep it in `~/.cursor/`). A legacy `.cursor/agent-runway.json` from before 1.7 is migrated automatically.
 
 ```json
 {
-  "version": "1.0.0",
+  "version": "1.7.0",
   "stacks": ["typescript", "react"],
   "targets": ["cursor", "claude"],
   "installedAt": "2026-03-31T10:30:00.000Z",
+  "isGlobal": false,
+  "mode": "structured",
   "updatedAt": "2026-03-31T11:00:00.000Z"
 }
 ```
 
-### .cursor/config/review-config.md
+### .agent-runway/config/
 
-Customize which code review searches run:
+Editable workflow configuration. Templates are copied once and never overwritten by `update`:
+
+| File | Used by |
+| ---- | ------- |
+| `review-config.md` | `code-review`: which systematic search categories run |
+| `ticket-creator.config.md` | `ticket-creator`: Jira project, personas, docs, output destination |
+| `spec-creator.config.md` | `spec-creator`: output destination and project docs used for context |
+| `developer-profiles.md` | `lead`: active developer profile (Guided, Standard, Autonomous) |
+| `spec-templates/<stack>/` | `spec-creator`: stack-specific spec templates |
+
+Example `review-config.md` excerpt:
 
 ```markdown
-# Code Review Configuration
+| ID | Category | Status | Reason (if disabled) |
+|----|----------|--------|----------------------|
+| U1 | Hardcoded Secrets | enabled | |
+| U7 | TODO / FIXME / HACK Comments | disabled | TODOs are tracked in our backlog |
 
-## Search Categories
-
-Enable or disable systematic search categories:
-
-- hardcoded-secrets: enabled
-- sensitive-data-logs: enabled
-- missing-authorization: enabled
-- todo-comments: disabled (allow TODOs in our codebase)
-- typescript-any-usage: enabled
-- react-inline-functions: disabled (performance not critical for us)
+| Stack: Category | Status | Reason (if disabled) |
+|-----------------|--------|----------------------|
+| dotnet: Blocking Async Calls | enabled | |
 ```
 
 ---
@@ -619,6 +674,7 @@ Expected outcome:
 - Spec with explicit boundaries and acceptance criteria
 - Delivery ticket with implementation-ready scope
 - Layered implementation validated by DRY/SOLID/security/test checks
+- Artifacts under `.agent-runway/specs/<slug>/` (`spec.md`, `tickets/task-NN-<description>.md`)
 
 ### Example 1: Implementing a New Feature
 
@@ -629,15 +685,16 @@ Expected outcome:
 # 2. Cursor suggests /lead for Standard complexity
 /lead
 
-# 3. Follow the 10-phase workflow
-# - Phase 0: Understand requirements
-# - Phase 1: Check for existing patterns (DRY)
-# - Phase 2: Architecture review
-# - Phase 3: Implementation planning
-# - Phase 4: Implementation
-# - ...
-# - Phase 9: Code review
-# - Phase 10: Final delivery
+# 3. Follow the gated workflow
+# - Pre-Phase 0: Input validation
+# - Phase 0: Exploration & alternatives (gate)
+# - Phase 1: Requirement analysis (gate)
+# - Phase 2: Implementation plan (gate)
+# - Phase 3: DRY analysis
+# - Phase 4-6: Implementation, testing, self-review
+# - Phase 7-8: Summary, automated verification
+# - Phase 9: Delegate to code review
+# - Phase 10: Commit
 
 # 4. Review runs automatically
 # Systematic searches, security checks, SOLID review
@@ -732,7 +789,7 @@ If you add a new technology to your project:
 npx agent-runway add typescript  # if not already installed
 
 # Custom rules
-# Add your own .mdc files to .cursor/rules/
+# Add your own .mdc files to .cursor/rules/ (updates leave them alone)
 ```
 
 ### 5. Customize Review Config
@@ -740,7 +797,7 @@ npx agent-runway add typescript  # if not already installed
 Disable searches that don't apply to your project:
 
 ```bash
-# Edit .cursor/config/review-config.md
+# Edit .agent-runway/config/review-config.md
 # Disable specific categories that create noise
 ```
 
@@ -768,23 +825,23 @@ npm run build
 npm pack --dry-run
 
 # In a separate test project
-npm install -D /absolute/path/to/adonai-labs-agent-runway-1.6.0.tgz
+npm install -D /absolute/path/to/adonai-labs-agent-runway-<version>.tgz
 npx agent-runway init --yes --target claude --preset node-typescript
 ```
 
 Then open the test project in Claude Code and verify:
 
 ```bash
+ls .claude/skills/
 ls .claude/commands/
-ls .agent-runway/skills/
 cat CLAUDE.md | head -20
 cat AGENTS.md | head -20
 ```
 
 Expected behavior:
 
-- Structured installs slash commands under `.claude/commands/`.
-- Skills are available under `.agent-runway/skills/`.
+- Skills are installed natively under `.claude/skills/<skill>/SKILL.md` and each is invocable as `/<skill>`.
+- Structured installs only the `review` and `validate` aliases under `.claude/commands/`, and agents under `.claude/agents/`.
 - `CLAUDE.md` contains an Agent Runway block marked with `<!-- agent-runway:claude:start -->` and `<!-- agent-runway:claude:end -->`.
 - If the project already had a `CLAUDE.md`, existing content stays outside that block.
 - `AGENTS.md` contains an Agent Runway block marked with `<!-- agent-runway:agents:start -->` and `<!-- agent-runway:agents:end -->`.
@@ -793,8 +850,8 @@ Expected behavior:
 ### Commands Not Available (Claude Code)
 
 ```bash
-# 1. Check commands are installed
-ls .claude/commands/
+# 1. Check skills (and aliases) are installed
+ls .claude/skills/ .claude/commands/
 
 # 2. Check CLAUDE.md exists at project root
 cat CLAUDE.md | head -5
@@ -802,8 +859,8 @@ cat CLAUDE.md | head -5
 # 3. Check AGENTS.md exists at project root
 cat AGENTS.md | head -5
 
-# 4. Reinstall Claude target
-npx agent-runway init --target claude --stacks typescript
+# 4. Refresh the installation
+npx agent-runway update
 ```
 
 ### Instructions Not Loading (VS Code Copilot)
@@ -815,8 +872,8 @@ cat .github/copilot-instructions.md | head -5
 # 2. Check individual instruction files
 ls .github/instructions/agent-runway/
 
-# 3. Reinstall VS Code target
-npx agent-runway init --target vscode --stacks typescript
+# 3. Refresh the installation
+npx agent-runway update
 ```
 
 ### Wrong Stack Installed
@@ -832,14 +889,15 @@ npx agent-runway add typescript
 ### Update Not Working
 
 ```bash
-# Clear and reinstall (Cursor)
-rm -rf .cursor/
-npx agent-runway init --stacks node,typescript,react
+# Make sure the CLI itself is current, then refresh
+npm install -D @adonai-labs/agent-runway@latest
+npx agent-runway update
 
-# Clear and reinstall (all targets)
-rm -rf .cursor/ .claude/ .github/
-npx agent-runway init --target all --stacks node,typescript,react
+# Reinstall with explicit options (keeps memory, logs, docs, config and your own files)
+npx agent-runway init --yes --target all --stacks node,typescript,react
 ```
+
+Avoid deleting `.cursor/`, `.claude/`, or `.github/` wholesale: they may hold your own skills, rules, agents, and workflows.
 
 ---
 
@@ -847,7 +905,7 @@ npx agent-runway init --target all --stacks node,typescript,react
 
 ### Creating Custom Rules
 
-Add your own `.mdc` files to `.cursor/rules/`:
+Add your own `.mdc` files to `.cursor/rules/` (updates replace only the rules listed in `.agent-runway-managed.json`):
 
 ```yaml
 ---
@@ -865,7 +923,7 @@ alwaysApply: false
 
 ### Creating Custom Skills
 
-Add workflows to `.cursor/skills/`:
+Add a folder with a `SKILL.md` to `.claude/skills/`, `.cursor/skills/`, or `.github/skills/` (for example `.claude/skills/deploy/SKILL.md`, invocable as `/deploy` in Claude Code). Updates leave your skills alone:
 
 ```markdown
 ---
@@ -886,6 +944,5 @@ description: Deployment workflow with safety checks
 ## See Also
 
 - [Main README](README.md) - Quick start and overview
-- [Contributing Guide](CONTRIBUTING.md) - How to contribute
 - [Extending Guide](EXTENDING.md) - Adding new stacks
 - [src/README.md](src/README.md) - Package internals

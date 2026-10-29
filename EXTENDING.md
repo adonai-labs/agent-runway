@@ -20,16 +20,19 @@ This section explains how to add support for a new programming language or frame
 
 ### Overview
 
-A "stack" in Agent Runway consists of:
+A "stack" in Agent Runway lives in `src/stacks/<stack>/` and consists of:
 
-1. **Rules** (`.mdc` files) - Coding standards, best practices
-2. **Code Review Searches** - Security and quality patterns to detect
-3. **Build Commands** - How to build and test the stack
-4. **Optional: Skills** - Complete workflow modules (like `dotnet-core`)
+1. **Rules** (`.mdc` files) - Coding standards, attached by file globs
+2. **Code Review Searches** (`code-review-searches.md`) - ripgrep commands for security and quality patterns
+3. **Build Commands** (`code-review-commands.md`) - How to build, lint, and test the stack
+4. **Stack Skill** (`skill-<stack>-core/`) - Implementation guidance, invoked as `@<stack>-core` (or `/<stack>-core` in Claude Code)
+5. **Optional: Spec Templates** (`spec-templates/`) - Stack-specific spec scaffold
+
+Sources are shared by every target (Cursor, Claude Code, VS Code), so they never contain a target's install path. Use the placeholders `{{skills}}`, `{{rules}}`, and `{{config}}`, which are resolved per target at install time, or relative links between skill files (e.g. `../code-review/SKILL.md`). The validator rejects paths such as `.cursor/skills/` or `.claude/skills/` in sources.
 
 ### Step-by-Step: Adding Python Support
 
-> **Note**: Python and Go now ship as built-in stacks (`src/stacks/python/`, `src/stacks/go/`). This walkthrough is kept as a worked template — follow the same steps for a new stack, and read the shipped Python/Go stacks as reference implementations.
+> **Note**: Python ships as a built-in stack (`src/stacks/python/`). This walkthrough is kept as a worked template: follow the same steps for a new stack, and read the shipped stacks as reference implementations.
 
 #### 1. Create Stack Directory
 
@@ -44,7 +47,7 @@ Create `src/stacks/python/python.mdc`:
 ```yaml
 ---
 description: Python best practices — PEP 8, type hints, error handling, async patterns, testing
-globs: "**/*.py"
+globs: "**/*.py,**/pyproject.toml"
 alwaysApply: false
 ---
 
@@ -52,17 +55,16 @@ alwaysApply: false
 
 ## Code Style
 
-- Follow PEP 8 style guide
+- Follow PEP 8; enforce it with `ruff check` and `ruff format`
 - Use 4 spaces for indentation (never tabs)
-- Maximum line length: 88 characters (Black formatter default)
+- Maximum line length: 88 characters (ruff format default)
 - Use snake_case for functions and variables
 - Use PascalCase for class names
 
 ## Type Hints
 
 - Use type hints for function signatures
-- Use `from __future__ import annotations` for forward references
-- Use `Optional[T]` for values that can be None
+- Use `T | None` for values that can be None
 - Use Protocol for structural subtyping
 
 ## Error Handling
@@ -72,79 +74,60 @@ alwaysApply: false
 - Use context managers (`with` statement) for resource management
 - Log exceptions with context
 
-## Async Patterns
-
-- Use `async`/`await` for I/O-bound operations
-- Never use blocking operations in async functions
-- Use `asyncio.gather()` for concurrent operations
-- Prefer `asyncio.create_task()` over `ensure_future()`
-
 ## Testing
 
-- Use pytest for testing
-- Name test files `test_*.py` or `*_test.py`
+- Use pytest; name test files `test_*.py`
 - Use fixtures for setup/teardown
-- Mock external dependencies
-- Aim for >80% code coverage
-
-## Common Anti-patterns
-
-| Anti-pattern | Do instead |
-|--------------|------------|
-| Bare `except:` | Use specific exception types |
-| Mutable default arguments | Use `None` and create inside function |
-| Using `global` | Pass as parameters or use class attributes |
-| Import * | Import specific names |
-| Concatenating strings in loop | Use `''.join()` or list comprehension |
+- Mock external dependencies only at the boundary
 ```
+
+Frontmatter conventions:
+
+- `description` - one line; it is shown in `CLAUDE.md` and used as the Copilot instruction description.
+- `globs` - double-quoted, comma-separated, every pattern starting with `**/`. No brace expansion: write `"**/*.ts,**/*.tsx"`, not `"**/*.{ts,tsx}"`.
+- `alwaysApply` - `true` or `false`. Stack rules should be `false` so they attach only to matching files.
 
 #### 3. Create Code Review Searches
 
-Create `src/stacks/python/code-review-searches.md`:
+Create `src/stacks/python/code-review-searches.md`. Every search is a valid `rg` command that can be pasted into a shell. Use ripgrep's built-in file types (`--type py`, `--type go`, `--type rust`, `--type cs`); `--type ts` already covers `.tsx` (there is no `tsx` type).
 
 ```markdown
 # Python-Specific Code Review Searches
 
+These searches complement the universal searches in `code-review/systematic-searches-base.md`.
+
+---
+
 ## Category: Bare Except
 
 \`\`\`bash
-rg "except:" --type py
+rg "except\s*:" --type py
 \`\`\`
 
-Critical. Bare except catches all exceptions including SystemExit and KeyboardInterrupt. Use specific exception types.
+Critical. A bare `except:` catches everything including `SystemExit` and `KeyboardInterrupt`. Catch specific exception types.
+
+---
 
 ## Category: Mutable Default Arguments
 
 \`\`\`bash
-rg "def.*=\s*\[|def.*=\s*\{" --type py
+rg "def \w+\([^)]*=\s*(\[\]|\{\})" --type py
 \`\`\`
 
-High. Mutable default arguments are shared across function calls. Use None and create inside function.
+High. Mutable default arguments are shared across calls. Default to `None` and create the value inside the function.
 
-## Category: Print Statements
+---
+
+## Category: Shell Injection Risk
 
 \`\`\`bash
-rg "print\(" --type py
+rg "subprocess\.(run|call|Popen)\(.*shell\s*=\s*True" --type py
 \`\`\`
 
-Medium. Use logging instead of print for production code.
-
-## Category: Type Hint Missing
-
-\`\`\`bash
-rg "def \w+\([^:]+\):" --type py
-\`\`\`
-
-Medium. Public functions should have type hints for parameters and return values.
-
-## Category: SQL Injection Risk
-
-\`\`\`bash
-rg "execute\(.*%|execute\(.*\+|execute\(.*f\"" --type py
-\`\`\`
-
-Critical. String formatting in SQL queries enables SQL injection. Use parameterized queries.
+Critical. `shell=True` with interpolated input enables command injection. Pass an argument list.
 ```
+
+The category titles are what teams reference in `.agent-runway/config/review-config.md` to disable a search (e.g. `python: Bare Except`).
 
 #### 4. Create Build Commands
 
@@ -153,57 +136,71 @@ Create `src/stacks/python/code-review-commands.md`:
 ```markdown
 # Python Build & Test Commands
 
-## Run Tests
+## Test
 
 \`\`\`bash
 pytest
-# or with coverage
-pytest --cov=src --cov-report=html
 \`\`\`
 
 ## Type Checking
 
 \`\`\`bash
-mypy src/
+mypy src
 \`\`\`
 
 ## Linting
 
 \`\`\`bash
-# Pylint
-pylint src/
-
-# Flake8
-flake8 src/
-
-# Ruff (fast)
-ruff check src/
+ruff check .
 \`\`\`
 
-## Formatting
+## Format Check
 
 \`\`\`bash
-# Black
-black --check src/
-
-# isort (import sorting)
-isort --check-only src/
+ruff format --check .
 \`\`\`
 
 ## Security Audit
 
 \`\`\`bash
-# Safety (dependency vulnerabilities)
-safety check
-
-# Bandit (security issues)
-bandit -r src/
+pip-audit
+bandit -r src
 \`\`\`
 ```
 
-#### 5. Register Stack in CLI
+On install, both files are copied next to the `code-review` skill as `searches-python.md` and `commands-python.md`, and the skill's stack list is updated to link them.
 
-Update `src/cli/presets/index.ts` — add an entry to the `STACKS` array:
+#### 5. Create the Stack Skill
+
+Create `src/stacks/python/skill-python-core/` with a `SKILL.md` and the six standard files every stack skill ships:
+
+```
+skill-python-core/
+├── SKILL.md           # Entry point: frontmatter + when to read each file
+├── architecture.md    # Project structure, layering
+├── patterns.md        # Idiomatic implementation patterns
+├── testing.md         # Test strategy and tooling
+├── security.md        # Stack-specific security guidance
+├── observability.md   # Logging, metrics, tracing
+└── reference.md       # Commands, libraries, links
+```
+
+`SKILL.md` needs `name` and `description` frontmatter; `name` is the installed skill name (the folder name without `skill-`):
+
+```markdown
+---
+name: python-core
+description: Python implementation guidance — project structure, testing with pytest, security, and observability. Use when the user asks about Python-specific patterns. Invoke via @python-core after `agent-runway add python`.
+---
+```
+
+Link the standard files with relative links (`[testing.md](testing.md)`), and other skills with `../<skill>/SKILL.md`. `lead` loads `../<stack>-core/security.md` and `../<stack>-core/observability.md` during self-review, so keep those file names.
+
+Optionally add `spec-templates/spec-template.md`; it is installed into `.agent-runway/config/spec-templates/python/`.
+
+#### 6. Register Stack in CLI
+
+Update `src/cli/presets/index.ts` — add an entry to the `STACKS` array (and to a preset in `PRESETS` if it belongs in one):
 
 ```typescript
 export const STACKS: Stack[] = [
@@ -211,39 +208,37 @@ export const STACKS: Stack[] = [
   {
     id: 'python',
     name: 'Python',
-    description: 'PEP 8, type hints, pytest, async patterns',
+    description: 'PEP 8, type hints, async patterns, pytest, packaging',
   },
 ];
 ```
 
-#### 6. Test Your Stack
+`init` rejects stacks that are not registered here.
+
+#### 7. Test Your Stack
 
 ```bash
-# Build and validate content (both run together)
-npm run build
-
-# Test init with new stack
-npx agent-runway init --stacks python
-
-# Verify Cursor files are copied
-ls .cursor/rules/python.mdc
-ls .cursor/skills/code-review/searches-python.md
-ls .cursor/skills/code-review/commands-python.md
-
-# Verify Claude Code files (if --target claude or all)
-ls .agent-runway/skills/code-review/searches-python.md
-
-# Verify VS Code files (if --target vscode or all)
-ls .github/instructions/agent-runway/
+npm test
 ```
 
-#### 7. Update Documentation
+`npm test` compiles TypeScript, runs the content validator (frontmatter, links, target-neutral paths, stack completeness), the smoke tests, the content tests, and the installed-links checker, which installs every target × mode × stack combination into a temp project and checks that every link and referenced path in the installed output resolves and that no `{{placeholder}}` survives.
 
-Add the stack to `USAGE.md` — both the preset selection list and the "Available Stacks" list:
+To inspect a real install:
 
-```text
-  ○ Python (python)
+```bash
+npm link
+cd /path/to/test-project
+npx agent-runway init --yes --target all --stacks python
+
+ls .cursor/rules/python.mdc .cursor/skills/python-core/
+ls .claude/skills/python-core/ .claude/skills/code-review/searches-python.md
+ls .github/skills/python-core/ .github/instructions/agent-runway/
+ls .agent-runway/rules/python.mdc
 ```
+
+#### 8. Update Documentation
+
+Add the stack to the "Stack Depth Policy" table in `README.md` and the "Stack guidance" table in `USAGE.md`.
 
 ---
 
@@ -264,7 +259,7 @@ ticket-creator (from chat) -> lead -> review
 
 - Extend `spec-creator` when you need richer business requirements, scenarios, or spec delta formats.
 - Extend `spec-creator` when you want to evolve the human summary output (`summary.md`) or stakeholder-facing structure.
-- Extend `ticket-creator` when backlog delivery shape changes (fields, Jira mapping, QA format, epic/ticket splitting behaviour, or markdown artefact naming under `.agent-runway/specs/proposed/<implementation-slug>/`).
+- Extend `ticket-creator` when backlog delivery shape changes (fields, Jira mapping, QA format, epic/ticket splitting behaviour, or markdown artefact naming under `.agent-runway/specs/<implementation-slug>/`, such as `epic.md` and `tickets/task-NN-<description>.md`).
 - Extend `lead` when implementation phases or quality gates need adaptation.
 - Extend `architect` when decision frameworks, trade-off criteria, or ADR patterns evolve.
 
@@ -311,14 +306,14 @@ alwaysApply: false
 - Include code examples for complex functions
 ```
 
-This rule will be picked up by Cursor automatically.
+This rule will be picked up by Cursor automatically. `agent-runway update` replaces only the rules listed in `.cursor/rules/.agent-runway-managed.json`, so your own rules are preserved.
 
 ### Contributing Rules to Framework
 
 If you create a rule that would benefit others:
 
-1. Place it in `src/stacks/{stack}/`
-2. Test it locally
+1. Place it in `src/stacks/{stack}/` (or `src/core/rules/` for a universal rule)
+2. Run `npm test`
 3. Submit a PR (see [Contributing Back](#contributing-back))
 
 ---
@@ -337,9 +332,21 @@ skills/
     └── templates.md       # Output templates
 ```
 
+### Where to Put Your Own Skills
+
+Add a skill folder in the skills directory of your environment:
+
+| Environment | Location | Invocation |
+| ----------- | -------- | ---------- |
+| Cursor | `.cursor/skills/<skill>/SKILL.md` | `@<skill>` |
+| Claude Code | `.claude/skills/<skill>/SKILL.md` | `/<skill>` |
+| VS Code Copilot | `.github/skills/<skill>/SKILL.md` | discovered by the agent |
+
+`agent-runway update` replaces only the entries listed in each folder's `.agent-runway-managed.json`, so your skills (and your own commands and agents) are preserved. Avoid reusing the name of an Agent Runway skill.
+
 ### Example: Database Migration Skill
 
-Create `.cursor/skills/db-migration/SKILL.md`:
+Create `.cursor/skills/db-migration/SKILL.md` (or `.claude/skills/db-migration/SKILL.md`):
 
 ```markdown
 ---
@@ -380,7 +387,7 @@ description: Safe database migration workflow with rollback plan
 3. Schedule maintenance window if needed
 ```
 
-Register the skill in `.cursor/commands/db-migrate.md`:
+Optionally add a Cursor command for it in `.cursor/commands/db-migrate.md` (Claude Code already exposes the skill as `/db-migration`):
 
 ```markdown
 # Database Migration
@@ -407,7 +414,7 @@ Guides you through safe database schema changes with rollback planning.
 1. **One pattern per category**: Don't combine unrelated patterns
 2. **Include severity**: Critical, High, Medium, Low
 3. **Provide context**: Explain why this pattern is problematic
-4. **Test patterns**: Verify regex matches what you expect
+4. **Test patterns**: Run each `rg` command against a sample project and verify it matches what you expect
 5. **Balance false positives**: Too many matches = noise
 
 ### Skills
@@ -425,16 +432,16 @@ Guides you through safe database schema changes with rollback planning.
 When adding a new stack, ensure you have:
 
 - [ ] Created `src/stacks/{stack}/` directory
-- [ ] Written `{stack}.mdc` rules file (<500 lines)
-- [ ] Created `code-review-searches.md` with security patterns
-- [ ] Created `code-review-commands.md` with build/test commands
-- [ ] Added `spec-templates/spec-template.md` with stack-specific clean architecture guidance (optional)
+- [ ] Written `.mdc` rules (<500 lines each) with `description`, double-quoted `**/` globs (no brace expansion), and `alwaysApply`
+- [ ] Created `code-review-searches.md` with valid `rg` commands
+- [ ] Created `code-review-commands.md` with build/lint/test commands
+- [ ] Created `skill-{stack}-core/` with `SKILL.md` (`name`, `description`) and the six standard files
+- [ ] Used `{{skills}}`, `{{rules}}`, `{{config}}` or relative links, never a target's install path
+- [ ] Added `spec-templates/spec-template.md` (optional)
 - [ ] Registered stack in `src/cli/presets/index.ts` (add entry to the `STACKS` array)
-- [ ] Ran `npm run build` — this compiles TypeScript **and** validates all content (frontmatter, internal references, stack completeness)
-- [ ] Added stack to `USAGE.md` (preset selection list and "Available Stacks" list)
-- [ ] Tested `npx agent-runway init --stacks {stack}` (Cursor)
-- [ ] Tested `npx agent-runway init --target all --stacks {stack}` (all targets)
-- [ ] Verified rules activate with correct glob patterns
+- [ ] Ran `npm test` (validator, smoke, content tests, installed-links checker across every target × mode × stack)
+- [ ] Added stack to `README.md` and `USAGE.md` stack tables
+- [ ] Verified rules activate with correct glob patterns in a sample project
 - [ ] Tested code review searches find expected patterns
 - [ ] Build commands work in sample project
 
@@ -459,8 +466,8 @@ Follow the guides above to add your extension.
 ### 3. Test Locally
 
 ```bash
-# Build
-npm run build
+# Build, validate, and run all tests
+npm test
 
 # Link locally
 npm link
@@ -481,7 +488,8 @@ git commit -m "feat(stacks): add Python support
 
 - Add Python rules (PEP 8, type hints, async patterns)
 - Add code review searches for common anti-patterns
-- Add pytest/mypy/ruff build commands"
+- Add pytest/mypy/ruff build commands
+- Add python-core stack skill"
 
 git push origin feature/add-python-stack
 ```
@@ -498,39 +506,30 @@ Then open a PR on GitHub.
 
 ---
 
-## Advanced: Stack with Custom Skill
+## Advanced: Stack Skill Depth
 
-For complex stacks (like .NET has `dotnet-core` skill), create a full skill module.
-
-### Structure
+Every shipped stack has a `skill-<stack>-core/` folder (see step 5). Complex stacks can add more files: `.NET` ships `dotnet-core` with extra `api-design.md`, `application-patterns.md`, `infrastructure.md`, and `delivery-checks.md` alongside the standard ones.
 
 ```
 src/stacks/python/
 ├── python.mdc
 ├── code-review-searches.md
 ├── code-review-commands.md
+├── spec-templates/
+│   └── spec-template.md
 └── skill-python-core/
     ├── SKILL.md
+    ├── architecture.md
+    ├── patterns.md
     ├── testing.md
-    ├── async-patterns.md
-    ├── type-hints.md
+    ├── security.md
+    ├── observability.md
     └── reference.md
 ```
 
-The skill will be copied to `.cursor/skills/python-core/` during init.
+The skill is installed as `python-core` in each target's skills folder (`.cursor/skills/`, `.claude/skills/`, `.github/skills/`). Stack skills have no slash command source of their own; rules attach by glob, and the skill is invoked directly.
 
-### When to Create a Stack Skill
-
-Create a dedicated skill when:
-- Stack has complex, multi-phase workflows
-- Stack requires specialized architectural guidance
-- Stack has many best practices that don't fit in rules
-- You want to provide deep, contextual help
-
-Examples:
-- `.NET` has `dotnet-core` skill with CQRS, EF Core, testing patterns
-- Python could have `python-core` with FastAPI, SQLAlchemy, pytest patterns
-- Go could have `go-core` with concurrency, interfaces, testing patterns
+Add extra files when the stack has deep architectural guidance or many best practices that do not fit in rules. Keep `SKILL.md` short and point to each file with a "read when" note.
 
 ---
 

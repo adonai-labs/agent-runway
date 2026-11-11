@@ -2,6 +2,8 @@
 
 .NET/C# specifics for the stack-neutral core workflows. The `lead`, `autonomous-lead`, `refactor`, and `code-review` skills load this file when the `dotnet-core` skill is installed.
 
+C# versions of the `refactor` skill's patterns are in [refactoring-examples.md](refactoring-examples.md).
+
 Use it together with [architecture.md](architecture.md), [application-patterns.md](application-patterns.md), [infrastructure.md](infrastructure.md), [api-design.md](api-design.md), [testing.md](testing.md), [security.md](security.md), and [observability.md](observability.md).
 
 ---

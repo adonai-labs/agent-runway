@@ -97,7 +97,7 @@ Run the verification steps from [safe-refactoring.md](safe-refactoring.md), then
 
 ## Supporting Files
 
-- [reference.md](reference.md) — smell table, refactoring patterns with before/after examples
+- [reference.md](reference.md) — smell table, refactoring patterns with before/after examples (TypeScript; the dotnet stack adds C# versions)
 - [systematic-smells.md](systematic-smells.md) — search commands to detect smells systematically
 - [safe-refactoring.md](safe-refactoring.md) — characterisation tests, incremental strategy, blast radius, verification
 - [complexity-signals.md](complexity-signals.md) — when to refactor, complexity indicators, prioritisation, knowing when to stop

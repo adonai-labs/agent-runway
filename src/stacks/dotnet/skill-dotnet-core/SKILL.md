@@ -74,3 +74,4 @@ This skill is **.NET and C# specific**. For system design, trade-off reasoning, 
 - [security.md](security.md) — OWASP-aligned security for .NET applications
 - [reference.md](reference.md) — quick reference: NuGet packages, CLI commands, common code structures
 - [delivery-checks.md](delivery-checks.md) — .NET-specific checks used by the `lead`, `code-review` and `refactor` workflows (build/test commands, EF Core migrations, async and DI pitfalls)
+- [refactoring-examples.md](refactoring-examples.md) — C# before/after examples for the `refactor` skill's patterns

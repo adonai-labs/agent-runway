@@ -53,6 +53,8 @@ codegen-units = 1
 panic         = "abort"
 ```
 
+> **Version note.** `axum` 0.8, `tokio` 1, `tower` 0.5, and `thiserror` 2 were current when checked against the crates.io index on 2026-11-11. Newer minor lines exist for `tower-http` (0.7), `sqlx` (0.9), and `validator` (0.21); for 0.x crates a new minor can break the API, so upgrade them deliberately and re-check the snippets.
+
 ---
 
 ## Common commands

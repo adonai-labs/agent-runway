@@ -37,8 +37,8 @@ Toolchain, `package.json`, and common commands for React applications.
     "@types/react":                 "^19",
     "@types/react-dom":             "^19",
     "vitest":                       "^4",
-    "@vitest/coverage-v8":          "^3",
-    "jsdom":                        "latest",
+    "@vitest/coverage-v8":          "^4",
+    "jsdom":                        "^31",
     "@testing-library/react":       "^16",
     "@testing-library/user-event":  "^14",
     "@testing-library/jest-dom":    "^6",
@@ -46,10 +46,12 @@ Toolchain, `package.json`, and common commands for React applications.
     "msw":                          "^2",
     "eslint":                       "^9",
     "typescript-eslint":            "^8",
-    "eslint-plugin-react-hooks":    "latest"
+    "eslint-plugin-react-hooks":    "^7"
   }
 }
 ```
+
+> **Version note.** The majors above are the ones the snippets in this skill were written for. The registry's declared compatibility (checked 2026-11-11) is consistent: `vitest` 4 supports `vite` 6 to 8, `@hookform/resolvers` 5 supports `zod` 4, and `react-router` 7 is still maintained. Newer majors exist for `react-router` (8), `vite` (8), `@vitejs/plugin-react` (6), `vitest` (5), `typescript` (7), `eslint` (10), and `msw` (3). Upgrade them deliberately and re-check the config snippets (for example the React Compiler `babel` option) against each release's migration notes.
 
 ---
 

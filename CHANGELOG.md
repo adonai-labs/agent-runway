@@ -45,6 +45,8 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Version
 - Many broken cross-references in skills (config paths, `ticket-eval`, `repeated-errors.md`, phase numbers, spec layout).
 - The changelog intro now sits above the release entries.
 - The README and `init` no longer claim that Cursor and VS Code Copilot auto-discover skills; they state where the skills are installed and how to reference them.
+- The `refactor` reference is language-neutral (TypeScript examples with mechanics and pitfalls per pattern); the C# versions moved to `dotnet-core/refactoring-examples.md`.
+- React and Rust reference dependency blocks: fixed an inconsistent `vitest`/`@vitest/coverage-v8` pair, replaced `latest` pins, and added a version note listing newer majors that the snippets have not been validated against. The Electron `@electron/fuses` and `electronegativity` invocations were checked against their published READMEs.
 - CI now also runs on Windows and macOS, and the installed-output check isolates the home directory on Windows too (it previously set only `HOME`).
 
 ---

@@ -1,6 +1,6 @@
 # Reference — Code Smells & Refactoring Patterns
 
-> The before/after pattern examples below are written in C# for compactness; each refactoring is language-agnostic. Translate to the project's language and idioms (and to `../<stack>-core/patterns.md` when the stack skill is installed). Keep behaviour identical and tests green at every step.
+> The examples are in TypeScript for compactness; each refactoring is language-agnostic. Translate to the project's language and idioms, and to the installed stack skill's patterns file when there is one (`../<stack>-core/patterns.md`). The `.NET` stack ships C# versions of these examples. Keep behaviour identical and tests green at every step.
 
 ---
 
@@ -12,14 +12,14 @@
 | Large class | 10+ public methods, multiple responsibilities | Extract Class, Split by SRP |
 | Duplicated logic | Same block in 2+ places | Extract shared method / utility |
 | Feature envy | Method uses another object's data more than its own | Move Method |
-| Primitive obsession | `string` for Email, `int` for Money, `bool` flags | Introduce Value Object, Replace Flag with Enum |
+| Primitive obsession | `string` for Email, `number` for Money, boolean flags | Introduce Value Object, Replace Flag with Enum |
 | God object | One class does everything | Decompose by Single Responsibility |
-| Deep nesting | 3+ levels of `if`/`foreach` | Guard clauses, Extract Method |
+| Deep nesting | 3+ levels of `if`/loops | Guard clauses, Extract Method |
 | Magic values | Unexplained numbers or strings | Named constants, configuration |
-| Tight coupling | `new SomeService()` inside a method | Extract interface, inject dependency |
+| Tight coupling | A dependency constructed inside the method that uses it | Extract interface, inject dependency |
 | Anemic domain | All logic in services, entities are data bags | Move behaviour to entity |
-| Switch on type | `if (type == "X")` patterns repeated across methods | Strategy pattern, polymorphism |
-| Long parameter list | Method with 4+ parameters | Parameter object, builder |
+| Switch on type | `if (type === "X")` repeated across methods | Strategy pattern, polymorphism |
+| Long parameter list | Function with 4+ parameters | Parameter object, builder |
 | Temporary field | Field only used in certain code paths | Extract class or method |
 | Speculative generality | Abstractions for problems that don't exist yet | Remove unused abstractions (YAGNI) |
 
@@ -27,43 +27,29 @@
 
 ## Pattern: Extract Method
 
-```csharp
-// Before — one method doing too many things
-public void ProcessOrder(Order order)
-{
-    // validate
-    if (order.Items.Count == 0) throw new InvalidOperationException("No items");
-    if (order.CustomerId == Guid.Empty) throw new InvalidOperationException("No customer");
+**When:** a function does several things, with comments marking the sections.
+**Mechanics:** move one section at a time into a named function, pass only what it needs, run the tests after each move.
+**Watch out:** a name that needs "and" means the extraction is still doing two things.
 
-    // calculate
-    var subtotal = order.Items.Sum(i => i.Price * i.Quantity);
-    var tax = subtotal * 0.1m;
-    var total = subtotal + tax;
-
-    // persist
-    order.SetTotal(total);
-    _repository.Save(order);
+```ts
+// Before
+function processOrder(order: Order) {
+  // validate
+  if (order.items.length === 0) throw new Error("No items");
+  if (!order.customerId) throw new Error("No customer");
+  // calculate
+  const subtotal = order.items.reduce((sum, i) => sum + i.price * i.quantity, 0);
+  const total = subtotal * 1.1;
+  // persist
+  order.total = total;
+  repository.save(order);
 }
 
 // After — each step is named and independently testable
-public void ProcessOrder(Order order)
-{
-    ValidateOrder(order);
-    var total = CalculateTotal(order);
-    order.SetTotal(total);
-    _repository.Save(order);
-}
-
-private static void ValidateOrder(Order order)
-{
-    if (order.Items.Count == 0) throw new InvalidOperationException("No items");
-    if (order.CustomerId == Guid.Empty) throw new InvalidOperationException("No customer");
-}
-
-private static decimal CalculateTotal(Order order)
-{
-    var subtotal = order.Items.Sum(i => i.Price * i.Quantity);
-    return subtotal + (subtotal * 0.1m);
+function processOrder(order: Order) {
+  validateOrder(order);
+  order.total = calculateTotal(order);
+  repository.save(order);
 }
 ```
 
@@ -71,30 +57,28 @@ private static decimal CalculateTotal(Order order)
 
 ## Pattern: Guard Clauses (Flatten Nesting)
 
-```csharp
+**When:** the happy path sits three or more levels deep.
+**Mechanics:** invert each condition and return or throw early; the main flow ends up at the left margin.
+**Watch out:** keep early returns consistent in what they return, and don't skip cleanup that a single exit point used to guarantee.
+
+```ts
 // Before — arrow-shaped code
-public void Save(Order order)
-{
-    if (order != null)
-    {
-        if (order.IsValid())
-        {
-            if (!_repository.Exists(order.Id))
-            {
-                _repository.Save(order);
-            }
-        }
+function save(order: Order | null) {
+  if (order) {
+    if (order.isValid()) {
+      if (!repository.exists(order.id)) {
+        repository.save(order);
+      }
     }
+  }
 }
 
-// After — linear, readable
-public void Save(Order order)
-{
-    if (order is null) return;
-    if (!order.IsValid()) return;
-    if (_repository.Exists(order.Id)) return;
-
-    _repository.Save(order);
+// After — linear
+function save(order: Order | null) {
+  if (!order) return;
+  if (!order.isValid()) return;
+  if (repository.exists(order.id)) return;
+  repository.save(order);
 }
 ```
 
@@ -102,54 +86,48 @@ public void Save(Order order)
 
 ## Pattern: Introduce Value Object
 
-```csharp
-// Before — primitive obsession
-public class Customer
-{
-    public string Email { get; set; }  // any string, no validation
-}
+**When:** the same primitive (email, money, id) is validated or formatted in several places.
+**Mechanics:** create an immutable type that validates in its constructor or factory, then replace the primitive at the boundaries first.
+**Watch out:** don't wrap every string; do it where invalid values have caused or would cause bugs.
+
+```ts
+// Before — any string is accepted
+class Customer { email: string = ""; }
 
 // After — validated, meaningful type
-public record Email
-{
-    public string Value { get; }
-
-    public Email(string value)
-    {
-        if (string.IsNullOrWhiteSpace(value) || !value.Contains('@'))
-            throw new ArgumentException("Invalid email address", nameof(value));
-        Value = value.ToLowerInvariant();
-    }
-
-    public static implicit operator string(Email email) => email.Value;
+class Email {
+  private constructor(readonly value: string) {}
+  static parse(raw: string): Email {
+    const value = raw.trim().toLowerCase();
+    if (!value.includes("@")) throw new Error("Invalid email address");
+    return new Email(value);
+  }
 }
-
-public class Customer
-{
-    public Email Email { get; private set; }
-}
+class Customer { constructor(readonly email: Email) {} }
 ```
 
 ---
 
 ## Pattern: Result Pattern (Replace Exception as Control Flow)
 
-```csharp
-// Before — exception for expected failure
-public Order GetOrder(Guid id)
-{
-    var order = _repository.Find(id);
-    if (order == null) throw new NotFoundException("Order not found");
-    return order;
+**When:** an expected outcome (not found, validation failed) is signalled with an exception that every caller must remember to catch.
+**Mechanics:** return an explicit success/failure value; keep exceptions for unexpected faults.
+**Watch out:** follow the project's existing error-handling convention; don't introduce a second one for a single function.
+
+```ts
+// Before — exception for an expected failure
+function getOrder(id: string): Order {
+  const order = repository.find(id);
+  if (!order) throw new NotFoundError("Order not found");
+  return order;
 }
 
 // After — explicit, composable outcome
-public Result<Order> GetOrder(Guid id)
-{
-    var order = _repository.Find(id);
-    return order is null
-        ? Result.Failure<Order>("Order not found")
-        : Result.Success(order);
+type Result<T> = { ok: true; value: T } | { ok: false; error: string };
+
+function getOrder(id: string): Result<Order> {
+  const order = repository.find(id);
+  return order ? { ok: true, value: order } : { ok: false, error: "Order not found" };
 }
 ```
 
@@ -157,107 +135,78 @@ public Result<Order> GetOrder(Guid id)
 
 ## Pattern: Replace Switch with Strategy
 
-```csharp
-// Before — switch repeated every time a new type is added
-public decimal CalculateDiscount(string customerType, decimal amount)
-{
-    return customerType switch
-    {
-        "VIP"       => amount * 0.2m,
-        "Returning" => amount * 0.1m,
-        _           => 0m
-    };
+**When:** the same switch on a type or kind is repeated, and each new kind touches several places.
+**Mechanics:** define one interface (or a function type), one implementation per case, and select it in a single lookup.
+**Watch out:** a single, stable switch is fine; apply this only when the cases keep growing.
+
+```ts
+// Before
+function discount(customerType: string, amount: number): number {
+  switch (customerType) {
+    case "vip": return amount * 0.2;
+    case "returning": return amount * 0.1;
+    default: return 0;
+  }
 }
 
-// After — strategy, open for extension without modification
-public interface IDiscountStrategy
-{
-    decimal Calculate(decimal amount);
-}
-
-public class VipDiscountStrategy : IDiscountStrategy
-{
-    public decimal Calculate(decimal amount) => amount * 0.2m;
-}
-
-public class ReturningCustomerDiscountStrategy : IDiscountStrategy
-{
-    public decimal Calculate(decimal amount) => amount * 0.1m;
-}
-
-public class NoDiscountStrategy : IDiscountStrategy
-{
-    public decimal Calculate(decimal amount) => 0m;
-}
-
-// Inject the correct strategy via DI factory or dictionary lookup
+// After — open for extension without modification
+type DiscountStrategy = (amount: number) => number;
+const strategies: Record<string, DiscountStrategy> = {
+  vip: (amount) => amount * 0.2,
+  returning: (amount) => amount * 0.1,
+};
+const discount = (customerType: string, amount: number) =>
+  (strategies[customerType] ?? (() => 0))(amount);
 ```
 
 ---
 
 ## Pattern: Move Behaviour to Entity (Fix Anemic Domain)
 
-```csharp
-// Before — service does all the work; entity is a data bag
-public class OrderService
-{
-    public void CancelOrder(Order order)
-    {
-        if (order.Status == OrderStatus.Shipped)
-            throw new InvalidOperationException("Cannot cancel shipped order");
-        order.Status = OrderStatus.Cancelled;
-        order.CancelledAt = DateTime.UtcNow;
-    }
+**When:** a service checks and mutates an entity's fields, so the same rules get copied wherever the entity is used.
+**Mechanics:** move the invariant and the state change into a method on the entity; make the fields private or read-only; leave the service as an orchestrator.
+**Watch out:** only for entities with real invariants; plain data holders can stay plain.
+
+```ts
+// Before — service does the work; entity is a data bag
+class OrderService {
+  cancel(order: Order) {
+    if (order.status === "shipped") throw new Error("Cannot cancel shipped order");
+    order.status = "cancelled";
+    order.cancelledAt = new Date();
+  }
 }
 
 // After — invariant and behaviour live on the entity
-public class Order
-{
-    public OrderStatus Status { get; private set; }
-    public DateTime? CancelledAt { get; private set; }
-
-    public void Cancel()
-    {
-        if (Status == OrderStatus.Shipped)
-            throw new InvalidOperationException("Cannot cancel a shipped order");
-        Status = OrderStatus.Cancelled;
-        CancelledAt = DateTime.UtcNow;
-        AddDomainEvent(new OrderCancelledEvent(Id));
-    }
+class Order {
+  private _status: "open" | "shipped" | "cancelled" = "open";
+  cancelledAt?: Date;
+  cancel() {
+    if (this._status === "shipped") throw new Error("Cannot cancel a shipped order");
+    this._status = "cancelled";
+    this.cancelledAt = new Date();
+  }
 }
-
-// Service becomes a thin orchestrator
-public class OrderService
-{
-    public async Task CancelAsync(Guid id, CancellationToken ct)
-    {
-        var order = await _repository.FindAsync(id, ct);
-        order.Cancel();
-        await _repository.SaveAsync(order, ct);
-    }
-}
+// The service now loads the order, calls order.cancel(), and saves it.
 ```
 
 ---
 
 ## Pattern: Extract Parameter Object
 
-```csharp
-// Before — long parameter list
-public Invoice CreateInvoice(
-    Guid customerId, string customerName, string customerEmail,
-    string billingAddress, string billingCity, string billingPostcode,
-    decimal amount, string currency)
-{ ... }
+**When:** a function takes four or more parameters that travel together.
+**Mechanics:** group the related parameters into one named type, update callers one at a time.
+**Watch out:** group by meaning (billing details), not by convenience (a bag of "options").
 
-// After — cohesive parameter object
-public record BillingDetails(
-    Guid CustomerId,
-    string Name,
-    string Email,
-    Address BillingAddress);
+```ts
+// Before
+function createInvoice(customerId: string, name: string, email: string,
+                       address: string, city: string, postcode: string,
+                       amount: number, currency: string) { /* ... */ }
 
-public Invoice CreateInvoice(BillingDetails billing, Money amount) { ... }
+// After
+interface BillingDetails { customerId: string; name: string; email: string; address: Address; }
+function createInvoice(billing: BillingDetails, amount: Money) { /* ... */ }
 ```
 
 ---
@@ -265,8 +214,8 @@ public Invoice CreateInvoice(BillingDetails billing, Money amount) { ... }
 ## Commit Convention
 
 ```
-refactor(orders): extract order validation into ValidateOrder method
-refactor(payments): replace switch on payment type with strategy pattern
+refactor(orders): extract order validation into validateOrder
+refactor(payments): replace switch on payment type with strategy lookup
 refactor(domain): move cancellation logic from OrderService to Order entity
 refactor(users): introduce Email value object to replace string primitive
 ```

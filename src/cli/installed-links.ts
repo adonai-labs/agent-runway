@@ -94,9 +94,18 @@ async function checkFile(file: string, projectRoot: string, homeDir: string): Pr
   return problems;
 }
 
+// Assigning undefined to process.env.X stores the string "undefined", so delete instead.
+function restoreEnv(name: string, value: string | undefined): void {
+  if (value === undefined) delete process.env[name];
+  else process.env[name] = value;
+}
+
 async function checkCombo(combo: Combo): Promise<string[]> {
   const originalCwd = process.cwd();
+  // os.homedir() reads HOME on macOS/Linux and USERPROFILE on Windows. Override both so the
+  // global-install case can never write to the real home directory of whoever runs the test.
   const originalHome = process.env.HOME;
+  const originalUserProfile = process.env.USERPROFILE;
   const tempRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'agent-runway-links-'));
   const projectRoot = path.join(tempRoot, 'project');
   const homeDir = path.join(tempRoot, 'home');
@@ -105,6 +114,7 @@ async function checkCombo(combo: Combo): Promise<string[]> {
 
   try {
     process.env.HOME = homeDir;
+    process.env.USERPROFILE = homeDir;
     process.chdir(projectRoot);
     await installFromConfig(projectRoot, newConfig(combo.stacks, [combo.target], combo.mode, combo.isGlobal), combo.isGlobal);
 
@@ -119,7 +129,8 @@ async function checkCombo(combo: Combo): Promise<string[]> {
     return problems;
   } finally {
     process.chdir(originalCwd);
-    process.env.HOME = originalHome;
+    restoreEnv('HOME', originalHome);
+    restoreEnv('USERPROFILE', originalUserProfile);
     await fs.remove(tempRoot);
   }
 }

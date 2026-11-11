@@ -186,7 +186,7 @@ export async function initCommand(options: InitOptions) {
         console.log(chalk.gray('Claude Code: run /start (skills are installed in .claude/skills and invocable as /<skill>)'));
       }
       if (installsVscode) {
-        console.log(chalk.gray(selectedMode === 'lite' ? 'VS Code: reload the window; Copilot discovers the skills in .github/skills' : 'VS Code: reload the window, then use Agent Runway prompt files such as /start'));
+        console.log(chalk.gray(selectedMode === 'lite' ? 'VS Code: reload the window, then reference .github/skills/<skill>/SKILL.md' : 'VS Code: reload the window, then use Agent Runway prompt files such as /start'));
       }
       console.log();
     }

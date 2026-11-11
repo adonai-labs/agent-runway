@@ -29,7 +29,7 @@ Fast, skill-first setup for prototypes, solo work, and low-ceremony coding.
 npx @adonai-labs/agent-runway init --preset vibe-lite --target all
 ```
 
-Lite installs the `start`, `express`, `code-review`, `checkpoint`, `learning`, `safety-check`, and `council` (preview) skills, plus a small rule set for engineering principles, security, and testing. It does not install command aliases, agents, or heavy structured delivery workflows. In Claude Code every installed skill is also a slash command (`/start`, `/express`, ...); in Cursor and VS Code the agent discovers them from the skills folder.
+Lite installs the `start`, `express`, `code-review`, `checkpoint`, `learning`, `safety-check`, and `council` (preview) skills, plus a small rule set for engineering principles, security, and testing. It does not install command aliases, agents, or heavy structured delivery workflows. In Claude Code every installed skill is also a slash command (`/start`, `/express`, ...); in Cursor and VS Code they are installed in `.cursor/skills/` and `.github/skills/`, where you can reference them from a prompt (for example `@start` or `.github/skills/start/SKILL.md`).
 
 When the work outgrows Lite, upgrade in place:
 

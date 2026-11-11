@@ -44,6 +44,8 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Version
 - Code review verdicts saved under `logs/reviews/` are now counted by `metrics`.
 - Many broken cross-references in skills (config paths, `ticket-eval`, `repeated-errors.md`, phase numbers, spec layout).
 - The changelog intro now sits above the release entries.
+- The README and `init` no longer claim that Cursor and VS Code Copilot auto-discover skills; they state where the skills are installed and how to reference them.
+- CI now also runs on Windows and macOS, and the installed-output check isolates the home directory on Windows too (it previously set only `HOME`).
 
 ---
 

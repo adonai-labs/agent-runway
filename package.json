@@ -47,7 +47,8 @@
     "src/stacks",
     "USAGE.md",
     "EXTENDING.md",
-    "action.yml"
+    "action.yml",
+    "CHANGELOG.md"
   ],
   "devDependencies": {
     "@types/fs-extra": "^11.0.0",
